@@ -394,6 +394,16 @@ final class Preferences: ObservableObject {
         didSet { store.set(waitsForPlay, forKey: Preferences.waitsKey) }
     }
     nonisolated static let waitsKey = "media.click"
+    /// Translate Page in the page's right-click menu, on this Mac only
+    /// (Translate.swift). Off unless asked for.
+    @Published var translatesPages: Bool {
+        didSet { store.set(translatesPages, forKey: PageTranslator.key) }
+    }
+    /// The languages whose pages are translated as they open, chosen from
+    /// the translated sign's menu (never from a private tab). None at first.
+    @Published var translateAlways: Set<String> {
+        didSet { store.set(Array(translateAlways).sorted(), forKey: PageTranslator.alwaysKey) }
+    }
     /// A video playing on a video site comes out into the floating window
     /// when you go to another tab (Browser.leaving). On, as it always was;
     /// the switch is for turning it off.
@@ -615,6 +625,8 @@ final class Preferences: ObservableObject {
         floatsAway = store.bool(forKey: "float.away")
         floatsOnLeave = store.object(forKey: "float.leave") as? Bool ?? true
         waitsForPlay = store.bool(forKey: Preferences.waitsKey)
+        translatesPages = store.bool(forKey: PageTranslator.key)
+        translateAlways = Set(store.stringArray(forKey: PageTranslator.alwaysKey) ?? [])
         installsUpdates = store.object(forKey: Updater.installKey) as? Bool ?? true
         peeksLinks = store.object(forKey: "links.peek") as? Bool ?? true
         peekClick = store.string(forKey: "links.peekClick").flatMap(PeekClick.init(rawValue:)) ?? .shift

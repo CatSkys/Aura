@@ -200,6 +200,9 @@ struct WelcomePanel: View {
                 Key("⌥⌘N", "Split a page in two; ⌃⌘← and ⌃⌘→ go from one page to the other. Turn Split View on in Settings › Tabs.")
                 Key("⌘O", "Links from other apps can open in a small window. Settings › General.")
                 Key("⌘L", "Suggestions from your search engine as you type — off until you turn them on in Settings › General.")
+                if PageTranslator.available {
+                    Key("⌃-click", "Translate a page into your language, on this Mac — nothing is sent anywhere. Off until you turn it on in Settings › General.")
+                }
                 if AI.shipped {
                     Key("⌘,", "AI summaries and questions about a page — off until you turn it on in Settings › AI.")
                 }
