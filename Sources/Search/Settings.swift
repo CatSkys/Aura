@@ -608,6 +608,7 @@ struct SettingsPanel: View {
                     }
                 }
             }
+            ApplePasswordsCard(prefs: prefs)
             Card {
                 Line("Bring yours in", "From another browser on this Mac — nothing leaves it") {
                     Pill("Import…") {
