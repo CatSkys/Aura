@@ -45,6 +45,7 @@ in [ROADMAP.md](ROADMAP.md).
 - File › Close Window, ⇧⌘W, closes the whole window with its tabs, as in Arc, Chrome and Safari; ⌘W still closes the tab. It can be changed in Settings › Shortcuts. Thanks [@Tom-Boscher](https://github.com/Tom-Boscher) ([#640](https://github.com/driceroland/Search/pull/640))
 - With spaces on, the mouse's back and forward buttons over the tabs go to the space before or after, as in Arc. Over the page they still go back and forward in the page. Thanks [@Tom-Boscher](https://github.com/Tom-Boscher) ([#639](https://github.com/driceroland/Search/pull/639))
 - Settings › General › Confirm before quitting asks before ⌘Q or Quit Search closes the browser. Cancel keeps the windows and tabs open. Off unless turned on. Thanks [@BryanZaneee](https://github.com/BryanZaneee) ([#659](https://github.com/driceroland/Search/pull/659))
+- Settings › Tabs › Show tab shortcut numbers: while ⌘ is held, each tab ⌘1–9 picks shows its number, in the column and across the top; a folded group counts once. Off unless turned on. Thanks [@BryanZaneee](https://github.com/BryanZaneee) ([#654](https://github.com/driceroland/Search/issues/654), [#658](https://github.com/driceroland/Search/pull/658))
 
 ### Changed
 
