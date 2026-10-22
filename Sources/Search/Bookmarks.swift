@@ -1259,7 +1259,7 @@ struct BookmarksPanel: View {
                             }
                             .padding(.bottom, 2)
                         }
-                        .frame(maxHeight: 440)
+                        .listHeight(440)
                         // A bookmark found is shown where it lives, which
                         // may be below what shows. This list is only made
                         // as the search is cleared for it, with the row to
@@ -1278,10 +1278,7 @@ struct BookmarksPanel: View {
                 Text("Bring in from")
                     .font(.system(size: 12))
                     .foregroundStyle(Palette.muted)
-                Pill("Bring in…") {
-                    browser.bookmarking = false
-                    browser.bringingIn = ""
-                }
+                Pill("Bring in…") { browser.lead(to: InternalPage(.importing)) }
                 Pill("File…") { browser.importFile() }
                 Spacer()
                 Pill("New Folder…") { bookmarks.askNewFolder(in: nil) }
@@ -1316,7 +1313,7 @@ struct BookmarksPanel: View {
                 }
                 .padding(.bottom, 2)
             }
-            .frame(maxHeight: 440)
+            .listHeight(440)
         }
     }
 
