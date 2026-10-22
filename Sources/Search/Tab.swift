@@ -121,6 +121,7 @@ enum Web {
         config.mediaTypesRequiringUserActionForPlayback = Web.playback
         if Store.testing, !Store.measuring { config.preferences.inactiveSchedulingPolicy = .none }
         inspector(config.preferences)
+        NativePiP.allow(config.preferences)
         return config
     }
 
@@ -729,6 +730,7 @@ final class Tab: ObservableObject, Identifiable {
         if #available(macOS 13.3, *) { web.isInspectable = true }
         Web.pages.add(web)
         Web.inspector(web.configuration.preferences)
+        NativePiP.allow(web.configuration.preferences)
         web.navigationDelegate = delegate
         web.uiDelegate = uiDelegate(delegate)
         if #available(macOS 15.4, *) { ExtensionCapture.shared.watchScreen(web) }
