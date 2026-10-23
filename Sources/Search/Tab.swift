@@ -1080,9 +1080,13 @@ final class Tab: ObservableObject, Identifiable {
     /// `done`, when given, hears back `false` for the one case worth saying
     /// something about: the sign-in fields that were there a moment ago,
     /// when this was offered, are gone by the time it actually runs.
-    func fill(user: String, password: String, done: ((Bool) -> Void)? = nil) {
+    /// With `host`, the page checks for itself that it is still that https
+    /// host when the script runs: a page that changed after the last check
+    /// on this side (a redirect while Touch ID was up) gets nothing.
+    func fill(user: String, password: String, onlyOn host: String? = nil, done: ((Bool) -> Void)? = nil) {
+        let still = host.map { "location.protocol === 'https:' && location.hostname.toLowerCase() === `\(escape($0.lowercased()))` && " } ?? ""
         web.evaluateInSearch(
-            "window.__officeForms && window.__officeForms.fill(`\(escape(user))`, `\(escape(password))`)"
+            "\(still)window.__officeForms && window.__officeForms.fill(`\(escape(user))`, `\(escape(password))`)"
         ) { result in
             done?((result as? Bool) ?? false)
         }
