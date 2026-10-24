@@ -159,10 +159,10 @@ final class Updater: ObservableObject {
     func checkByHand() {
         switch stage {
         case .ready(let next):
-            say?("Search \(next.version) is ready — relaunch to use it")
+            say?(Localized("Search \(next.version) is ready — relaunch to use it"))
             return
         case .fetching(let next):
-            say?("Search \(next.version) is downloading…")
+            say?(Localized("Search \(next.version) is downloading…"))
             return
         default: break
         }
@@ -201,7 +201,7 @@ final class Updater: ObservableObject {
             case .waiting(let known) where known == found: break
             case .none, .offered, .waiting:
                 stage = .waiting(found)
-                say?("Search \(found.version) is out — choose Install Update in the Search menu")
+                say?(Localized("Search \(found.version) is out — choose Install Update in the Search menu"))
             }
         }
     }
@@ -216,7 +216,7 @@ final class Updater: ObservableObject {
     func openDisk() {
         guard case .offered(let release) = stage, !fetchingDisk else { return }
         fetchingDisk = true
-        say?("Downloading Search \(release.version)…")
+        say?(Localized("Downloading Search \(release.version)…"))
         Task.detached(priority: .utility) {
             let result: Result<URL, Error>
             do { result = .success(try await Swap.disk(release)) } catch { result = .failure(error) }
@@ -251,7 +251,7 @@ final class Updater: ObservableObject {
         case .none, .offered, .waiting: break
         }
         stage = .fetching(release)
-        say?("Search \(release.version) is downloading…")
+        say?(Localized("Search \(release.version) is downloading…"))
         Task.detached(priority: .utility) {
             let worked: Bool
             do {

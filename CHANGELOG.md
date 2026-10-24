@@ -45,6 +45,8 @@ in [ROADMAP.md](ROADMAP.md).
 - File › Close Window, ⇧⌘W, closes the whole window with its tabs, as in Arc, Chrome and Safari; ⌘W still closes the tab. It can be changed in Settings › Shortcuts. Thanks [@Tom-Boscher](https://github.com/Tom-Boscher) ([#640](https://github.com/driceroland/Search/pull/640))
 - With spaces on, the mouse's back and forward buttons over the tabs go to the space before or after, as in Arc. Over the page they still go back and forward in the page. Thanks [@Tom-Boscher](https://github.com/Tom-Boscher) ([#639](https://github.com/driceroland/Search/pull/639))
 
+- Search speaks Chinese: the whole of it — the menus, every page of Settings, the panels, the welcome page, the site card and each version's notes — reads in 简体中文 when the Mac is set to Chinese, and in English everywhere else, as before. One language is one folder: `Resources/zh-Hans.lproj/Localizable.strings` maps each sentence the app says to the same sentence in Chinese, and a folder beside it — `zh-Hant.lproj` — would offer 繁體中文 without a line of code changing. A sentence a translation has not reached yet shows in English rather than as a blank or a key, `./Tools/i18n.py missing` lists those, and `./Tools/i18n.py check` fails a build that leaves one behind.
+
 ### Changed
 
 - A bookmark opens in a tab of its own, from the bookmarks bar, the Bookmarks menu or the list: opened from a pinned tab it used to take the pin's place. An empty new tab is used as it is, and ⌘ opens the bookmark behind the tab you are on.

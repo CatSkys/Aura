@@ -172,7 +172,7 @@ struct ExtensionsPage: View {
                 .menuStyle(.borderlessButton)
                 .menuIndicator(.hidden)
                 .fixedSize()
-                .accessibilityLabel("More for \(item.name)")
+                .accessibilityLabel(Localized("More for \(item.name)"))
                 .help("More for \(item.name)")
                 Switch(on: Binding(get: { item.enabled }, set: { extensions.setEnabled(item.id, $0) }))
             }
@@ -209,7 +209,7 @@ struct ExtensionsPage: View {
                         get: { context.hasAccessToPrivateData },
                         set: { extensions.setPrivate(item.id, $0) }
                     ))
-                    .accessibilityLabel("Allow \(item.name) in private tabs")
+                    .accessibilityLabel(Localized("Allow \(item.name) in private tabs"))
                     .help("Private tabs opened before any extension was allowed need reopening. Turned off, a script already running in one stops only when the page reloads.")
                 }
             }

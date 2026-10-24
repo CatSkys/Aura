@@ -114,7 +114,7 @@ private struct SplitTabHalf: View {
     @State private var selectedOnPress = false
 
     private var hovering: Bool { hovered == tab.id }
-    private var title: String { tab.label.isEmpty ? "New Tab" : tab.label }
+    private var title: String { tab.label.isEmpty ? "New Tab".localized : tab.label }
     private var playing: Bool { !tab.loading && (tab.noisy || tab.muted) }
     private var editing: Bool { browser.editingTab == tab.id }
 

@@ -33,8 +33,8 @@ enum When {
 
     static func day(_ date: Date) -> String {
         let calendar = Calendar.current
-        if calendar.isDateInToday(date) { return "Today" }
-        if calendar.isDateInYesterday(date) { return "Yesterday" }
+        if calendar.isDateInToday(date) { return "Today".localized }
+        if calendar.isDateInYesterday(date) { return "Yesterday".localized }
         return plain.string(from: date)
     }
 }
@@ -373,7 +373,7 @@ struct DownloadsPanel: View {
                                 }
                                 .frame(width: 68, height: 3)
                         }
-                        Text("\(stateLabel) · \(bytes)")
+                        Text(Localized("\(stateLabel) · \(bytes)"))
                             .font(.system(size: 11.5))
                             .foregroundStyle(Palette.muted)
                             .monospacedDigit()

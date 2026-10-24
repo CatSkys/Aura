@@ -175,7 +175,7 @@ final class Links: NSObject, NSApplicationDelegate {
     /// New Window in the Dock icon's menu, as every browser has it.
     func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
         let menu = NSMenu()
-        let item = NSMenuItem(title: "New Window", action: #selector(newWindow), keyEquivalent: "")
+        let item = NSMenuItem(title: "New Window".localized, action: #selector(newWindow), keyEquivalent: "")
         item.target = self
         menu.addItem(item)
         return menu
@@ -311,8 +311,8 @@ final class Links: NSObject, NSApplicationDelegate {
         text.scheme = "mailto"
         text.path = "hello@officecommun.com"
         text.queryItems = [
-            URLQueryItem(name: "subject", value: "Search feedback — \(Updater.version) (\(Updater.build))"),
-            URLQueryItem(name: "body", value: "\n\n—\nSearch \(Updater.version), build \(Updater.build), macOS \(ProcessInfo.processInfo.operatingSystemVersionString)"),
+            URLQueryItem(name: "subject", value: Localized("Search feedback — \(Updater.version) (\(Updater.build))")),
+            URLQueryItem(name: "body", value: Localized("\n\n—\nSearch \(Updater.version), build \(Updater.build), macOS \(ProcessInfo.processInfo.operatingSystemVersionString)")),
         ]
         guard let url = text.url else { return }
         NSWorkspace.shared.open(url)

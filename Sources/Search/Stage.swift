@@ -61,7 +61,7 @@ struct Page: View {
             }
 
             if let failure = tab.failure {
-                Trouble(message: failure) { tab.reload() }
+                Trouble(message: failure.localized) { tab.reload() }
                     .transition(.opacity)
             }
 

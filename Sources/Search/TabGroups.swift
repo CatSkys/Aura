@@ -102,7 +102,7 @@ struct GroupHeading: View {
             }
             return true
         }
-        .onDrag { NSItemProvider(object: "search-group:\(group.id.uuidString)" as NSString) }
+        .onDrag { NSItemProvider(object: Localized("search-group:\(group.id.uuidString)") as NSString) }
         .contextMenu {
             Button("Rename Group") { browser.editingGroupID = group.id }
             Button(group.collapsed ? "Expand Group" : "Collapse Group") { browser.toggleTabGroup(group.id) }

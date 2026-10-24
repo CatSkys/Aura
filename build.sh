@@ -89,6 +89,11 @@ mv "$APP/Contents/MacOS/$NAME.sdk" "$APP/Contents/MacOS/$NAME"
 # The AppleScript dictionary (Scripting.swift): read-only, tabs' addresses
 # and titles. The plist below points to it.
 cp Search.sdef "$APP/Contents/Resources/"
+# The translations, one folder per language, where macOS looks for them. A
+# language with no folder is one the app isn't offered in.
+if compgen -G "Resources/*.lproj" > /dev/null; then
+  cp -R Resources/*.lproj "$APP/Contents/Resources/"
+fi
 
 # Symbols stay out of the app. The linker leaves every function's name and a
 # map back to the source in the binary — 15,000 entries, more than half of
@@ -138,6 +143,18 @@ else
 fi
 rm -rf "$ICONCAR" "$ICONDOC"
 
+# The languages the app is offered in: one per folder under Resources, named
+# as macOS names them (zh-Hans.lproj, and a zh-Hant.lproj would add 繁體中文
+# the day it is there). English is written in the code and needs no folder.
+LOCALIZATIONS=""
+for LPROJ in Resources/*.lproj; do
+  [ -d "$LPROJ" ] || continue
+  LANGUAGE="$(basename "$LPROJ" .lproj)"
+  [ "$LANGUAGE" = "en" ] && continue
+  LOCALIZATIONS="$LOCALIZATIONS    <string>$LANGUAGE</string>
+"
+done
+
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -152,6 +169,18 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleVersion</key><string>$BUILD</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   $ICONNAME
+  <!-- Which language the app comes up in. What is written in the code is
+       English, and Resources/<language>.lproj holds the same sentences in
+       another; macOS picks one of these by the Mac's own language order, so
+       a Mac set to Chinese gets Chinese without a switch to find. en is the
+       development region: a sentence a translation hasn't reached yet shows
+       in English rather than not at all. -->
+  <key>CFBundleDevelopmentRegion</key><string>en</string>
+  <key>CFBundleLocalizations</key>
+  <array>
+    <string>en</string>
+$LOCALIZATIONS
+  </array>
   <key>LSMinimumSystemVersion</key><string>$MINIMUM</string>
   <key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
   <key>NSHumanReadableCopyright</key><string>© Office Commun · Search</string>

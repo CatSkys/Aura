@@ -505,7 +505,7 @@ final class Extensions: NSObject, ObservableObject {
             // The same origin every launch. WebKit picks a fresh one
             // otherwise, and everything an extension keeps in its own pages
             // — localStorage, IndexedDB — is filed under its origin.
-            if let stable = URL(string: "\(Extensions.scheme)://\(item.id)/") { context.baseURL = stable }
+            if let stable = URL(string: Localized("\(Extensions.scheme)://\(item.id)/")) { context.baseURL = stable }
             context.isInspectable = true
             // Installing was the consent: everything it asked for then is
             // granted each time it loads. Optional ones are asked for when
@@ -521,7 +521,7 @@ final class Extensions: NSObject, ObservableObject {
             // Chrome's "tabs" is enough, and one watching its sign-in tab
             // for that address has to be able to see it.
             if ExtensionShims.allowed(item.id, context: context).contains("identity"),
-               let own = try? WKWebExtension.MatchPattern(string: "https://\(item.id).chromiumapp.org/*") {
+               let own = try? WKWebExtension.MatchPattern(string: Localized("https://\(item.id).chromiumapp.org/*")) {
                 context.setPermissionStatus(.grantedExplicitly, for: own)
             }
             Extensions.fence(context)
@@ -663,7 +663,7 @@ final class Extensions: NSObject, ObservableObject {
                 try ExtensionShims.prepare(staged, fresh: true)
                 try await admit(staged, as: id, fromStore: false, finalFolder: Extensions.folder(for: id), confirm: confirm || !Store.testing, source: source)
             } catch {
-                browser?.announce("Couldn't install the extension: \(error.localizedDescription)")
+                browser?.announce(Localized("Couldn't install the extension: \(error.localizedDescription)"))
             }
         }
     }
@@ -685,11 +685,11 @@ final class Extensions: NSObject, ObservableObject {
             if let path = original.source, let staged {
                 let source = URL(fileURLWithPath: path, isDirectory: true)
                 guard FileManager.default.fileExists(atPath: source.appendingPathComponent("manifest.json").path) else {
-                    browser?.announce("The folder \(original.name) was loaded from is gone")
+                    browser?.announce(Localized("The folder \(original.name) was loaded from is gone"))
                     return
                 }
                 guard original.sourceKeepsID else {
-                    browser?.announce("\(original.name) wasn't reloaded — its folder now leads somewhere else")
+                    browser?.announce(Localized("\(original.name) wasn't reloaded — its folder now leads somewhere else"))
                     return
                 }
                 do {
@@ -697,14 +697,14 @@ final class Extensions: NSObject, ObservableObject {
                     try Extensions.unlinkOutside(staged)
                     try ExtensionShims.prepare(staged, fresh: true)
                 } catch {
-                    browser?.announce("Couldn't copy \(original.name) again: \(error.localizedDescription)")
+                    browser?.announce(Localized("Couldn't copy \(original.name) again: \(error.localizedDescription)"))
                     return
                 }
             }
             let resource = staged ?? target
             let found = try? await WKWebExtension(resourceBaseURL: resource)
             if found == nil, staged != nil {
-                browser?.announce("\(original.name) wasn't reloaded — its manifest couldn't be read")
+                browser?.announce(Localized("\(original.name) wasn't reloaded — its manifest couldn't be read"))
                 return
             }
             var wants: [String]?
@@ -714,7 +714,7 @@ final class Extensions: NSObject, ObservableObject {
                 if !Set(permissions).isSubset(of: Set(original.permissions)) {
                     let name = [found.displayName ?? original.name, found.version].compactMap { $0 }.joined(separator: " ")
                     guard await ask(install: name, wants: Extensions.describe(found, in: resource), icon: found.icon(for: CGSize(width: 64, height: 64))) else {
-                        browser?.announce("\(original.name) wasn't reloaded — it asks for more than before")
+                        browser?.announce(Localized("\(original.name) wasn't reloaded — it asks for more than before"))
                         return
                     }
                 }
@@ -726,7 +726,7 @@ final class Extensions: NSObject, ObservableObject {
                 do {
                     try ExtensionFiles.replace(staged, at: target)
                 } catch {
-                    browser?.announce("Couldn't replace \(original.name): \(error.localizedDescription)")
+                    browser?.announce(Localized("Couldn't replace \(original.name): \(error.localizedDescription)"))
                     return
                 }
             }
@@ -845,9 +845,9 @@ final class Extensions: NSObject, ObservableObject {
         installed.append(item)
         save()
         if await load(item) {
-            browser?.announce("\(name) is installed")
+            browser?.announce(Localized("\(name) is installed"))
         } else {
-            browser?.announce("\(name) is installed, but WebKit couldn't start it")
+            browser?.announce(Localized("\(name) is installed, but WebKit couldn't start it"))
         }
     }
 
@@ -856,11 +856,11 @@ final class Extensions: NSObject, ObservableObject {
         ExtensionCapture.forget(id)
         errors[id] = nil
         Extensions.setSettings([:], for: id)
-        Store.settings.removeObject(forKey: "extensions.granted.\(id)")
+        Store.settings.removeObject(forKey: Localized("extensions.granted.\(id)"))
         loadsThisRun.remove(id)
         loadedBefore.remove(id)
-        Store.settings.removeObject(forKey: "extensions.newtab.\(id)")
-        Store.settings.removeObject(forKey: "extensions.private.\(id)")
+        Store.settings.removeObject(forKey: Localized("extensions.newtab.\(id)"))
+        Store.settings.removeObject(forKey: Localized("extensions.private.\(id)"))
         installed.removeAll { $0.id == id }
         save()
         try? FileManager.default.removeItem(at: Extensions.folder(for: id))
@@ -905,7 +905,7 @@ final class Extensions: NSObject, ObservableObject {
         let types = WKWebExtensionController.allExtensionDataTypes
         let records = await controller.dataRecords(ofTypes: types).filter { $0.uniqueIdentifier == id }
         if !records.isEmpty { await controller.removeData(ofTypes: types, from: records) }
-        guard let base = URL(string: "\(Extensions.scheme)://\(id)/") else { return false }
+        guard let base = URL(string: Localized("\(Extensions.scheme)://\(id)/")) else { return false }
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("search-forget-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: folder) }
         do {
@@ -1086,7 +1086,7 @@ final class Extensions: NSObject, ObservableObject {
             // allowed when it was added or last asked about.
             let wants = Set(Extensions.grants(found, in: staged))
             if !wants.isSubset(of: Set(current.permissions)) {
-                guard await ask(install: "An update to \(item.name)", wants: Extensions.describe(found, in: staged), icon: found.icon(for: CGSize(width: 64, height: 64)), updating: true) else {
+                guard await ask(install: Localized("An update to \(item.name)"), wants: Extensions.describe(found, in: staged), icon: found.icon(for: CGSize(width: 64, height: 64)), updating: true) else {
                     return
                 }
             }
@@ -1172,7 +1172,7 @@ final class Extensions: NSObject, ObservableObject {
     /// `reachesExtensions`). Set again after anything is granted.
     static func fence(_ context: WKWebExtensionContext) {
         for scheme in Set([Extensions.scheme, Extensions.formerScheme, "webkit-extension"]) {
-            if let pages = try? WKWebExtension.MatchPattern(string: "\(scheme)://*/*") {
+            if let pages = try? WKWebExtension.MatchPattern(string: Localized("\(scheme)://*/*")) {
                 context.setPermissionStatus(.deniedExplicitly, for: pages)
             }
         }
@@ -1188,13 +1188,13 @@ final class Extensions: NSObject, ObservableObject {
     /// manifest doesn't refuse them ("incognito": "not_allowed"), which
     /// Chrome honours whatever was allowed. WebKit doesn't read that key.
     static func mayGoPrivate(_ context: WKWebExtensionContext) -> Bool {
-        Store.settings.bool(forKey: "extensions.private.\(context.uniqueIdentifier)")
+        Store.settings.bool(forKey: Localized("extensions.private.\(context.uniqueIdentifier)"))
             && (context.webExtension.manifest["incognito"] as? String) != "not_allowed"
     }
 
     func setPrivate(_ id: String, _ on: Bool) {
         guard let context = contexts[id] else { return }
-        Store.settings.set(on, forKey: "extensions.private.\(id)")
+        Store.settings.set(on, forKey: Localized("extensions.private.\(id)"))
         let allowed = Extensions.mayGoPrivate(context)
         guard context.hasAccessToPrivateData != allowed else { return }
         context.hasAccessToPrivateData = allowed
@@ -1302,7 +1302,7 @@ final class Extensions: NSObject, ObservableObject {
         let name = context.webExtension.displayName ?? "An extension"
         return await ask(
             "“\(name)” wants to record your screen or a window.",
-            detail: "macOS will ask what to share. Search remembers your answer for \(name); Settings › Extensions takes it back.",
+            detail: Localized("macOS will ask what to share. Search remembers your answer for \(name); Settings › Extensions takes it back."),
             icon: context.webExtension.icon(for: CGSize(width: 64, height: 64)), yes: "Continue", no: "Don't Allow")
     }
 
@@ -1504,7 +1504,7 @@ extension Extensions: WKWebExtensionControllerDelegate {
     static func mayOpen(_ url: URL) throws {
         let scheme = url.scheme?.lowercased() ?? ""
         guard scheme != "javascript", scheme != "file" else {
-            throw NSError(domain: "Search", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cannot navigate to a \(scheme): URL."])
+            throw NSError(domain: "Search", code: 1, userInfo: [NSLocalizedDescriptionKey: Localized("Cannot navigate to a \(scheme): URL.")])
         }
     }
 
@@ -2012,15 +2012,15 @@ private struct ExtensionActions: View {
         }
         SwiftUI.Button("Reload") { extensions.reload(id) }
         Divider()
-        SwiftUI.Button("Remove “\(name)”…") { ExtensionActions.confirmRemove(id, name: name, extensions) }
+        SwiftUI.Button(Localized("Remove “\(name)”…")) { ExtensionActions.confirmRemove(id, name: name, extensions) }
     }
 
     static func confirmRemove(_ id: String, name: String, _ extensions: Extensions) {
         let alert = NSAlert()
-        alert.messageText = "Remove “\(name)”?"
-        alert.informativeText = "Its settings and data go with it."
-        alert.addButton(withTitle: "Remove")
-        alert.addButton(withTitle: "Cancel")
+        alert.messageText = Localized("Remove “\(name)”?")
+        alert.informativeText = "Its settings and data go with it.".localized
+        alert.addButton(withTitle: "Remove".localized)
+        alert.addButton(withTitle: "Cancel".localized)
         if alert.runModal() == .alertFirstButtonReturn { extensions.remove(id) }
     }
 }

@@ -388,7 +388,7 @@ extension ShortcutStore {
         let names = Dictionary(Extensions.shared.installed.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a })
         return Extensions.shared.contexts.sorted { $0.key < $1.key }.flatMap { ext, context in
             context.commands.map {
-                ExtensionCommand(id: "ext:\(ext):\($0.id)", extensionName: names[ext] ?? ext, command: $0)
+                ExtensionCommand(id: Localized("ext:\(ext):\($0.id)"), extensionName: names[ext] ?? ext, command: $0)
             }
         }
     }

@@ -99,7 +99,7 @@ struct SearchApp: App {
                     Button("Show Substitutions") { Substitution.showPanel() }
                     Divider()
                     ForEach(Substitution.allCases, id: \.self) { kind in
-                        Toggle(kind.title, isOn: Binding(
+                        Toggle(kind.title.localized, isOn: Binding(
                             get: { browser.substitutes(kind) },
                             set: { _ in browser.toggleSubstitution(kind) }
                         ))
@@ -123,7 +123,7 @@ struct SearchApp: App {
                     set: { browser.prefs.glyph = $0 }
                 )) {
                     ForEach(Glyph.allCases) { glyph in
-                        Text(glyph.title).tag(glyph)
+                        Text(glyph.title.localized).tag(glyph)
                     }
                 }
                 Divider()
@@ -971,7 +971,7 @@ struct ContentView: View {
     /// A dark pill, for the one mode this browser has. It stays up for as long
     /// as the mode does, which is how you know you are still in it.
     private func hint(_ text: String) -> some View {
-        Text(text)
+        Text(text.localized)
             .font(.system(size: 11.5))
             .foregroundStyle(Palette.ground.opacity(0.92))
             .padding(.horizontal, 15)

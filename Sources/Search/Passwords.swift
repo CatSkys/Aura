@@ -106,7 +106,7 @@ struct PasswordsPanel: View {
                         .foregroundStyle(Palette.ink)
                         .lineLimit(1)
                     if logins.count > 1 {
-                        Text("\(logins.count) accounts")
+                        Text(Localized("\(logins.count) accounts"))
                             .font(.system(size: 11.5))
                             .foregroundStyle(Palette.muted)
                     } else if let only = logins.first, !only.user.isEmpty, !open {

@@ -71,7 +71,7 @@ enum Substitution: String, CaseIterable {
     /// menu's tick. Without a web view yet, what WebKit will read.
     func isOn(in web: WKWebView?) -> Bool {
         guard let web, web.responds(to: action) else { return UserDefaults.standard.bool(forKey: key) }
-        let item = NSMenuItem(title: "", action: action, keyEquivalent: "")
+        let item = NSMenuItem(title: "".localized, action: action, keyEquivalent: "")
         _ = web.validateUserInterfaceItem(item)
         return item.state == .on
     }

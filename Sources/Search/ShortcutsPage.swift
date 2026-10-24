@@ -199,7 +199,7 @@ private struct KeyBox: View {
         let other = store.owner(of: combo, except: id)
         store.assign(combo, to: id)
         stop()
-        if let other { browser.announce("\(combo.display) moved from \(other.title)") }
+        if let other { browser.announce(Localized("\(combo.display) moved from \(other.title)")) }
     }
 
     /// Why that key won't do, for a moment, still listening.

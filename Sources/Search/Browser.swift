@@ -617,7 +617,7 @@ final class Browser: NSObject, ObservableObject {
         }
         guard let host = hereHost, let back = curtain.undo(on: host) else { return }
         redress()
-        announce("\(back.label) is back")
+        announce(Localized("\(back.label) is back"))
     }
 
     /// The pointer resting on a row in the list brings that one thing back,
@@ -724,7 +724,7 @@ final class Browser: NSObject, ObservableObject {
         guard let offer = offering else { return }
         Vault.never(offer.login.host)
         offering = nil
-        announce("Never for \(offer.login.host)")
+        announce(Localized("Never for \(offer.login.host)"))
     }
 
     /// The caret in a sign-in box: the accounts kept for this site, and the
@@ -874,7 +874,7 @@ final class Browser: NSObject, ObservableObject {
             return
         }
         relist()
-        announce("Kept for \(host)")
+        announce(Localized("Kept for \(host)"))
     }
 
     func forget(_ login: Kept) {
@@ -973,11 +973,11 @@ final class Browser: NSObject, ObservableObject {
             ImportRecords.note(name, passwords: kept)
             announce(kept == 0 ? "Nothing new in \(name)" : "\(kept) passwords from \(name)")
         case .failure(Chromium.Trouble.noPassphrase):
-            announce("\(name) didn't give up its keychain key")
+            announce(Localized("\(name) didn't give up its keychain key"))
         case .failure(Mozilla.Trouble.primaryPassword):
-            announce("\(name) has a primary password — export your passwords from it (Settings › Passwords › ⋯ › Export) and bring in the CSV file")
+            announce(Localized("\(name) has a primary password — export your passwords from it (Settings › Passwords › ⋯ › Export) and bring in the CSV file"))
         case .failure:
-            announce("Nothing readable in \(name)")
+            announce(Localized("Nothing readable in \(name)"))
         }
     }
 
@@ -1553,7 +1553,7 @@ final class Browser: NSObject, ObservableObject {
     }
 
     func announce(_ text: String, file: URL? = nil) {
-        announcement = text
+        announcement = text.localized
         announcedFile = file
         hush?.cancel()
         let work = DispatchWorkItem { [weak self] in
@@ -3324,7 +3324,7 @@ final class Browser: NSObject, ObservableObject {
             if unsaved {
                 Ask.sure(
                     "Move Tab?",
-                    detail: "This page has unsaved form entries. It will reopen in “\(destination.name)” with that Space’s sign-ins, so the entries may be lost.",
+                    detail: Localized("This page has unsaved form entries. It will reopen in “\(destination.name)” with that Space’s sign-ins, so the entries may be lost."),
                     confirm: "Move",
                     then: complete
                 )
@@ -3380,7 +3380,7 @@ final class Browser: NSObject, ObservableObject {
 
         writeSession(now: true)
         writeSession(now: true, space: id, row: row)
-        announce("Moved to \(destination.name)")
+        announce(Localized("Moved to \(destination.name)"))
         return true
     }
 
@@ -3468,7 +3468,7 @@ final class Browser: NSObject, ObservableObject {
     @discardableResult
     func addTabGroup(containing tab: Tab) -> UUID {
         let id = UUID()
-        tabGroups.append(TabGroup(id: id, name: "Group \(tabGroups.count + 1)", collapsed: false))
+        tabGroups.append(TabGroup(id: id, name: Localized("Group \(tabGroups.count + 1)"), collapsed: false))
         editingGroupID = id
         move(tab, toGroup: id)
         // A tab that can't be in a group (a pin, a private one) leaves none behind.
@@ -4034,7 +4034,7 @@ final class Browser: NSObject, ObservableObject {
             do {
                 let data = try result.get()
                 try data.write(to: file, options: .atomic)
-                self?.announce("Saved \(file.lastPathComponent)", file: file)
+                self?.announce(Localized("Saved \(file.lastPathComponent)"), file: file)
                 finished?(true)
             } catch {
                 self?.announce("Couldn't export page")
@@ -4454,7 +4454,7 @@ final class Browser: NSObject, ObservableObject {
             offering = offer
         }
         tab.onPickTrouble = { [weak self] _, reason in
-            self?.announce("Couldn't hide that — \(reason)")
+            self?.announce(Localized("Couldn't hide that — \(reason)"))
         }
 
         // The line at the bottom doubles as the zoom read-out: it keeps being
@@ -4464,7 +4464,7 @@ final class Browser: NSObject, ObservableObject {
             let percent = Int((value * 100).rounded())
             guard percent != zoomShown else { return }
             zoomShown = percent
-            announce("\(percent)%")
+            announce(Localized("\(percent)%"))
         }
 
         // A page's title lands a beat after the page itself, and a history
@@ -5227,10 +5227,10 @@ extension Browser: WKNavigationDelegate, WKUIDelegate {
         // Over its own tab only, as a page's own questions are (see ask).
         ask(from: webView, show: {
             let alert = NSAlert()
-            alert.messageText = "Open \u{201C}\(name)\u{201D}?"
-            alert.informativeText = "\(webView.url?.host() ?? "This page") wants to open \(name)."
-            alert.addButton(withTitle: "Open")
-            alert.addButton(withTitle: "Cancel")
+            alert.messageText = Localized("Open “\(name)”?")
+            alert.informativeText = Localized("This page wants to open \(name).")
+            alert.addButton(withTitle: "Open".localized)
+            alert.addButton(withTitle: "Cancel".localized)
             Dialogs.show(alert, over: webView) { answer in
                 guard answer == .alertFirstButtonReturn else { return }
                 NSWorkspace.shared.open(url)
@@ -5915,7 +5915,7 @@ extension Browser: WKDownloadDelegate {
         // gave it: never from "report 2.pdf", whose own " 2" is not its name.
         if chosen == nil { fetches.entry(for: download)?.retryName = prefs.asksWhereToSave ? file.lastPathComponent : name }
         completionHandler(file)
-        announce("Downloading \(file.lastPathComponent)")
+        announce(Localized("Downloading \(file.lastPathComponent)"))
     }
 
     func downloadDidFinish(_ download: WKDownload) {
@@ -5931,7 +5931,7 @@ extension Browser: WKDownloadDelegate {
             return
         }
         guard listed else {
-            announce("Saved \(file.lastPathComponent)")
+            announce(Localized("Saved \(file.lastPathComponent)"))
             return
         }
         if #available(macOS 15.4, *), let asked = source,
@@ -6016,7 +6016,7 @@ extension Browser: WKDownloadDelegate {
 
     private func saved(_ file: URL, from source: URL?) {
         loot.add(Keep(name: file.lastPathComponent, from: source?.host() ?? "", path: file.path, date: Date()))
-        announce("Saved \(file.lastPathComponent)", file: file)
+        announce(Localized("Saved \(file.lastPathComponent)"), file: file)
     }
 
     func download(

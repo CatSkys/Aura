@@ -183,7 +183,7 @@ struct BlockedPopupsMenu: View {
             if !openable.isEmpty {
                 VStack(spacing: 1) {
                     ForEach(openable, id: \.0.id) { popup, url in
-                        Item(symbol: "arrow.up.forward.square", title: "Open \(BlockedPopups.label(url))") {
+                        Item(symbol: "arrow.up.forward.square", title: Localized("Open \(BlockedPopups.label(url))")) {
                             browser.openBlocked(popup, from: tab)
                             done()
                         }

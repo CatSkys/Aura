@@ -531,7 +531,7 @@ final class Bookmarks: ObservableObject {
         let detail = switch count {
         case 0: "The empty folders in it go too."
         case 1: "The bookmark in it goes too."
-        default: "The \(count) bookmarks in it go too."
+        default: Localized("The \(count) bookmarks in it go too.")
         }
         Ask.sure("Remove \u{201C}\(node.title)\u{201D}?", detail: detail, confirm: "Remove") {
             self.remove(node.id)
@@ -888,7 +888,7 @@ struct BookmarkOutline: View {
                     .lineLimit(1)
                 Spacer(minLength: 8)
                 if node.isFolder, let kids = node.children, !kids.isEmpty {
-                    Text("\(Bookmarks.count(kids))")
+                    Text(Localized("\(Bookmarks.count(kids))"))
                         .font(.system(size: 11))
                         .foregroundStyle(Palette.faint)
                 }
@@ -1515,7 +1515,7 @@ final class BookmarkMenu: NSObject, NSMenuDelegate {
         let menu = NSMenu(title: folder.title)
         let made = items(for: folder.children ?? [])
         if made.isEmpty {
-            let empty = NSMenuItem(title: "Empty", action: nil, keyEquivalent: "")
+            let empty = NSMenuItem(title: "Empty".localized, action: nil, keyEquivalent: "")
             empty.isEnabled = false
             menu.addItem(empty)
         }
@@ -1594,7 +1594,7 @@ final class BookmarkMenu: NSObject, NSMenuDelegate {
         menu.removeAllItems()
         let made = items(for: kids)
         if made.isEmpty {
-            let empty = NSMenuItem(title: "Empty", action: nil, keyEquivalent: "")
+            let empty = NSMenuItem(title: "Empty".localized, action: nil, keyEquivalent: "")
             empty.isEnabled = false
             menu.addItem(empty)
         }

@@ -33,7 +33,7 @@ enum ExtensionFiles {
             domain: NSPOSIXErrorDomain,
             code: Int(code),
             userInfo: [
-                NSLocalizedDescriptionKey: "Couldn't replace extension at \(target.path): \(posix.localizedDescription)",
+                NSLocalizedDescriptionKey: Localized("Couldn't replace extension at \(target.path): \(posix.localizedDescription)"),
                 NSFilePathErrorKey: target.path,
                 "ExtensionStagedPath": staged.path,
             ]

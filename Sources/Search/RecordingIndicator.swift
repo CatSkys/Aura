@@ -186,7 +186,7 @@ struct PillView: View {
                         .fill(Color(nsColor: .systemRed))
                         .frame(width: 7, height: 7)
                     (Text(line.name).font(.system(size: 12.5, weight: .semibold))
-                        + Text(" \(line.what)").font(.system(size: 12.5)))
+                        + Text(Localized(" \(line.what)")).font(.system(size: 12.5)))
                         .foregroundStyle(Palette.ink)
                         .lineLimit(1)
                         .fixedSize()
@@ -200,7 +200,7 @@ struct PillView: View {
                             .background(Palette.ink, in: Capsule())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Stop \(line.name)")
+                    .accessibilityLabel(Localized("Stop \(line.name)"))
                 }
             }
         }

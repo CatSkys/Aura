@@ -182,7 +182,7 @@ final class Passkeys: NSObject {
         // A test run never asks the Mac: it would list the passkeys of
         // whoever is working beside it. One made up, for the site.
         if Store.testing {
-            return settle(key, token: body["token"] as? String, [Offered(id: Passkeys.rehearsalID, name: "probe@\(rp)", provider: "Test")])
+            return settle(key, token: body["token"] as? String, [Offered(id: Passkeys.rehearsalID, name: Localized("probe@\(rp)"), provider: "Test")])
         }
         // Not asked for here: a site loading is no time for macOS's question.
         // Until it has been answered, the field offers none.

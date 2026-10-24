@@ -136,7 +136,7 @@ extension Browser {
         }
         ask(from: webView, show: {
             let alert = Dialogs.alert(from: frame, saying: message)
-            alert.addButton(withTitle: "OK")
+            alert.addButton(withTitle: "OK".localized)
             Dialogs.show(alert, over: webView) { _ in completionHandler() }
         }, drop: completionHandler)
     }
@@ -152,8 +152,8 @@ extension Browser {
         }
         ask(from: webView, show: {
             let alert = Dialogs.alert(from: frame, saying: message)
-            alert.addButton(withTitle: "OK")
-            alert.addButton(withTitle: "Cancel")
+            alert.addButton(withTitle: "OK".localized)
+            alert.addButton(withTitle: "Cancel".localized)
             Dialogs.show(alert, over: webView) { answer in
                 completionHandler(answer == .alertFirstButtonReturn)
             }
@@ -174,8 +174,8 @@ extension Browser {
         }
         ask(from: webView, show: {
             let alert = Dialogs.alert(from: frame, saying: prompt)
-            alert.addButton(withTitle: "OK")
-            alert.addButton(withTitle: "Cancel")
+            alert.addButton(withTitle: "OK".localized)
+            alert.addButton(withTitle: "Cancel".localized)
             let field = NSTextField(string: defaultText ?? "")
             field.frame = NSRect(x: 0, y: 0, width: 260, height: 24)
             alert.accessoryView = field
@@ -279,11 +279,11 @@ extension Browser {
         // Over its own tab only, as a page's own questions are (see ask).
         ask(from: webView, show: {
             let alert = NSAlert()
-            alert.messageText = "\(host) can't prove who it is"
-            alert.informativeText = "Its certificate isn't trusted by this Mac. Someone could be reading what you send. Continue only if you know why it looks like this."
+            alert.messageText = Localized("\(host) can't prove who it is")
+            alert.informativeText = "Its certificate isn't trusted by this Mac. Someone could be reading what you send. Continue only if you know why it looks like this.".localized
             alert.alertStyle = .warning
-            alert.addButton(withTitle: "Go Back")
-            alert.addButton(withTitle: "Continue Anyway")
+            alert.addButton(withTitle: "Go Back".localized)
+            alert.addButton(withTitle: "Continue Anyway".localized)
             Dialogs.show(alert, over: webView) { answer in
                 guard answer == .alertSecondButtonReturn else {
                     completionHandler(.cancelAuthenticationChallenge, nil)
@@ -321,19 +321,19 @@ extension Browser {
     ) {
         let space = challenge.protectionSpace
         let alert = NSAlert()
-        alert.messageText = "\(space.host) asks you to sign in"
+        alert.messageText = Localized("\(space.host) asks you to sign in")
         alert.informativeText = space.realm.map { "“\($0)”" } ?? "The site wants a name and a password."
         if challenge.previousFailureCount > 0 {
-            alert.informativeText += "\nThat wasn't accepted — try again."
+            alert.informativeText += "\nThat wasn't accepted — try again.".localized
         }
-        alert.addButton(withTitle: "Sign In")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: "Sign In".localized)
+        alert.addButton(withTitle: "Cancel".localized)
 
         let box = NSView(frame: NSRect(x: 0, y: 0, width: 260, height: 56))
         let name = NSTextField(frame: NSRect(x: 0, y: 32, width: 260, height: 24))
-        name.placeholderString = "Name"
+        name.placeholderString = "Name".localized
         let pass = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 260, height: 24))
-        pass.placeholderString = "Password"
+        pass.placeholderString = "Password".localized
         name.nextKeyView = pass
         box.addSubview(name)
         box.addSubview(pass)

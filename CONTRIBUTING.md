@@ -43,3 +43,21 @@ Pull requests are reviewed by Drice, usually with Claude Code doing a first pass
 ## Reporting a bug
 
 Open an issue with: what you did, what you expected, what happened instead, and your macOS version. A crash log, if there is one, lives at `~/Library/Application Support/Search/crash.log` — it only ever stays on your Mac unless you paste it into the issue yourself.
+
+## Translations
+
+The app is written in English and the English is the key: `Resources/<language>.lproj/Localizable.strings` maps a sentence to the same sentence in another language, and a sentence it doesn't have shows in English rather than not at all. macOS picks the language from the Mac's own order, out of the folders under `Resources/` — adding `zh-Hant.lproj` next to `zh-Hans.lproj` offers 繁體中文 with no code change anywhere.
+
+Two ways a sentence reaches the table, and no third:
+
+- A view SwiftUI makes from a literal — `Text("…")`, `Button("…")`, `Label("…")`, `Toggle("…")` — looks it up itself; nothing is done to it. One with a value in it is written `Text(Localized("Search \(version) is downloading…"))`, so the key is its shape rather than the sentence of the moment.
+- Anything that builds its own sentence — the shared views (`Line`, `Pill`, `Caption`, `Nothing`, `Quick`, `Plate`, `Hunt`), `announce`, AppKit's titles and alerts — goes through `Localized(…)`, or `.localized` when what it has is already a `String`. Both live in `Sources/Search/Localized.swift`.
+
+A value in a sentence is `{1}`, `{2}` in the table, and a translation may move it, leave it out, or use it twice:
+
+```
+"Search {1} is downloading…" = "Search 正在下载 {1}…";
+"{1} is back" = "{1} 回来了";
+```
+
+`./Tools/i18n.py missing` lists the keys a language hasn't covered yet, `./Tools/i18n.py scan` prints every key with the file and line it came from, and `./Tools/i18n.py check` fails when something is missing. Run `plutil -lint Resources/*/Localizable.strings` before sending a pull request; a stray quote in a long sentence is the usual mistake.

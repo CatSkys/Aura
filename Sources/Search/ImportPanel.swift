@@ -226,7 +226,7 @@ struct ImportPanel: View {
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = false
         panel.directoryURL = source.root.deletingLastPathComponent()
-        panel.message = "Choose \(source.name)'s browser data folder"
+        panel.message = Localized("Choose \(source.name)'s browser data folder")
         panel.prompt = "Use Folder"
         panel.begin { answer in
             guard answer == .OK, let folder = panel.url else { return }
@@ -258,7 +258,7 @@ struct ImportPanel: View {
         return Card {
             if case .chromium(let chromium) = source,
                let root = Chromium.chosenRoot(for: chromium.name), !Store.testing {
-                Text("From \(root.path.replacingOccurrences(of: NSHomeDirectory(), with: "~"))")
+                Text(Localized("From \(root.path.replacingOccurrences(of: NSHomeDirectory(), with: "~"))"))
                     .font(.system(size: 12))
                     .foregroundStyle(Palette.muted)
                     .textSelection(.enabled)
@@ -306,7 +306,7 @@ struct ImportPanel: View {
             if wantsBookmarks, preview?.bookmarks != 0, let record = ImportRecords.of(source.name) {
                 Rule()
                 let recorded = !record.bookmarkIDs.isEmpty
-                Line("Replace what came from \(source.name) before",
+                Line(Localized("Replace what came from \(source.name) before"),
                      recorded ? "Its bookmarks from \(record.date.formatted(.dateTime.day().month())) go, and these come fresh; passwords only ever add"
                               : "Nothing recorded from \(source.name) yet — only what is new comes") {
                     option($replaceBookmarks, none: !recorded)
@@ -340,7 +340,7 @@ struct ImportPanel: View {
             }
             if !extensions.isEmpty {
                 Rule()
-                Line("Extensions", "\(extensions.count) found — installed fresh from the Chrome Web Store, you say yes to each one") {
+                Line("Extensions", Localized("\(extensions.count) found — installed fresh from the Chrome Web Store, you say yes to each one")) {
                     Switch(on: $wantsExtensions)
                 }
             }
@@ -473,11 +473,11 @@ struct ImportPanel: View {
                         let skipped = found.skipped > 0 ? " (\(found.skipped.formatted()) skipped: no address)" : ""
                         said[0] = Said(ok: true, text: (kept == 1 ? "1 password" : "\(kept.formatted()) passwords") + skipped)
                     case .failure(Chromium.Trouble.noPassphrase):
-                        said[0] = Said(ok: false, text: "macOS didn't hand over \(source.name)'s key — allow it and try again")
+                        said[0] = Said(ok: false, text: Localized("macOS didn't hand over \(source.name)'s key — allow it and try again"))
                     case .failure(Mozilla.Trouble.primaryPassword):
-                        said[0] = Said(ok: false, text: "\(source.name) has a primary password: export your passwords from it and bring in the CSV file")
+                        said[0] = Said(ok: false, text: Localized("\(source.name) has a primary password: export your passwords from it and bring in the CSV file"))
                     case .failure:
-                        said[0] = Said(ok: false, text: "No passwords readable in \(source.name)")
+                        said[0] = Said(ok: false, text: Localized("No passwords readable in \(source.name)"))
                     }
                     group.leave()
                 }
@@ -487,7 +487,7 @@ struct ImportPanel: View {
             let (added, already, kept) = browser.takeBookmarks(from: source, profile: profile, replacing: replaceBookmarks)
             marksLanded = added + already > 0
             said[1] = kept
-                ? Said(ok: false, text: "Couldn't read all of \(source.name)'s bookmarks: what came from it before was kept, \(added.formatted()) new")
+                ? Said(ok: false, text: Localized("Couldn't read all of \(source.name)'s bookmarks: what came from it before was kept, \(added.formatted()) new"))
                 : Said(ok: true, text: added == 0 && already == 0 ? "No bookmarks in \(source.name)"
                            : already == 0 ? "\(added.formatted()) bookmarks"
                            : "\(added.formatted()) new bookmarks, \(already.formatted()) already here")
@@ -495,7 +495,7 @@ struct ImportPanel: View {
         if places {
             group.enter()
             browser.takePlaces(from: source, profile: profile) { count in
-                said[2] = Said(ok: true, text: "\(count.formatted()) places")
+                said[2] = Said(ok: true, text: Localized("\(count.formatted()) places"))
                 group.leave()
             }
         }

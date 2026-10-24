@@ -82,7 +82,7 @@ final class Assistant: ObservableObject, Identifiable {
     }
 
     private func ask(_ ask: AIPage.Ask) {
-        if !provider.isLocal, !Store.settings.bool(forKey: "ai.told.\(provider.rawValue)") {
+        if !provider.isLocal, !Store.settings.bool(forKey: Localized("ai.told.\(provider.rawValue)")) {
             waiting = ask
             notice = AIAssist.notice(for: provider)
             return
@@ -92,7 +92,7 @@ final class Assistant: ObservableObject, Identifiable {
 
     /// The notice read and agreed to: what was asked goes.
     func agree() {
-        Store.settings.set(true, forKey: "ai.told.\(provider.rawValue)")
+        Store.settings.set(true, forKey: Localized("ai.told.\(provider.rawValue)"))
         notice = nil
         if let waiting { send(waiting) }
         waiting = nil
@@ -213,13 +213,13 @@ extension Browser {
         guard !model.isEmpty else {
             settingsPage = .ai
             tuning = true
-            announce("Choose a model for \(provider.name)")
+            announce(Localized("Choose a model for \(provider.name)"))
             return
         }
         guard provider.isLocal || AIKeys.hint(for: provider) != nil else {
             settingsPage = .ai
             tuning = true
-            announce("No key for \(provider.name) yet")
+            announce(Localized("No key for \(provider.name) yet"))
             return
         }
         // Asked again on the page the panel is already about: the same
@@ -283,7 +283,7 @@ struct AssistantPanel: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            Text("AI — may be wrong · \(assistant.place)")
+            Text(Localized("AI — may be wrong · \(assistant.place)"))
                 .font(.system(size: 10.5))
                 .foregroundStyle(Palette.faint)
                 .lineLimit(1)
@@ -342,7 +342,7 @@ struct AssistantPanel: View {
 
     private func noticeCard(_ notice: String) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Answers from \(assistant.provider.name)")
+            Text(Localized("Answers from \(assistant.provider.name)"))
                 .font(.system(size: 12.5, weight: .medium))
                 .foregroundStyle(Palette.ink)
             Text(verbatim: notice)
@@ -472,17 +472,17 @@ struct AISettings: View {
         } else {
             switch engine.state {
             case .absent:
-                Line("Model", "\(AIEngine.model.name), downloaded once (\(size)) and checked. Nothing leaves this Mac") {
+                Line("Model", Localized("\(AIEngine.model.name), downloaded once (\(size)) and checked. Nothing leaves this Mac")) {
                     Pill("Download", filled: true) { engine.install() }
                 }
             case .downloading(let done):
-                Line("Model", "Downloading… \(Int(done * 100))%") {
+                Line("Model", Localized("Downloading… \(Int(done * 100))%")) {
                     Pill("Cancel") { engine.cancelInstall() }
                 }
             case .preparing:
                 Line("Model", "Preparing it for this Mac — about twenty seconds, once") { EmptyView() }
             case .ready:
-                Line("Model", "\(AIEngine.model.name), on this Mac. Nothing leaves it") {
+                Line("Model", Localized("\(AIEngine.model.name), on this Mac. Nothing leaves it")) {
                     Pill("Remove") { engine.remove() }
                 }
             case .failed(let why):
@@ -503,7 +503,7 @@ struct AISettings: View {
     @ViewBuilder
     private func key(_ provider: AIProvider) -> some View {
         if let hint {
-            Line("Key", "\(hint), in this Mac's keychain") {
+            Line("Key", Localized("\(hint), in this Mac's keychain")) {
                 Pill("Forget") {
                     AIKeys.forget(provider)
                     refresh()
@@ -535,7 +535,7 @@ struct AISettings: View {
     }
 
     private func cloudModel(_ provider: AIProvider) -> some View {
-        Line("Model", "Leave empty for \(provider.defaultModel)") {
+        Line("Model", Localized("Leave empty for \(provider.defaultModel)")) {
             if drawn {
                 Stand(prefs.aiModels[provider.rawValue].flatMap { $0.isEmpty ? nil : $0 } ?? provider.defaultModel, width: 170)
             } else {
@@ -560,7 +560,7 @@ struct AISettings: View {
         init(_ text: String, menu: Bool = false, width: CGFloat? = nil) { self.text = text; self.menu = menu; self.width = width }
         var body: some View {
             HStack(spacing: 5) {
-                Text(text).font(.system(size: 12)).foregroundStyle(menu ? Palette.ink : Palette.faint)
+                Text(text.localized).font(.system(size: 12)).foregroundStyle(menu ? Palette.ink : Palette.faint)
                 if menu { Image(systemName: "chevron.up.chevron.down").font(.system(size: 8, weight: .semibold)).foregroundStyle(Palette.muted) }
             }
             .frame(width: width, alignment: .leading)
@@ -578,7 +578,7 @@ struct AISettings: View {
                 Pill("Look Again") { refresh() }
             }
         } else {
-            Line("Model", "From \(provider.name) on this Mac") {
+            Line("Model", Localized("From \(provider.name) on this Mac")) {
                 Picker("", selection: Binding(get: { prefs.aiModel(for: provider) }, set: { prefs.setAIModel($0, for: provider) })) {
                     Text("Choose…").tag("")
                     ForEach(models, id: \.self) { Text($0).tag($0) }

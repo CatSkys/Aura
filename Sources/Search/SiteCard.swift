@@ -309,7 +309,7 @@ struct SiteCard: View {
             Spacer(minLength: 24)
             Step(symbol: "minus", help: "Zoom Out   ⌘-") { browser.zoom(by: 1 / 1.1) }
             Button { browser.resetZoom() } label: {
-                Text("\(Int((tab.zoom * 100).rounded()))%")
+                Text(Localized("\(Int((tab.zoom * 100).rounded()))%"))
                     .font(MenuMetrics.font)
                     .monospacedDigit()
                     .foregroundStyle(Color(nsColor: .secondaryLabelColor))

@@ -686,7 +686,7 @@ final class Tab: ObservableObject, Identifiable {
         }
         if !title.isEmpty { return title }
         if let address { return Address.pretty(address) }
-        return "New Tab"
+        return "New Tab".localized
     }
 
     init(shy: Bool = false, bench: Bool = false, configuration: WKWebViewConfiguration? = nil) {
@@ -1794,13 +1794,13 @@ final class PageView: WKWebView {
         if let index = menu.items.firstIndex(where: { $0.identifier?.rawValue == "WKMenuItemIdentifierOpenLinkInNewWindow" }) {
             let item = menu.items[index]
             if let front = item.copy() as? NSMenuItem {
-                front.title = "Open Link in New Tab and Go to It"
+                front.title = "Open Link in New Tab and Go to It".localized
                 front.keyEquivalentModifierMask = .option
                 front.isAlternate = true
                 menu.insertItem(front, at: index + 1)
             }
             openLink = (item.target, item.action)
-            item.title = "Open Link in New Tab"
+            item.title = "Open Link in New Tab".localized
             item.keyEquivalentModifierMask = []
             item.target = self
             item.action = #selector(openLinkBehind(_:))
@@ -1821,7 +1821,7 @@ final class PageView: WKWebView {
             evaluateJavaScript(PageView.selected, in: nil, in: .defaultClient) { [weak self] result in
                 self?.selection = (try? result.get()) as? String ?? ""
             }
-            item.title = "Search with \(name)"
+            item.title = Localized("Search with \(name)").localized
             item.target = self
             item.action = #selector(searchSelection(_:))
         }

@@ -409,7 +409,7 @@ enum PageNotifications {
         guard Shared.prefs.siteNotifications, SiteNotifications.choices[origin] == true,
               let web, web.configuration.websiteDataStore.isPersistent else { return }
         let id = c.id(note)
-        SiteNotifications.shared.post(id: "page|\(id)", title: c.text(c.title(note)), body: c.text(c.body(note)),
+        SiteNotifications.shared.post(id: Localized("page|\(id)"), title: c.text(c.title(note)), body: c.text(c.body(note)),
                                       origin: origin, tag: c.text(c.tag(note)),
                                       info: ["search.kind": "page", "search.id": String(id), "search.origin": origin])
         shown[id] = manager
