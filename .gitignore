@@ -16,3 +16,8 @@ __pycache__/
 
 # A local virtualenv for a one-off tool (aura-logo)
 .venv/
+
+# Local work that is not part of the browser: the logo exploration, and the
+# reverse-engineering scratch folder with its 300 MB of slices.
+aura-logo/
+arc-rea/
