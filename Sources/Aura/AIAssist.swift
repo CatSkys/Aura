@@ -451,7 +451,7 @@ struct AISettings: View {
                 }
                 .onAppear(perform: refresh)
                 Card {
-                    Line("Forget every key", "Deletes them from this Mac's keychain. A key made by signing in with OpenRouter still works until you delete it on openrouter.ai") {
+                    Line("Forget every key", "Deletes them from this Mac's keychain") {
                         Pill("Forget") {
                             AIKeys.forgetAll()
                             refresh()
@@ -512,7 +512,7 @@ struct AISettings: View {
         } else if !AIKeys.available {
             Line("Key", "This copy of Aura can't keep keys safely — it isn't the signed release. An app on this Mac still works") { EmptyView() }
         } else {
-            Line("Key", provider == .openRouter ? "Paste one, or sign in and OpenRouter makes one for you" : "Paste your API key") {
+            Line("Key", "Paste your API key") {
                 HStack(spacing: 6) {
                     SecureField("", text: $pasted, prompt: Text("Key").foregroundStyle(Palette.faint))
                         .textFieldStyle(.plain)
@@ -523,12 +523,6 @@ struct AISettings: View {
                         .background(Palette.wash, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
                         .onSubmit { save(provider) }
                     Pill("Save") { save(provider) }
-                    if provider == .openRouter {
-                        Pill("Sign In…") {
-                            browser.tuning = false
-                            AISignIn.start(in: browser)
-                        }
-                    }
                 }
             }
         }

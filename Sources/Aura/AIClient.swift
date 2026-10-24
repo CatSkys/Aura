@@ -191,7 +191,7 @@ final class AIClient: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
     }
 
     /// OpenRouter's one-time code, and the flow's verifier, for a key of
-    /// the account's own (see AISignIn).
+    /// the account's own.
     func exchange(code: String, verifier: String) async throws -> String {
         let url = AIProvider.openRouter.base.appendingPathComponent("auth/keys")
         guard Self.allowed(url, for: .openRouter) else { throw AIError.refusedHost }

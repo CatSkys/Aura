@@ -43,9 +43,9 @@ final class Updater: ObservableObject {
         // AURA_ARCH=x86_64) and a feed beside it naming only Intel builds,
         // so neither kind of Mac is ever offered the other's.
         #if arch(x86_64)
-        return URL(string: "https://github.com/CatSkys/Aura/releases/latest/download/appcast.json")!
+        return URL(string: "https://catskys.github.io/Aura/intel/appcast.json")!
         #else
-        return URL(string: "https://github.com/CatSkys/Aura/releases/latest/download/appcast.json")!
+        return URL(string: "https://catskys.github.io/Aura/appcast.json")!
         #endif
     }()
 

@@ -1690,12 +1690,9 @@ final class Bench {
                     }
                 }
             case "signin":
-                // OpenRouter's sign-in, against the stand-in: the tab it opens,
-                // and a moment later whether a key is kept.
-                AISignIn.start(in: browser)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
-                    answer(["kept": AIKeys.hint(for: .openRouter) ?? "", "waiting": AISignIn.waiting, "tabs": browser.tabs.count])
-                }
+                // Signing in to OpenRouter is not offered: the callback lives on
+                // a server Aura doesn't have. A key pasted in Settings › AI works.
+                answer(["error": "not offered in Aura"])
             case "engine":
                 // A test run's engine (engine.sh, signed ad-hoc) and a folder
                 // of models shared between test worlds; then the state.

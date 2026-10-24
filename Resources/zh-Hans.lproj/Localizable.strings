@@ -939,3 +939,8 @@
 "This Mac is offline." = "这台 Mac 离线了。";
 "a question waiting" = "有等待回答的问题";
 "the page on screen came from it" = "屏幕上的页面来自它";
+
+/* —— Keys, without the account sign-in —— */
+"Paste your API key" = "粘贴你的 API 密钥";
+"Deletes them from this Mac's keychain" = "从这台 Mac 的钥匙串中删除";
+"Aura {1}" = "Aura {1}";

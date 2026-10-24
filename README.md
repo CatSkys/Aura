@@ -56,7 +56,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for how a sentence reaches the table, and
 
 ## Updates and feedback
 
-Aura looks at `https://github.com/CatSkys/Aura/releases/latest/download/appcast.json` for a newer build and offers it; nothing installs unless you press Install. Bugs and requests go to [the issue tracker](https://github.com/CatSkys/Aura/issues) — Help › Send Feedback fills in the version in an issue for you.
+Aura looks at `https://catskys.github.io/Aura/appcast.json` (or `/Aura/intel/appcast.json` on an Intel Mac) for a newer build and offers it; nothing installs unless you press Install. Bugs and requests go to [the issue tracker](https://github.com/CatSkys/Aura/issues) — Help › Send Feedback fills in the version in an issue for you.
 
 ## Licence
 

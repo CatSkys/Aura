@@ -49,6 +49,8 @@ in [ROADMAP.md](ROADMAP.md).
 
 - Search is called Aura, and is its own app: a bundle id of its own (com.catskys.aura), its own Developer ID (49LSZKN27V), its own feed for updates and its own issue tracker at github.com/CatSkys/Aura, so it installs beside Search rather than over it. Nothing of Search's is read or moved — the settings, the session, the passwords and the signed-in sites all start fresh under the new name — and Help › Send Feedback opens an issue with the version already in it instead of a mail draft. This file and ROADMAP.md keep the history they were written with; what has changed since the fork is under **Unreleased**, here.
 
+- The sign-in with an OpenRouter account is not offered, since its callback lives on a server Aura doesn't have; a key pasted into Settings › AI works the same, and the local model is untouched. Updates come from `catskys.github.io/Aura`, which has the per-chip folder the feed was built around.
+
 ### Changed
 
 - A bookmark opens in a tab of its own, from the bookmarks bar, the Bookmarks menu or the list: opened from a pinned tab it used to take the pin's place. An empty new tab is used as it is, and ⌘ opens the bookmark behind the tab you are on.

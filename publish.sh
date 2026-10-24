@@ -2,8 +2,8 @@
 # Puts the three files the site serves into the site: the disk image for
 # people, the ZIP for the updater, and the appcast that names them both.
 #
-#   ./publish.sh "../aura-site/public"
-#   AURA_ARCH=x86_64 ./publish.sh "../aura-site/public"
+#   ./publish.sh "../aura-pages"
+#   AURA_ARCH=x86_64 ./publish.sh "../aura-pages"
 #
 # ./build.sh release ship makes them first (release dmg makes them too, but
 # unnotarised — fine for trying, not for anyone else's Mac). The names never

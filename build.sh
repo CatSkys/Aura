@@ -20,7 +20,7 @@
 # copies them into the site.
 #
 # Two builds from 1.0.5, each for one kind of Mac: Apple Silicon, in build/,
-# and Intel, in build/intel/, served from the site's search/intel/ folder
+# and Intel, in build/intel/, served from the site's intel/ folder
 # with an appcast of its own. A single universal app would have weighed
 # twice as much for everyone (10.9 MB of binary instead of 5.4). The app's
 # updater reads the feed for the chip it was built for (Updater.feed).
@@ -35,7 +35,7 @@
 #   - a notarytool profile: xcrun notarytool store-credentials "aura"
 #     (AURA_NOTARY_PROFILE names it; default "aura")
 #   - AURA_DOWNLOAD_URL, the https folder the three files are served from,
-#     for the appcast. Default https://github.com/CatSkys/Aura/releases/latest/download, which is
+#     for the appcast. Default https://catskys.github.io/Aura, which is
 #     where Updater.feed in Updater.swift looks.
 #
 # NOTES.md, next to this script, is what's new: newest release first, one
@@ -326,7 +326,7 @@ echo "packed: $ZIP"
 # characters JSON minds escaped, is the line under the version in Settings.
 # Written last — after notarisation has stapled its ticket to the DMG, which
 # changes it — so the DMG's hash is the one people download.
-BASE="${AURA_DOWNLOAD_URL:-https://github.com/CatSkys/Aura/releases/latest/download}"
+BASE="${AURA_DOWNLOAD_URL:-https://catskys.github.io/Aura}"
 BASE="${BASE%/}$SUBFOLDER"
 NOTES=""
 if [ -f NOTES.md ]; then
