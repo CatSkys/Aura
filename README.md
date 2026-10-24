@@ -54,6 +54,8 @@ English is the key. `Resources/zh-Hans.lproj/Localizable.strings` says what each
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how a sentence reaches the table, and for what tends to get merged.
 
+The mark is `Icon/mark.svg`; `./Tools/mark.py Icon/mark.svg` writes the path the app draws into `Sources/Aura/AuraMark.swift`, with arc commands turned into cubics. The app icon is `Icon/AppIcon.png` — 1024 points square, corners rounded — and every size `build.sh` needs is taken from it.
+
 ## Updates and feedback
 
 Aura looks at `https://catskys.github.io/Aura/appcast.json` (or `/Aura/intel/appcast.json` on an Intel Mac) for a newer build and offers it; nothing installs unless you press Install. Bugs and requests go to [the issue tracker](https://github.com/CatSkys/Aura/issues) — Help › Send Feedback fills in the version in an issue for you.

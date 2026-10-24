@@ -107,12 +107,24 @@ if [ "$CONFIG" = "release" ]; then
   strip -x "$APP/Contents/MacOS/$NAME"
 fi
 
-# The icon, drawn fresh each time — it is thirty lines of Swift, not an asset
-# to keep in step with anything.
+# The icon. Icon/AppIcon.png, when there is one, is the artwork itself — 1024
+# points square, its corners already rounded, as the designer exports it — and
+# every size the icon needs is taken from it. Without one, it is drawn fresh
+# from Icon/icon.swift, which is thirty lines of Swift rather than an asset to
+# keep in step with anything.
 ICONSET="build/AppIcon.iconset"
 ICONDOC="build/AppIcon.icon"
 rm -rf "$ICONSET" "$ICONDOC"
-swift Icon/icon.swift "$ICONSET" "$ICONDOC" > /dev/null
+if [ -f "Icon/AppIcon.png" ]; then
+  mkdir -p "$ICONSET"
+  for SIZE in 16 32 128 256 512; do
+    sips -z "$SIZE" "$SIZE" "Icon/AppIcon.png" --out "$ICONSET/icon_${SIZE}x${SIZE}.png" > /dev/null
+    DOUBLE=$((SIZE * 2))
+    sips -z "$DOUBLE" "$DOUBLE" "Icon/AppIcon.png" --out "$ICONSET/icon_${SIZE}x${SIZE}@2x.png" > /dev/null
+  done
+else
+  swift Icon/icon.swift "$ICONSET" "$ICONDOC" > /dev/null
+fi
 iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
 rm -rf "$ICONSET"
 # macOS 26's Dark, Clear and Tinted Dock styles read the icon from an asset
@@ -132,7 +144,7 @@ rm -rf "$ICONCAR"
 mkdir -p "$ICONCAR"
 # Full paths: actool hands the document to a helper that runs elsewhere, and
 # with "build/…" it finds nothing ("Icon export exited with status 255").
-if xcrun actool "$PWD/$ICONDOC" --compile "$PWD/$ICONCAR" --platform macosx \
+if [ -f "$ICONDOC" ] && xcrun actool "$PWD/$ICONDOC" --compile "$PWD/$ICONCAR" --platform macosx \
      --minimum-deployment-target "$MINIMUM" --app-icon AppIcon --optimization space \
      --output-partial-info-plist "$PWD/$ICONCAR/partial.plist" > /dev/null 2>&1 \
    && [ -f "$ICONCAR/Assets.car" ]; then
