@@ -19,7 +19,7 @@ Fixes and things every browser is expected to do (Tab moving between a form's fi
 
 ## Where things are tracked
 
-- [ROADMAP.md](ROADMAP.md), live at [officecommun.com/search/roadmap](https://officecommun.com/search/roadmap): every idea and report, from issues, pull requests, emails and X, with where it stands — being built, in the next version, next, or not planned. Maintainers keep it with `./ideas`.
+- [ROADMAP.md](ROADMAP.md), live at [github.com/CatSkys/Aura/blob/main/ROADMAP.md](https://github.com/CatSkys/Aura/blob/main/ROADMAP.md): every idea and report, from issues, pull requests, emails and X, with where it stands — being built, in the next version, next, or not planned. Maintainers keep it with `./ideas`.
 - [CHANGELOG.md](CHANGELOG.md): what has changed since the last version. A pull request that fixes or adds something also adds its line under **Unreleased** (and takes its item off the roadmap), so the next update's notes write themselves.
 
 ## What tends to get merged
@@ -32,7 +32,7 @@ Fixes and things every browser is expected to do (Tab moving between a form's fi
 ## What doesn't
 
 - Rewrites of things that already work, for style reasons alone.
-- Anything that phones home, adds analytics, or changes what leaves the app over the network — see the [privacy page](https://officecommun.com/search/privacy) for what that boundary currently is.
+- Anything that phones home, adds analytics, or changes what leaves the app over the network — see the the [README](README.md) for what that boundary currently is.
 - Vendoring Chromium or any other engine. This is a WebKit browser on purpose.
 - A real key or token anywhere: in code, a test, an issue, a pull request or a pasted log. Tests use keys that are obviously made up. `gitleaks git --pre-commit --staged` with the repo's `.gitleaks.toml` catches most of them before a commit; it is worth running as a pre-commit hook.
 
@@ -42,7 +42,7 @@ Pull requests are reviewed by Drice, usually with Claude Code doing a first pass
 
 ## Reporting a bug
 
-Open an issue with: what you did, what you expected, what happened instead, and your macOS version. A crash log, if there is one, lives at `~/Library/Application Support/Search/crash.log` — it only ever stays on your Mac unless you paste it into the issue yourself.
+Open an issue with: what you did, what you expected, what happened instead, and your macOS version. A crash log, if there is one, lives at `~/Library/Application Support/Aura/crash.log` — it only ever stays on your Mac unless you paste it into the issue yourself.
 
 ## Translations
 
@@ -51,7 +51,7 @@ The app is written in English and the English is the key: `Resources/<language>.
 Two ways a sentence reaches the table, and no third:
 
 - A view SwiftUI makes from a literal — `Text("…")`, `Button("…")`, `Label("…")`, `Toggle("…")` — looks it up itself; nothing is done to it. One with a value in it is written `Text(Localized("Search \(version) is downloading…"))`, so the key is its shape rather than the sentence of the moment.
-- Anything that builds its own sentence — the shared views (`Line`, `Pill`, `Caption`, `Nothing`, `Quick`, `Plate`, `Hunt`), `announce`, AppKit's titles and alerts — goes through `Localized(…)`, or `.localized` when what it has is already a `String`. Both live in `Sources/Search/Localized.swift`.
+- Anything that builds its own sentence — the shared views (`Line`, `Pill`, `Caption`, `Nothing`, `Quick`, `Plate`, `Hunt`), `announce`, AppKit's titles and alerts — goes through `Localized(…)`, or `.localized` when what it has is already a `String`. Both live in `Sources/Aura/Localized.swift`.
 
 A value in a sentence is `{1}`, `{2}` in the table, and a translation may move it, leave it out, or use it twice:
 

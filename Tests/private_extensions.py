@@ -2,7 +2,7 @@
 """Per-extension private consent, checked in a hidden, isolated probe.
 
 Build first (`./build.sh`), then `python3 Tests/private_extensions.py`.
-Content scripts, blocking rules, native WebKit APIs and Search's shims must
+Content scripts, blocking rules, native WebKit APIs and Aura's shims must
 all respect the same consent, including IDs cached before revocation.
 """
 import json
@@ -63,7 +63,7 @@ MARKS = "[document.title, document.documentElement.getAttribute('data-marked'), 
 
 
 # From an extension page, call WebKit's original prototype methods as well
-# as the public methods patched by Search. A shim must not hide a native leak.
+# as the public methods patched by Aura. A shim must not hide a native leak.
 BOOT = """window.nativeAPI = (space, method, args) => {
   for (let p = Object.getPrototypeOf(chrome[space]); p; p = Object.getPrototypeOf(p)) {
     const d = Object.getOwnPropertyDescriptor(p, method);
@@ -361,7 +361,7 @@ def main():
             """)
             t.ok("normal native mutations still work", got["ok"] and abs(got["value"] - 1.2) < 0.01, got)
             # WebKit exposes an unimplemented public tabs.move stub on some
-            # releases. Exercise Search's existing handlers directly as well.
+            # releases. Exercise Aura's existing handlers directly as well.
             target = by_url(queries(a)["native"], "ordinary")
             run(a, f"await native('tabs.move', [{{i: {target['index']}}}, 0]);")
             moved = by_url(queries(a)["native"], "ordinary")

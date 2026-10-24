@@ -45,12 +45,12 @@ PAGES = {
     "/code": '<form action="/s"><input id="c" name="otc" autocomplete="one-time-code"><button>Verify</button></form>',
     # GitHub's search dialog has no input name or id; only its accessible
     # name and placeholder say what it is. Its issue title is not a login.
-    "/github-search": '<input type="text" role="combobox" aria-label="Search or jump to" '
-                      'placeholder="Search or jump to..."><button>Clear</button>',
+    "/github-search": '<input type="text" role="combobox" aria-label="Aura or jump to" '
+                      'placeholder="Aura or jump to..."><button>Clear</button>',
     "/issue-title": '<form><label for="issue-title">Add a title</label>'
                     '<input id="issue-title" placeholder="Title"><textarea></textarea><button>Create</button></form>',
-    "/labelled-search": '<form><input id="u" aria-label="Search repositories"><button>Go</button></form>',
-    "/placeholder-search": '<form><input id="u" placeholder="Search repositories"><button>Go</button></form>',
+    "/labelled-search": '<form><input id="u" aria-label="Aura repositories"><button>Go</button></form>',
+    "/placeholder-search": '<form><input id="u" placeholder="Aura repositories"><button>Go</button></form>',
     "/username-off": '<form><input id="u" autocomplete="off" placeholder="Username"><button>Continue</button></form>',
 }
 
@@ -153,7 +153,7 @@ def main():
         r = acc()
         t.ok("another site's password page doesn't get the name either", r.get("offer", {}).get("user") == "", r)
 
-        # (b) Search boxes, a page of many boxes, a code's box: nothing.
+        # (b) Aura boxes, a page of many boxes, a code's box: nothing.
         s = open_page(base, "/search")
         t.ok("a search box (type=search, role=search) offers nothing", focus(s, "q").get("shown") is False)
         t.ok("a box named q with a button offers nothing", focus(s, "q2").get("shown") is False)

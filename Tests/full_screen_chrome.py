@@ -3,7 +3,7 @@
 
 Build first (`./build.sh`), then `python3 Tests/full_screen_chrome.py`.
 Nothing goes full screen: the page's own word that it is going, and that it
-is back (Forms.swift, "fullscreen"), is sent from Search's world, and what
+is back (Forms.swift, "fullscreen"), is sent from Aura's world, and what
 lies where the column is is asked of the window. The column steps aside for
 the page and comes back after it, with Split View off and on: back
 without anything else drawing the window again, as after a video's full

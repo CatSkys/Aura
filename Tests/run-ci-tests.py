@@ -17,7 +17,7 @@ if len(cases) != 7:
     raise RuntimeError(f"Expected 7 WebKit download cases; discovered {cases}")
 for index, case in enumerate(cases):
     print(f"Isolated WebKit case: {case}", flush=True)
-    env = dict(os.environ, SEARCH_PROBE=f"ci-download-{os.getpid()}-{index}")
+    env = dict(os.environ, AURA_PROBE=f"ci-download-{os.getpid()}-{index}")
     result = subprocess.run(["swift", "test", "--skip-build", "--filter", f"^{re.escape(case)}$"], env=env)
     failed |= result.returncode != 0
 sys.exit(1 if failed else 0)

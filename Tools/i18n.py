@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SOURCES = ROOT / "Sources" / "Search"
+SOURCES = ROOT / "Sources" / "Aura"
 RESOURCES = ROOT / "Resources"
 
 # Where a sentence is shown as it is written: the first argument of one of

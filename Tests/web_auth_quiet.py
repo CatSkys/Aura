@@ -10,7 +10,7 @@ Claude in Chrome keeps its sign-in in storage.session, which every browser
 empties when it quits, and gets it back at the next start with a
 non-interactive flow (interactive: false, abortOnLoadForNonInteractive:
 false, timeoutMsForNonInteractive: 15000) on claude.ai's authorize page.
-Chrome runs such a flow out of sight; Search opened a tab in front for it.
+Chrome runs such a flow out of sight; Aura opened a tab in front for it.
 Without its sign-in the extension never joins Anthropic's bridge, and the
 Claude app says it "couldn't reach Claude in Chrome" (18 Oct 2026).
 

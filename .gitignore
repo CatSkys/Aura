@@ -13,3 +13,6 @@ __pycache__/
 *.provisionprofile
 *.p12
 *.mobileprovision
+
+# A local virtualenv for a one-off tool (aura-logo)
+.venv/

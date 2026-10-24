@@ -47,6 +47,8 @@ in [ROADMAP.md](ROADMAP.md).
 
 - Search speaks Chinese: the whole of it — the menus, every page of Settings, the panels, the welcome page, the site card and each version's notes — reads in 简体中文 when the Mac is set to Chinese, and in English everywhere else, as before. One language is one folder: `Resources/zh-Hans.lproj/Localizable.strings` maps each sentence the app says to the same sentence in Chinese, and a folder beside it — `zh-Hant.lproj` — would offer 繁體中文 without a line of code changing. A sentence a translation has not reached yet shows in English rather than as a blank or a key, `./Tools/i18n.py missing` lists those, and `./Tools/i18n.py check` fails a build that leaves one behind.
 
+- Search is called Aura, and is its own app: a bundle id of its own (com.catskys.aura), its own Developer ID (49LSZKN27V), its own feed for updates and its own issue tracker at github.com/CatSkys/Aura, so it installs beside Search rather than over it. Nothing of Search's is read or moved — the settings, the session, the passwords and the signed-in sites all start fresh under the new name — and Help › Send Feedback opens an issue with the version already in it instead of a mail draft. This file and ROADMAP.md keep the history they were written with; what has changed since the fork is under **Unreleased**, here.
+
 ### Changed
 
 - A bookmark opens in a tab of its own, from the bookmarks bar, the Bookmarks menu or the list: opened from a pinned tab it used to take the pin's place. An empty new tab is used as it is, and ⌘ opens the bookmark behind the tab you are on.

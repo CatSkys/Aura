@@ -30,7 +30,7 @@
 "Peek at a link with a {1}" = "用{1}预览链接";
 "Its page opens in a panel over the one you're reading. Escape puts it away; the other button keeps it as a tab" = "网页会在当前页面上方的面板中打开。按 Escape 收起，另一个按钮则保留为标签页";
 "Open links from other apps in a small window" = "来自其他 App 的链接用小窗口打开";
-"To read and close, or keep with Open in Search (⌘O)" = "可以读完即关，或用「在 Search 中打开」(⌘O) 保留";
+"To read and close, or keep with Open in Aura (⌘O)" = "可以读完即关，或用「在 Aura 中打开」(⌘O) 保留";
 "Address bar commands" = "地址栏命令";
 "A word like \"settings\" or \"new tab\", typed alone in the address field, goes there instead of searching for it" = "在地址栏单独输入 \"settings\" 或 \"new tab\" 这样的词，会直接前往该处，而不是去搜索它";
 "New tab in a floating field" = "新标签页使用浮动地址栏";
@@ -50,8 +50,8 @@
 "Float the video when you switch tabs" = "切换标签页时浮动视频";
 "A video playing on YouTube and the like comes out into its floating window when you go to another tab, and back when you return. ⇧⌘P still floats one by hand" = "在 YouTube 等网站播放的视频，切到其他标签页时会进入浮动窗口，回来时又回到标签页。⇧⌘P 仍可手动浮动";
 "Float the video when you switch apps" = "切换 App 时浮动视频";
-"A video playing on the site you're on comes out into its floating window as another app comes to the front, and goes back into its tab when you return" = "当前网站正在播放的视频，在其他 App 来到前台时会进入浮动窗口，回到 Search 时又回到标签页";
-"Let a script drive Search" = "允许脚本驱动 Search";
+"A video playing on the site you're on comes out into its floating window as another app comes to the front, and goes back into its tab when you return" = "当前网站正在播放的视频，在其他 App 来到前台时会进入浮动窗口，回到 Aura 时又回到标签页";
+"Let a script drive Aura" = "允许脚本驱动 Aura";
 "A local socket for testing. Its tabs open beside yours with a flask on them and never take over — see ./bench" = "用于测试的本地套接字。它打开的标签页与你的并列，带有烧瓶标记，永不抢占当前页面——见 ./bench";
 "Back, forward and reload on the left" = "后退、前进和重新载入放在左侧";
 "Beside the window's buttons, before the tabs" = "位于窗口按钮旁、标签页之前";
@@ -75,7 +75,7 @@
 "A tab left alone lets its page go and comes back where you left it. Pinned tabs, sound, calls and anything typed stay awake." = "放置不用的标签页会释放页面，回来时仍在原处。固定标签页、播放声音、通话中以及有输入内容的标签页不会休眠。";
 "How soon tabs sleep" = "休眠等待时间";
 "Close tabs you leave alone" = "自动关闭放置不用的标签页";
-"Counted from when you last left the tab, while Search is quit too. Pin a tab, name it or put it in a group to keep it; private tabs, sound, calls and anything typed stay. ⇧⌘T and History bring one back." = "从你最后一次离开该标签页算起，Search 退出期间也计时。固定、命名或归入分组的标签页会保留；无痕浏览、播放声音、通话中以及有输入内容的标签页不会关闭。⇧⌘T 和历史记录可以找回。";
+"Counted from when you last left the tab, while Aura is quit too. Pin a tab, name it or put it in a group to keep it; private tabs, sound, calls and anything typed stay. ⇧⌘T and History bring one back." = "从你最后一次离开该标签页算起，Aura 退出期间也计时。固定、命名或归入分组的标签页会保留；无痕浏览、播放声音、通话中以及有输入内容的标签页不会关闭。⇧⌘T 和历史记录可以找回。";
 "Keep selected sites awake" = "让所选网站保持唤醒";
 "Adds Keep This Site Awake to the site card. Chosen sites use more memory: they neither sleep nor close automatically, even under memory pressure. Private choices last only in that tab." = "在网站卡片中加入「保持此网站唤醒」。选中的网站会占用更多内存：即使内存紧张，也不会休眠或自动关闭。无痕浏览中的选择仅在该标签页有效。";
 "Load background tabs when you go to them" = "前往后台标签页时才载入";
@@ -88,7 +88,7 @@
 "Search a site from the address field" = "在地址栏中搜索网站";
 "Type the start of a site's name, like red or yout, then Tab, and what you type next searches that site. Sites you visit that offer a search join the list." = "输入网站名的开头（如 red 或 yout），按 Tab，接下来输入的内容就在该网站内搜索。你访问过且支持搜索的网站会自动加入列表。";
 "Start with a fresh window" = "以全新窗口启动";
-"Each time Search opens, your pinned tabs, tab groups and named tabs are there and last time's other tabs aren't." = "每次打开 Search 时，固定标签页、标签页组和命名过的标签页都在，上次的其他标签页不在。";
+"Each time Aura opens, your pinned tabs, tab groups and named tabs are there and last time's other tabs aren't." = "每次打开 Aura 时，固定标签页、标签页组和命名过的标签页都在，上次的其他标签页不在。";
 "Spaces" = "空间";
 "Separate sets of tabs, signed in where the others are or starting afresh, switched with ⌃1–⌃9, two fingers sideways over the column, or the space's icon. Mission Control's own ⌃1–⌃9, if you turned them on, take those keys first." = "相互独立的标签页集合，可沿用其他空间的登录状态或全新开始；用 ⌃1–⌃9、在侧边栏上双指横扫，或点击空间图标切换。若已开启调度中心的 ⌃1–⌃9，它们会优先占用这些快捷键。";
 "Pins in every space" = "每个空间都保留的固定标签页";
@@ -98,7 +98,7 @@
 "Pinned rows" = "固定行";
 "As in Arc: pins as squares for the sites you live in, pins as rows under them for pages you keep, and a line over the rest with Clear. Right-click a tab to pin it as a row." = "如同 Arc：常用网站固定为方格，常留页面固定为方格下方的行，其上方有一条分隔线和「清除」。右键点击标签页可将其固定为一行。";
 "Pins go back home" = "固定标签页回到原页";
-"As in Arc: a pinned tab closed with ⌘W, or left open when Search quits, comes back at the page it was pinned at rather than wherever you went from there." = "如同 Arc：用 ⌘W 关闭的固定标签页，或 Search 退出时仍开着的固定标签页，会回到当初固定的那个页面，而不是你之后去过的位置。";
+"As in Arc: a pinned tab closed with ⌘W, or left open when Aura quits, comes back at the page it was pinned at rather than wherever you went from there." = "如同 Arc：用 ⌘W 关闭的固定标签页，或 Aura 退出时仍开着的固定标签页，会回到当初固定的那个页面，而不是你之后去过的位置。";
 "Pins stay on their site" = "固定标签页留在原网站";
 "As in Arc: a link from a pinned tab to another site opens in a panel over it, and the pin stays on its page. Links within the site go as usual, and ⌘W takes the pin back to the page it was pinned at." = "如同 Arc：从固定标签页指向其他网站的链接会在其上方的面板中打开，固定标签页仍留在原页面。站内链接照常打开，⌘W 会把固定标签页带回当初固定的页面。";
 "Split View" = "分屏浏览";
@@ -145,9 +145,9 @@
 "Only what was fetched to draw pages" = "仅为绘制页面而抓取的内容";
 "by Office Commun · version {1}" = "Office Commun 出品 · 版本 {1}";
 "Install updates on its own" = "自动安装更新";
-"Off, Search still looks every hour and tells you, and installs only when you press Install" = "关闭后，Search 仍每小时检查并告知你，只有按下「安装」才会安装";
+"Off, Aura still looks every hour and tells you, and installs only when you press Install" = "关闭后，Aura 仍每小时检查并告知你，只有按下「安装」才会安装";
 "Found something wrong?" = "发现问题？";
-"Opens a draft with the version already in it" = "打开一封已填好版本号的邮件草稿";
+"Opens the issue tracker with the version already in it" = "打开问题反馈页，已填好版本号";
 "Send Feedback" = "发送反馈";
 "What's new" = "新功能";
 "Every version's notes, newest first" = "每个版本的更新说明，最新的在前";
@@ -314,7 +314,7 @@
 
 /* —— Passwords —— */
 "Passwords" = "密码";
-"macOS asks once for that browser's keychain key. Nothing is changed there; everything lands in your own keychain, under Search." = "macOS 会询问一次那个浏览器的钥匙串密钥。对方的数据不会被改动；所有内容都会存入你自己的钥匙串，归属 Search。";
+"macOS asks once for that browser's keychain key. Nothing is changed there; everything lands in your own keychain, under Aura." = "macOS 会询问一次那个浏览器的钥匙串密钥。对方的数据不会被改动；所有内容都会存入你自己的钥匙串，归属 Aura。";
 "{1} accounts" = "{1} 个账号";
 "Copy" = "拷贝";
 
@@ -333,7 +333,7 @@
 "Passwords from {1} aren't supported yet." = "暂不支持从 {1} 导入密码。";
 "From a file another browser exported…" = "从其他浏览器导出的文件…";
 "Tabs wear" = "标签页外观";
-"Search is the default browser" = "Search 已是默认浏览器";
+"Aura is the default browser" = "Aura 已是默认浏览器";
 "macOS asks in its own dialog" = "macOS 会用自己的对话框询问";
 "A few things worth knowing" = "几点值得了解的事";
 "Skip" = "跳过";
@@ -375,7 +375,7 @@
 "Add from the Chrome Web Store" = "从 Chrome 应用商店添加";
 "Open the Store" = "打开商店";
 "Paste a link to an extension, or its id" = "粘贴扩展的链接或 ID";
-"Or find it in the store and press Add to Search on its page." = "或在商店里找到它，然后在其页面上按「添加到 Search」。";
+"Or find it in the store and press Add to Aura on its page." = "或在商店里找到它，然后在其页面上按「添加到 Aura」。";
 "From another browser" = "从其他浏览器";
 "What Chrome, Arc, Brave and the others added from the Chrome Web Store — installed fresh from the store, you say yes to each one" = "Chrome、Arc、Brave 等浏览器从 Chrome 应用商店安装过的扩展——会从商店重新安装，每个都需你确认";
 "Bring them over…" = "导入它们…";
@@ -391,8 +391,8 @@
 "Allow in Private Tabs" = "允许用于无痕浏览标签页";
 "Allow {1} in private tabs" = "允许 {1} 用于无痕浏览标签页";
 "Home page" = "主页";
-"Search's own" = "Search 自带页面";
-"Add “{1}” to Search?" = "要将“{1}”添加到 Search 吗？";
+"Aura's own" = "Aura 自带页面";
+"Add “{1}” to Aura?" = "要将“{1}”添加到 Aura 吗？";
 "Already installed" = "已安装";
 "Choose the folder that holds the extension's manifest.json." = "选择包含该扩展 manifest.json 的文件夹。";
 "That folder has no manifest.json" = "该文件夹里没有 manifest.json";
@@ -455,7 +455,7 @@
 "Camera, microphone, location and notification choices forgotten" = "已忘记相机、麦克风、位置与通知的选择";
 "Address copied" = "地址已拷贝";
 "Link copied" = "链接已拷贝";
-"“Let a script drive Search” was turned on outside Settings, and stays off" = "「允许脚本驱动 Search」在设置之外被打开了，仍会保持关闭";
+"“Let a script drive Aura” was turned on outside Settings, and stays off" = "「允许脚本驱动 Aura」在设置之外被打开了，仍会保持关闭";
 "Moved to {1}" = "已移到 {1}";
 "A tab that keeps nothing" = "不保留任何内容的标签页";
 "Saved {1}" = "已存储 {1}";
@@ -492,7 +492,7 @@
 "Stop" = "停止";
 "Stop {1}" = "停止 {1}";
 "Recording" = "正在录制";
-"Open in Search" = "在 Search 中打开";
+"Open in Aura" = "在 Aura 中打开";
 "Open Link in New Tab" = "在新标签页中打开链接";
 "Open Link in New Tab and Go to It" = "在新标签页中打开链接并前往";
 
@@ -516,7 +516,7 @@
 "Deletes them from this Mac's keychain. A key made by signing in with OpenRouter still works until you delete it on openrouter.ai" = "从这台 Mac 的钥匙串中删除。通过 OpenRouter 登录取得的密钥仍然有效，直到你在 openrouter.ai 上删除它";
 "Keys forgotten" = "密钥已忘记";
 "Model" = "模型";
-"Needs the Apple Silicon version of Search — this copy runs translated" = "需要 Apple Silicon 版 Search——此副本是在转译下运行";
+"Needs the Apple Silicon version of Aura — this copy runs translated" = "需要 Apple Silicon 版 Aura——此副本是在转译下运行";
 "{1}, downloaded once ({2}) and checked. Nothing leaves this Mac" = "{1}，下载一次（{2}）并已校验。数据不会离开这台 Mac";
 "Download" = "下载";
 "Downloading… {1}%" = "正在下载… {1}%";
@@ -525,13 +525,13 @@
 "Try Again" = "重试";
 "Key" = "密钥";
 "{1}, in this Mac's keychain" = "{1}，保存在这台 Mac 的钥匙串中";
-"This copy of Search can't keep keys safely — it isn't the signed release. An app on this Mac still works" = "这份 Search 无法安全保存密钥——它不是签名发布的版本。使用这台 Mac 上的 App 仍然可用";
+"This copy of Aura can't keep keys safely — it isn't the signed release. An app on this Mac still works" = "这份 Aura 无法安全保存密钥——它不是签名发布的版本。使用这台 Mac 上的 App 仍然可用";
 "Sign In…" = "登录…";
 "Leave empty for {1}" = "留空则使用 {1}";
 "Look Again" = "再次检查";
 "From {1} on this Mac" = "来自这台 Mac 上的 {1}";
 "Key kept in the keychain" = "密钥已存入钥匙串";
-"This copy of Search can't keep keys" = "这份 Search 无法保存密钥";
+"This copy of Aura can't keep keys" = "这份 Aura 无法保存密钥";
 "The key wasn't kept" = "密钥未保存";
 
 /* —— What's new, version by version —— */
@@ -547,9 +547,9 @@
 "Find says “3 of 17”, paints every match, and can match case or whole words." = "查找会显示「第 3 项，共 17 项」，标出所有匹配，并可区分大小写或全字匹配。";
 "Downloads pause and resume." = "下载可以暂停和继续。";
 "Open Link in New Tab leaves you where you are; hold ⌥ to go to it." = "「在新标签页中打开链接」不会把你带走；按住 ⌥ 才会前往。";
-"Search can start with a fresh window: your pinned tabs, tab groups and named tabs, and none of last time's others." = "Search 可以以全新窗口启动：固定标签页、标签页组和命名过的标签页都在，上次的其他标签页不在。";
+"Aura can start with a fresh window: your pinned tabs, tab groups and named tabs, and none of last time's others." = "Aura 可以以全新窗口启动：固定标签页、标签页组和命名过的标签页都在，上次的其他标签页不在。";
 "Intel Macs get a download of their own." = "Intel Mac 有了单独的下载版本。";
-"Search is built for size, so all of this fits in 6.8 MB, and pages that change all the time, like a chat writing its answer, stay quick." = "Search 为体积而设计，所以这一切都装进 6.8 MB，而不断变化的页面（比如正在写答案的对话）依然流畅。";
+"Aura is built for size, so all of this fits in 6.8 MB, and pages that change all the time, like a chat writing its answer, stay quick." = "Aura 为体积而设计，所以这一切都装进 6.8 MB，而不断变化的页面（比如正在写答案的对话）依然流畅。";
 "An extension's popup window opens as a small window, as in Chrome: a password manager's vault, a sign-in." = "扩展的弹出窗口会以小窗口打开，如同 Chrome：密码管理器的保险库、登录页面。";
 "Esc closes a new tab you haven't used, and words typed into a new tab wait for you." = "Esc 会关闭你还没用过的新标签页；在新标签页里输入的文字会为你留着。";
 "Tampermonkey installs scripts from a link, and SingleFile saves pages again." = "Tampermonkey 可以从链接安装脚本，SingleFile 也能再次保存页面了。";
@@ -585,8 +585,8 @@
 "Scrolling asks far less of the window, and a tab still loading no longer keeps the Mac busy." = "滚动对窗口的负担小得多，仍在载入的标签页也不再占着 Mac。";
 "Where links go, peeking at a link with a shift-click, and flicking the floating video to a corner are now on." = "「显示链接去向」、Shift-点击预览链接、把浮动视频甩到角落，现在都已开启。";
 "Tab managers and other extensions see every tab, in every window." = "标签页管理器等扩展能看到每个窗口里的每个标签页。";
-"Window › Move & Resize and the Mac's tiling work with Search's window." = "「窗口 › 移动与调整大小」以及 Mac 的窗口平铺都能作用于 Search 的窗口。";
-"Links from Notion and other apps bring Search to the front." = "来自 Notion 等 App 的链接会把 Search 带到前台。";
+"Window › Move & Resize and the Mac's tiling work with Aura's window." = "「窗口 › 移动与调整大小」以及 Mac 的窗口平铺都能作用于 Aura 的窗口。";
+"Links from Notion and other apps bring Aura to the front." = "来自 Notion 等 App 的链接会把 Aura 带到前台。";
 "Addresses a dev server prints, like 0.0.0.0:3000, open." = "开发服务器打印的地址（如 0.0.0.0:3000）可以打开了。";
 "The tabs you had at quit are the ones that come back." = "退出时有哪些标签页，回来还是哪些。";
 "The × closes a tab in the tab bar folded away with ⌘S." = "用 ⌘S 收起的标签栏里，× 也能关闭标签页。";
@@ -598,17 +598,17 @@
 "Pop-ups need a click." = "弹出窗口需要点击才会打开。";
 "The holes found in this week's reviews: an extension could read files outside its own folder, and a page or an ad could open another app without asking." = "本周审查发现的漏洞：扩展可以读取其文件夹之外的文件，网页或广告可以在不经询问的情况下打开其他 App。";
 "Bitwarden signs in to a self-hosted server, and extension popups hear what changes while they're open." = "Bitwarden 可以登录自建服务器，扩展弹窗在打开期间也能收到变化。";
-"A link from Mail brings Search to the front, and a full-screen video no longer goes black." = "来自「邮件」的链接会把 Search 带到前台，全屏视频也不再黑屏。";
+"A link from Mail brings Aura to the front, and a full-screen video no longer goes black." = "来自「邮件」的链接会把 Aura 带到前台，全屏视频也不再黑屏。";
 "Your extensions may each ask once more for their permissions at their next update." = "你的扩展在下一次更新时可能各自再请求一次权限。";
 "A site's passkey button brings up the Mac's own passkey sheet: Touch ID, your iPhone, a security key." = "网站的通行密钥按钮会唤起 Mac 自己的通行密钥面板：Touch ID、你的 iPhone、安全密钥。";
-"Search can be the Mac's default browser." = "Search 可以成为这台 Mac 的默认浏览器。";
+"Aura can be the Mac's default browser." = "Aura 可以成为这台 Mac 的默认浏览器。";
 "Each off until you turn it on in Settings: a bookmarks bar, a peek at a link with a shift-click, the video that follows you to another app, pages at 120 Hz, and where a link goes." = "以下各项在设置里开启之前都是关闭的：书签栏、Shift-点击预览链接、跟着你到其他 App 的视频、网页 120 Hz 刷新，以及链接去向提示。";
 "Mute a tab, share a page, copy a link as Markdown, the mouse's back and forward buttons, and spaces in the bar across the top." = "静音标签页、共享页面、把链接拷贝为 Markdown、鼠标的前进后退键，以及顶部标签栏里的空间。";
 "Faster to open, and new tabs in about 10 ms." = "打开更快，新标签页约 10 毫秒。";
-"Pages see nothing of Search that Safari doesn't show them, and a saved password is offered only on its own site." = "网页看不到任何 Safari 不会显示的东西，保存的密码也只在它自己的网站上提供。";
+"Pages see nothing of Aura that Safari doesn't show them, and a saved password is offered only on its own site." = "网页看不到任何 Safari 不会显示的东西，保存的密码也只在它自己的网站上提供。";
 "If passkeys still fail after the update, restart your Mac once." = "如果更新后通行密钥仍然失败，请重启一次 Mac。";
 "Each off until you turn it on in Settings: Spaces, a sidebar that hides until the pointer reaches the edge, and the search engine of your choice." = "以下各项在设置里开启之前都是关闭的：空间、指针到达边缘才出现的侧边栏，以及你选择的搜索引擎。";
-"Search opens again on macOS 14." = "Search 在 macOS 14 上重新可以打开了。";
+"Aura opens again on macOS 14." = "Aura 在 macOS 14 上重新可以打开了。";
 "Signing in to Google no longer reloads the page over and over with iCloud Passwords installed." = "装了 iCloud 密码之后，登录 Google 不再反复刷新页面。";
 "Tabs in a row or down the side, pinned tabs that keep their place, and one field for addresses and searches." = "标签页排成一行或放在侧边，固定标签页始终在原位，一个输入框兼顾地址与搜索。";
 "Ads blocked before they load; passwords and passkeys in your keychain." = "广告在载入之前就被拦截；密码和通行密钥保存在你的钥匙串里。";
@@ -616,7 +616,7 @@
 "Chrome extensions from the Chrome Web Store, on macOS 15.4 or later." = "在 macOS 15.4 或更高版本上，可以从 Chrome 应用商店安装 Chrome 扩展。";
 "Tabs you haven't looked at for half an hour sleep and give their memory back." = "半小时没看的标签页会休眠，把内存还回来。";
 "It runs on the engine already in macOS and weighs 2.9 MB." = "它运行在 macOS 已有的引擎上，体积只有 2.9 MB。";
-"New in Search {1}" = "Search {1} 新功能";
+"New in Aura {1}" = "Aura {1} 新功能";
 "From earlier versions, in case you missed them" = "来自更早的版本，也许你错过了";
 "Everything that's new…" = "全部新功能…";
 "Close" = "关闭";
@@ -634,17 +634,17 @@
 "Fixed" = "修复";
 "Group {1}" = "分组 {1}";
 "Links from other apps." = "来自其他 App 的链接。";
-"Make Search the default" = "将 Search 设为默认";
+"Make Aura the default" = "将 Aura 设为默认";
 "New" = "新增";
 "No passwords readable in {1}" = "{1} 里没有可读取的密码";
 "Open {1}" = "打开 {1}";
-"Search feedback — {1} ({2})" = "Search 反馈 — {1}（{2}）";
+"Aura feedback — {1} ({2})" = "Aura 反馈 — {1}（{2}）";
 "The {1} bookmarks in it go too." = "其中的 {1} 个书签也会一并删除。";
 "This page has unsaved form entries. It will reopen in “{1}” with that Space’s sign-ins, so the entries may be lost." = "此页面有尚未保存的表单内容。它会在“{1}”中以该空间的登录状态重新打开，这些内容可能会丢失。";
 "Two ways to hold it." = "两种摆法。";
 "\n\n—\nSearch {1}, build {2}, macOS {3}" = "\n\n—\nSearch {1}，构建 {2}，macOS {3}";
 "macOS didn't hand over {1}'s key — allow it and try again" = "macOS 没有交出 {1} 的密钥——请允许后重试";
-"macOS will ask what to share. Search remembers your answer for {1}; Settings › Extensions takes it back." = "macOS 会询问要共享什么。Search 会记住你对 {1} 的答复；可在「设置 › 扩展」中撤回。";
+"macOS will ask what to share. Aura remembers your answer for {1}; Settings › Extensions takes it back." = "macOS 会询问要共享什么。Aura 会记住你对 {1} 的答复；可在「设置 › 扩展」中撤回。";
 "{1} has a primary password: export your passwords from it and bring in the CSV file" = "{1} 设置了主密码：请从中导出密码，再导入该 CSV 文件";
 "{1} moved from {2}" = "{1} 已从 {2} 移走";
 "{1} places" = "{1} 个位置";
@@ -675,7 +675,7 @@
 "Light" = "浅色";
 "Dark" = "深色";
 "System" = "跟随系统";
-"Search is the default browser on this Mac" = "Search 已是这台 Mac 的默认浏览器";
+"Aura is the default browser on this Mac" = "Aura 已是这台 Mac 的默认浏览器";
 "Mail, Slack and the rest still send links elsewhere" = "「邮件」、Slack 等仍会把链接送到别处";
 "Links now open here" = "链接现在在此打开";
 "macOS didn't change it" = "macOS 没有更改它";
@@ -691,13 +691,13 @@
 "Leftmost" = "最左";
 "Bottom" = "底部";
 "Rightmost" = "最右";
-"{1} does the saving — it asked Search not to offer" = "由 {1} 负责保存——它要求 Search 不再提供";
+"{1} does the saving — it asked Aura not to offer" = "由 {1} 负责保存——它要求 Aura 不再提供";
 "Asked once per site, never again for a site you refuse" = "每个网站询问一次，拒绝过的网站不再询问";
 "Needs an Apple entitlement this build doesn't have — off keeps sites to the password" = "需要 Apple 的授权，此构建没有——关闭后网站只能用密码";
 "macOS was told no — System Settings › Privacy & Security › Passkeys Access for Web Browsers" = "macOS 被拒绝了——系统设置 › 隐私与安全性 › 网页浏览器的通行密钥访问";
 "Touch ID or an iCloud passkey, on sites that offer one" = "在提供通行密钥的网站上，用 Touch ID 或 iCloud 通行密钥";
 "Third parties whose only job is to watch" = "专门负责监视的第三方";
-"Nothing is being blocked until this clears — try again, or restart Search" = "在它清除之前不会拦截任何内容——请重试，或重新启动 Search";
+"Nothing is being blocked until this clears — try again, or restart Aura" = "在它清除之前不会拦截任何内容——请重试，或重新启动 Aura";
 "Address" = "地址栏";
 "Switch tab" = "切换标签页";
 "New, close, reopen tab" = "新建、关闭、重新打开标签页";
@@ -710,13 +710,13 @@
 "Float the video" = "浮动视频";
 "Clear browsing data" = "清除浏览数据";
 "Updates" = "更新";
-"Search {1} is downloading…" = "Search {1} 正在下载…";
-"Search {1} is ready" = "Search {1} 已就绪";
-"Search {1} is out" = "Search {1} 已发布";
+"Aura {1} is downloading…" = "Aura {1} 正在下载…";
+"Aura {1} is ready" = "Aura {1} 已就绪";
+"Aura {1} is out" = "Aura {1} 已发布";
 "Checked {1} — every hour on its own" = "已于 {1} 检查——此后每小时自动检查";
 "Checked every hour on its own" = "每小时自动检查";
 "Quietly, in the background — nothing you have set is touched" = "在后台安静进行——不会触碰你的任何设置";
-"It's there the next time you open Search" = "下次打开 Search 时它就在那里";
+"It's there the next time you open Aura" = "下次打开 Aura 时它就在那里";
 "Open the disk image, the same as the first time" = "打开磁盘映像，和第一次一样";
 "Checked and put in place when you press Install" = "按下「安装」时校验并放置";
 "Checking…" = "正在检查…";
@@ -827,13 +827,13 @@
 "The download failed." = "下载失败。";
 "Start the download again from the beginning" = "从头重新开始下载";
 "Checking for updates…" = "正在检查更新…";
-"Downloading Search {1}…" = "正在下载 Search {1}…";
-"Search {1} is ready — relaunch to use it" = "Search {1} 已就绪——重新启动即可使用";
-"Search is up to date" = "Search 已是最新版本";
-"Search {1} is out — choose Install Update in the Search menu" = "Search {1} 已发布——请在 Search 菜单中选「安装更新」";
-"That download didn't check out — get Search from officecommun.com/search" = "那次下载未通过校验——请从 officecommun.com/search 获取 Search";
-"Search {1} is ready — it's there the next time you open it" = "Search {1} 已就绪——下次打开时它就在那里";
-"Search {1} is out — choose Download Update in the Search menu" = "Search {1} 已发布——请在 Search 菜单中选「下载更新」";
+"Downloading Aura {1}…" = "正在下载 Aura {1}…";
+"Aura {1} is ready — relaunch to use it" = "Aura {1} 已就绪——重新启动即可使用";
+"Aura is up to date" = "Aura 已是最新版本";
+"Aura {1} is out — choose Install Update in the Aura menu" = "Aura {1} 已发布——请在 Aura 菜单中选「安装更新」";
+"That download didn't check out — get Aura from officecommun.com/search" = "那次下载未通过校验——请从 officecommun.com/search 获取 Aura";
+"Aura {1} is ready — it's there the next time you open it" = "Aura {1} 已就绪——下次打开时它就在那里";
+"Aura {1} is out — choose Download Update in the Aura menu" = "Aura {1} 已发布——请在 Aura 菜单中选「下载更新」";
 "Click to focus this page" = "点击以聚焦此页面";
 "Click to focus this page; right-click for tab actions" = "点击以聚焦此页面；右键可执行标签页操作";
 "Focus page" = "聚焦页面";
@@ -844,7 +844,7 @@
 "Bring this tab into the split" = "将此标签页并入分屏";
 "This page says" = "此页面提示";
 "Page" = "页面";
-"Open in Search   ⌘O" = "在 Search 中打开   ⌘O";
+"Open in Aura   ⌘O" = "在 Aura 中打开   ⌘O";
 "Not secure — " = "不安全——";
 "Extension page" = "扩展页面";
 "Not a website" = "不是网站";

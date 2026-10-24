@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Search a site from the address field (SiteSearch.swift), in a hidden probe.
+"""Aura a site from the address field (SiteSearch.swift), in a hidden probe.
 
 Build first (`./build.sh`), then `python3 Tests/site_search.py`. Uses the
 split suite's harness: started hidden, no window made or shown, everything

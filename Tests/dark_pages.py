@@ -20,8 +20,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import split_view as sv  # noqa: E402
 
 sv.W = "dark-pages"
-sv.SUPPORT = f"{sv.HOME}/Library/Application Support/Search ({sv.W})"
-sv.SUITE = f"com.officecommun.search.test.{sv.W}"
+sv.SUPPORT = f"{sv.HOME}/Library/Application Support/Aura ({sv.W})"
+sv.SUITE = f"com.catskys.aura.test.{sv.W}"
 sv.SOCK = f"{sv.SUPPORT}/bench.sock"
 SHOTS = sys.argv[1] if len(sys.argv) > 1 else None
 
