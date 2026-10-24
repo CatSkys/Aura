@@ -127,6 +127,21 @@ enum WhatsNew {
     /// Newest first.
     static let notes: [Notes] = [
         Notes(
+            version: "0.1.0", date: "24 October 2026",
+            headline: "Aura, in Chinese. The browser is the same one, under a name and an identity of its own, and every sentence of it now reads in 简体中文.",
+            new: [
+                "The whole interface in 简体中文, chosen by the Mac's own language order, beside the English it is written in.",
+                "An app of its own: com.catskys.aura, installed beside Search rather than over it, with its own settings, its own session and its own signed-in sites. Nothing of Search's is read or moved.",
+                "Updates come from Aura's own feed, and Help › Send Feedback opens an issue with the version already in it.",
+                "Signing in to OpenRouter is not offered, since its callback lives on a server Aura doesn't have; a key pasted into Settings › AI works the same, and the model on this Mac is untouched.",
+            ],
+            better: [
+                "Everything Search 1.0.5 did, which is everything below this line.",
+                "Sentence by sentence, the app says what it means in two languages now: a missing translation shows in English rather than as a blank.",
+            ],
+            fixed: []
+        ),
+        Notes(
             version: "1.0.5", date: "14 October 2026",
             headline: "Split View, pinned rows, notifications and screen recorders. What's new is off until you turn it on, and the card after the update offers it.",
             new: [

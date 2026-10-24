@@ -707,7 +707,7 @@ struct SettingsPanel: View {
                     Text("Aura")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Palette.ink)
-                    Text(Localized("by Office Commun · version \(Updater.version)"))
+                    Text(Localized("by CatSkys · version \(Updater.version)"))
                         .font(.system(size: 12))
                         .foregroundStyle(Palette.muted)
                 }

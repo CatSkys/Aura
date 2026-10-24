@@ -33,7 +33,7 @@ final class Updater: ObservableObject {
     /// else — and is the only way plain http is accepted, so a build that
     /// was not handed the variable only ever listens to the real site.
     /// AURA_FEED points a test run at a feed of its own. Only a test run:
-    /// the browser people use reads Office Commun's feed whatever the
+    /// the browser people use reads CatSkys's feed whatever the
     /// environment it was started with says.
     static let feed: URL = {
         if overridden, let set = ProcessInfo.processInfo.environment["AURA_FEED"], let url = URL(string: set) {
@@ -208,7 +208,7 @@ final class Updater: ObservableObject {
 
     /// The disk image, when the bundle can't be swapped where it is: fetched
     /// by Aura itself, never through a web page, and opened only if its
-    /// hash is the signed feed's and its signature is Office Commun's.
+    /// hash is the signed feed's and its signature is CatSkys's.
     @Published private(set) var fetchingDisk = false
     /// What a test run decided about a disk image, for the bench.
     static var diskVerdict = ""
@@ -301,7 +301,7 @@ final class Updater: ObservableObject {
     }
 
     private static func fetch() async -> Release? {
-        // The feed as Office Commun signed it: appcast.json.zip, next to the
+        // The feed as CatSkys signed it: appcast.json.zip, next to the
         // plain one older builds read, holding the same file with its code
         // signature (build.sh). Only what comes out of it, checked, is read:
         // a feed a server or a hijacked answer made up is no feed at all.

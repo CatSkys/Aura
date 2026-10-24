@@ -143,7 +143,7 @@
 "Sign out of everything" = "退出全部登录";
 "Cache" = "缓存";
 "Only what was fetched to draw pages" = "仅为绘制页面而抓取的内容";
-"by Office Commun · version {1}" = "Office Commun 出品 · 版本 {1}";
+"by CatSkys · version {1}" = "CatSkys 出品 · 版本 {1}";
 "Install updates on its own" = "自动安装更新";
 "Off, Aura still looks every hour and tells you, and installs only when you press Install" = "关闭后，Aura 仍每小时检查并告知你，只有按下「安装」才会安装";
 "Found something wrong?" = "发现问题？";
@@ -944,3 +944,13 @@
 "Paste your API key" = "粘贴你的 API 密钥";
 "Deletes them from this Mac's keychain" = "从这台 Mac 的钥匙串中删除";
 "Aura {1}" = "Aura {1}";
+
+/* —— Aura's own first version —— */
+"24 October 2026" = "2026 年 10 月 24 日";
+"Aura, in Chinese. The browser is the same one, under a name and an identity of its own, and every sentence of it now reads in 简体中文." = "Aura，中文版。还是同一个浏览器，但有了自己的名字和身份，而且每一句界面文字现在都能读成简体中文。";
+"The whole interface in 简体中文, chosen by the Mac's own language order, beside the English it is written in." = "整套界面都有简体中文，由 Mac 自己的语言顺序决定，并保留它原本写就的英文。";
+"An app of its own: com.catskys.aura, installed beside Search rather than over it, with its own settings, its own session and its own signed-in sites. Nothing of Search's is read or moved." = "一个独立的 App：com.catskys.aura，与 Search 并存而不是覆盖它，有自己的设置、自己的会话和自己的登录状态。Search 的任何东西都不会被读取或移动。";
+"Updates come from Aura's own feed, and Help › Send Feedback opens an issue with the version already in it." = "更新来自 Aura 自己的源；「帮助 › 发送反馈」会打开一个问题，版本号已经填好。";
+"Signing in to OpenRouter is not offered, since its callback lives on a server Aura doesn't have; a key pasted into Settings › AI works the same, and the model on this Mac is untouched." = "不提供用 OpenRouter 账号登录，因为它的回调在 Aura 没有的服务器上；在「设置 › AI」里粘贴密钥效果相同，这台 Mac 上的模型不受影响。";
+"Everything Search 1.0.5 did, which is everything below this line." = "Search 1.0.5 能做的一切，也就是这条线以下的全部内容。";
+"Sentence by sentence, the app says what it means in two languages now: a missing translation shows in English rather than as a blank." = "逐句来看，这个 App 现在能用两种语言表达：缺译的句子会显示英文，而不是留白。";
