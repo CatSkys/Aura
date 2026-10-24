@@ -5,6 +5,11 @@
 #   ./publish.sh "../aura-pages"
 #   AURA_ARCH=x86_64 ./publish.sh "../aura-pages"
 #
+# ../aura-pages is the gh-pages branch, checked out beside this one as a git
+# worktree (`git worktree add ../aura-pages gh-pages`). GitHub Pages serves it
+# at catskys.github.io/Aura, which is where Updater.feed looks; publishing is
+# copying the files in, committing and pushing that branch.
+#
 # ./build.sh release ship makes them first (release dmg makes them too, but
 # unnotarised — fine for trying, not for anyone else's Mac). The names never
 # change, so the site's links never have to. The Intel build (build/intel/)

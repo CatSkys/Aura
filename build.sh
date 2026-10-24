@@ -405,7 +405,7 @@ if [ "$STEP" = "dmg" ]; then write_appcast; exit 0; fi
 # is fetched by an app that already trusts it, and is left as hashed.
 [ -z "$IDENTITY" ] && { echo "can't ship without a Developer ID certificate" >&2; exit 1; }
 for FILE in "$DMG" "$ZIP"; do
-  xcrun notarytool submit "$FILE" --keychain-profile "${AURA_NOTARY_PROFILE:-search}" --wait
+  xcrun notarytool submit "$FILE" --keychain-profile "${AURA_NOTARY_PROFILE:-aura}" --wait
 done
 xcrun stapler staple "$DMG"
 write_appcast
