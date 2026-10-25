@@ -822,6 +822,9 @@ final class Bench {
             out["peekFrom"] = browser.peekFrom?.uuidString ?? ""
             // The peek's page by name, for a swipe aimed at it (see find).
             out["peekID"] = browser.peekTab.map(Bench.short) ?? ""
+            // How far the page on screen has leaned out from its edge under a
+            // sideways swipe with nowhere to go (see Elastic).
+            out["stretch"] = Double(browser.active?.stretch ?? 0)
             // The size the peek's page is drawn at (see Tab.applyRememberedZoom).
             out["peekZoom"] = Double(browser.peekTab?.built?.pageZoom ?? 0)
             out["fetching"] = ["showing": browser.fetches.showing, "fraction": browser.fetches.fraction ?? -1, "done": browser.fetches.done]
@@ -2183,13 +2186,24 @@ final class Bench {
                 cg.setIntegerValueField(.scrollWheelEventDeltaAxis2, value: Int64(x))
                 if let event = NSEvent(cgEvent: cg) { web.scrollWheel(with: event) }
             }
+            // "release" sends the end of a gesture a "hold" left open, and
+            // nothing else — the only way to look at what a pull in progress
+            // has done (a page leaning out from its edge, say).
+            if request["release"] as? Bool == true {
+                send(4, 0, 0, 0)
+                answer(["ok": true])
+                return
+            }
             send(128, 0, 0, 0)
             send(1, 0, 0, 0)
+            // "hold" keeps the fingers down: the phases up to the last change
+            // and no end.
+            let hold = request["hold"] as? Bool == true
             let each = ms / 1000 / Double(steps)
             for n in 1...steps {
                 DispatchQueue.main.asyncAfter(deadline: .now() + each * Double(n)) {
                     send(2, 0, dx / Double(steps), dy / Double(steps))
-                    if n == steps { send(4, 0, 0, 0) }
+                    if n == steps, !hold { send(4, 0, 0, 0) }
                 }
             }
             for n in 0..<glide {
@@ -2198,7 +2212,7 @@ final class Bench {
                     send(0, n == 0 ? 1 : (n == glide - 1 ? 3 : 2), dx / Double(steps) * k, dy / Double(steps) * k)
                 }
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + ms / 1000 + 0.016 * Double(glide) + 0.5) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + ms / 1000 + 0.016 * Double(glide) + (hold ? 0.15 : 0.5)) {
                 answer(["ok": true])
             }
 
