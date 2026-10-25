@@ -1,0 +1,35 @@
+{
+  "made": "2026-10-25",
+  "by": "Tools/filters.py",
+  "lists": [
+    {
+      "name": "EasyList",
+      "url": "https://easylist.to/easylist/easylist.txt",
+      "licence": "CC BY-SA 3.0",
+      "lines": 85986
+    },
+    {
+      "name": "EasyPrivacy",
+      "url": "https://easylist.to/easylist/easyprivacy.txt",
+      "licence": "CC BY-SA 3.0",
+      "lines": 56820
+    }
+  ],
+  "files": {
+    "network": {
+      "rules": 113421,
+      "bytes": 23739427,
+      "hash": "709cfc4456c17cdd0bf8e4c6405ce85f3ef3cfcf700294ffeb187eb5b4b89c10"
+    },
+    "extra": {
+      "rules": 691,
+      "bytes": 102096,
+      "hash": "1d65ef2c5aa53a803b8ade6c0f3c15913c62e85a32ebcd20069be41c408483ea"
+    },
+    "cosmetic": {
+      "rules": 10508,
+      "bytes": 1795945,
+      "hash": "774bf6317efc69e8d62b9d087d4deda507f312d6d729fff9c64145ebb3ba1858"
+    }
+  }
+}

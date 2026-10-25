@@ -127,8 +127,11 @@
 "Beside the other buttons, even with nothing downloading. Off, it shows only while a file comes in" = "即使没有下载也显示在其他按钮旁。关闭后仅在文件下载时显示";
 "Block ads and trackers" = "拦截广告与跟踪器";
 "Try again" = "重试";
-"Block on {1}" = "在 {1} 上拦截";
-"Turn off here if the site breaks — the page reloads" = "若该网站显示异常可在此关闭——页面会重新载入";
+"On {1}" = "在 {1} 上";
+"Everything blocks and hides. Requests only blocks, for a site the hiding broke. Off, the page is as the site wrote it. The page reloads" = "全部：既拦截请求，也隐藏它们留下的空位。仅请求：只拦请求，适合被隐藏弄坏版面的网站。关闭：页面就是网站写的样子。切换后页面会重新载入";
+"Everything" = "全部";
+"Requests" = "仅请求";
+"Off" = "关闭";
 "Prevent cross-site tracking" = "阻止跨站跟踪";
 "As in Safari. Off, sites you rarely open keep their sign-ins, and trackers inside other sites can follow you across them again, as in Chrome. Private tabs keep it on" = "与 Safari 相同。关闭后，你很少打开的网站会保留登录状态，其他网站中的跟踪器也能跨站跟踪你，如同 Chrome。无痕浏览中始终保持开启";
 "Camera, microphone, location and notifications" = "相机、麦克风、位置与通知";
@@ -765,7 +768,7 @@
 "Needs an Apple entitlement this build doesn't have — off keeps sites to the password" = "需要 Apple 的授权，此构建没有——关闭后网站只能用密码";
 "macOS was told no — System Settings › Privacy & Security › Passkeys Access for Web Browsers" = "macOS 被拒绝了——系统设置 › 隐私与安全性 › 网页浏览器的通行密钥访问";
 "Touch ID or an iCloud passkey, on sites that offer one" = "在提供通行密钥的网站上，用 Touch ID 或 iCloud 通行密钥";
-"Third parties whose only job is to watch" = "专门负责监视的第三方";
+"EasyList and EasyPrivacy, kept by other people: the requests not to make, and the boxes they leave behind hidden" = "EasyList 与 EasyPrivacy，由他人维护：不发出这些请求，它们留下的空位也一并隐藏";
 "Nothing is being blocked until this clears — try again, or restart Aura" = "在它清除之前不会拦截任何内容——请重试，或重新启动 Aura";
 "Address" = "地址栏";
 "Switch tab" = "切换标签页";

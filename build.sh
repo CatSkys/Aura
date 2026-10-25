@@ -94,6 +94,15 @@ cp Aura.sdef "$APP/Contents/Resources/"
 if compgen -G "Resources/*.lproj" > /dev/null; then
   cp -R Resources/*.lproj "$APP/Contents/Resources/"
 fi
+# The block list (Shield.swift): filter lists converted at build time by
+# Tools/filters.py. Without it there is no ad blocking, so a missing folder is
+# worth failing on rather than shipping a browser that looks protected.
+if [ ! -f "Resources/Shield/network.json" ]; then
+  echo "Resources/Shield is empty — run ./Tools/filters.py --fetch" >&2
+  exit 1
+fi
+mkdir -p "$APP/Contents/Resources/Shield"
+cp Resources/Shield/*.json "$APP/Contents/Resources/Shield/"
 
 # Symbols stay out of the app. The linker leaves every function's name and a
 # map back to the source in the binary — 15,000 entries, more than half of

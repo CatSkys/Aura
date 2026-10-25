@@ -651,7 +651,7 @@ struct SettingsPanel: View {
     private var privacy: some View {
         VStack(alignment: .leading, spacing: 18) {
             Card {
-                Line("Block ads and trackers", shield.trouble ?? "Third parties whose only job is to watch") {
+                Line("Block ads and trackers", shield.trouble ?? "EasyList and EasyPrivacy, kept by other people: the requests not to make, and the boxes they leave behind hidden") {
                     Switch(on: $prefs.shielded)
                 }
                 if let trouble = shield.trouble {
@@ -662,14 +662,15 @@ struct SettingsPanel: View {
                 }
                 if let host = browser.hereHost, prefs.shielded, shield.trouble == nil {
                     Rule()
-                    Line(Localized("Block on \(host)"), "Turn off here if the site breaks — the page reloads") {
-                        Switch(on: Binding(
-                            get: { !Shield.shared.isPaused(on: host) },
-                            set: { on in
-                                Shield.shared.pause(host, !on)
-                                browser.reload()
-                            }
-                        ))
+                    Line(Localized("On \(host)"), "Everything blocks and hides. Requests only blocks, for a site the hiding broke. Off, the page is as the site wrote it. The page reloads") {
+                        Segmented(options: Shield.Level.allCases.map { ($0, $0.title) },
+                                  selection: Binding(
+                                    get: { shield.level(on: host) },
+                                    set: { level in
+                                        shield.set(level, on: host)
+                                        browser.reload()
+                                    }
+                                  ))
                     }
                 }
                 Rule()

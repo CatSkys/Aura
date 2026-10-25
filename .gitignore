@@ -21,3 +21,7 @@ __pycache__/
 # reverse-engineering scratch folder with its 300 MB of slices.
 aura-logo/
 arc-rea/
+
+# The filter lists Tools/filters.py downloads. What it makes of them is
+# committed in Resources/Shield; the lists themselves are fetched again.
+.filters-cache/
