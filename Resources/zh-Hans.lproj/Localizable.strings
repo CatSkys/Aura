@@ -1353,7 +1353,7 @@
 /* —— 枚举标题、图片选项与品牌名 —— */
 "As a card" = "作为卡片";
 "Edge to edge" = "铺到边缘";
-"Set up" = "设置";
+"Already set up" = "已按 Arc 方式设置";
 "Needs an Apple entitlement this build doesn't have" = "需要这个构建没有的 Apple 权限";
 "Aura's window" = "Aura 的窗口";
 "Picture in picture" = "画中画";
