@@ -192,7 +192,7 @@
 "Summarize Page" = "总结页面";
 "Ask About This Page…" = "询问关于此页面的问题…";
 "Hide Elements…" = "隐藏元素…";
-"Hide This Element" = "隐藏这个元素";
+"Hide This Element" = "隐藏元素";
 "Hidden on This Site…" = "在此网站上隐藏的内容…";
 "Zoom In" = "放大";
 "Zoom Out" = "缩小";
@@ -1280,6 +1280,8 @@
 "Always there: View › Side Panel, or right-click a tab" = "一直在：「显示 › 侧边面板」，或右键标签页";
 "Translate pages on this Mac" = "在这台 Mac 上翻译页面";
 "Always there: right-click a page › Translate Page" = "一直在：右键页面 ›「翻译页面」";
+"Translate Page to {1}" = "翻译页面为 {1}";
+"Show Original" = "显示原文";
 "Always there: Keep This Site Awake, on the site's card" = "一直在：网站卡片上的「让这个网站保持唤醒」";
 "Always there: type red, then Tab, and search Reddit" = "一直在：输入 red，按 Tab，就在 Reddit 里搜";
 "Always there with Spaces: right-click a pin › Keep in Every Space" = "开了空间就一直在：右键固定项 ›「每个空间都保留」";

@@ -2131,7 +2131,7 @@ final class PageView: WKWebView {
     func translateItem() -> NSMenuItem? {
         guard PageTranslator.enabled, let on = translating?() else { return nil }
         let language = PageTranslator.name(PageTranslator.code(PageTranslator.reader))
-        let item = NSMenuItem(title: on ? "Show Original" : "Translate Page to \(language)", action: #selector(translatePage(_:)), keyEquivalent: "")
+        let item = NSMenuItem(title: on ? Localized("Show Original") : Localized("Translate Page to \(language)"), action: #selector(translatePage(_:)), keyEquivalent: "")
         item.target = self
         return item
     }
