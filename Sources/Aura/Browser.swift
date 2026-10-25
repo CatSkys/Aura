@@ -3639,13 +3639,26 @@ final class Browser: NSObject, ObservableObject {
         tabs.remove(at: index)
         removeEmptyGroup(tab.groupID)
         if activeID == tab.id {
-            // The neighbour on the right, or the last one if there is no
-            // right — through select(), same as everywhere else you land on
-            // a tab, so one that was never built yet actually wakes up
-            // instead of sitting there blank until a manual reload.
-            select(partner ?? tabs[min(index, tabs.count - 1)])
+            // A tab that is already open comes before the neighbour: landing
+            // on a sleeping one wakes it, and waking fetches a page nobody
+            // asked for. Through select(), same as everywhere else you land
+            // on a tab, so a neighbour that was never built yet actually
+            // wakes up instead of sitting there blank until a manual reload.
+            select(partner ?? Browser.awake(nearest: index, in: tabs) ?? tabs[min(index, tabs.count - 1)])
         }
         rememberSession()
+    }
+
+    /// The tab nearest this slot in `row` — the row with the closed one
+    /// already out of it — that is holding its page, the one on the right
+    /// first when two are as near. Nil when everything beside is asleep,
+    /// which leaves ⌘W its neighbour to wake.
+    static func awake(nearest index: Int, in row: [Tab]) -> Tab? {
+        func gap(_ at: Int) -> Int { abs(at - index) }
+        return row.indices
+            .filter { !row[$0].asleep }
+            .min { gap($0) == gap($1) ? $0 > $1 : gap($0) < gap($1) }
+            .map { row[$0] }
     }
 
     /// Everything but this one. Pinned tabs are put down rather than removed —
