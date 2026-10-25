@@ -488,6 +488,18 @@ struct ContentView: View {
             // side by side are a card each (see PaneStage).
             stage
                 .modifier(CardEdge(on: cards && !browser.prefs.splitView))
+                // The bar Arc puts over a page that is coming: in the room the
+                // window keeps over the page, riding with the page's own edges
+                // (see Beam.swift).
+                .overlay(alignment: .top) {
+                    if fullscreenTab == nil, let tab = browser.active {
+                        LoadingBar(tab: tab)
+                            // In the gap a card leaves, at the page's top
+                            // edge: a pair of pages has no gap, and keeps the
+                            // bar on its edge.
+                            .offset(y: cards && !browser.prefs.splitView ? -(Beam.height + 2) : 0)
+                    }
+                }
                 .padding(.leading, sideOnRight ? farGap + panelRoom : 0)
                 .padding(.trailing, sideOnRight ? 0 : farGap + panelRoom)
                 .padding(.bottom, farGap)
