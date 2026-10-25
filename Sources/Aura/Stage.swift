@@ -127,48 +127,61 @@ struct Swiping: View {
 
 /// The disc a sideways swipe brings in from the edge.
 ///
-/// White, with a hairline, like everything else that floats over a page. A
-/// line of ink winds round it as the fingers go and closes at the point where
-/// letting go would mean it. Turn back and it unwinds. Let go while it is
-/// closed and the disc leaves with the page.
+/// Arc's, and measured off it: one dark disc with a white arrow on it, no
+/// ring, no border and no hairline — the whole disc is the arrow's ground,
+/// and it is big enough to be the thing you are looking at rather than a hint
+/// at the edge of the page. 128 across, its glyph a third of that, bold
+/// enough to be read from across the room, black at 0.82 so the page behind
+/// shows as a whisper of its own colour through it (measured: (1,4,19) over
+/// a dark blue page), and sitting on the leading edge, which cuts a sliver
+/// off it as it did in Arc.
+///
+/// What the disc is bound to is the action, not the edge: the way the page
+/// is going, or a cross where letting go would close rather than go back.
 ///
 /// It follows the fingers directly, with no spring between: a spring reads
-/// as lag on a quick flick, and a quick flick is how most people swipe.
+/// as lag on a quick flick, and a quick flick is how most people swipe. What
+/// it does instead of a ring is grow: small when it arrives, its own size by
+/// the point where letting go would mean it, so a pull that stops short is
+/// visibly short.
 private struct Disc: View {
     let pull: Pull
 
+    /// Measured off Arc's: 256 pixels of a Retina picture, so 128 points
+    /// across, in a window 1180 wide.
+    private static let width: CGFloat = 128
+    /// A third of it, as the arrow there is: 85 pixels of the 256.
+    private static let glyph: CGFloat = 42
+    /// Where it sits off the page's edge: the edge cut a sliver of Arc's, some
+    /// eight points of it.
+    private static let inset: CGFloat = 8
+    /// How far it is pressed against that edge while the fingers go.
+    private static let press: CGFloat = 14
+
     var body: some View {
         // The fingers can travel as far as they like; the disc stops short.
-        let reach = 150 * (1 - exp(-pull.travel / 110))
-        let grown = min(1, pull.travel / 110)
-        let scale: CGFloat = pull.going ? 1.08 : 0.86 + 0.14 * grown
+        let grown = min(1, pull.travel / PageView.arm)
+        // Comes in small and reaches its own size exactly where letting go
+        // would mean it: a nudge shows a small one, a pull that stops short a
+        // big one that is visibly short of full.
+        let scale: CGFloat = pull.going ? 1.05 : 0.55 + 0.45 * grown
 
         ZStack {
             Circle()
-                .fill(Palette.ground)
-            Circle()
-                .strokeBorder(Palette.hairline, lineWidth: 1)
-            // How far there is to go, wound round the edge, closed when it
-            // is armed.
-            Circle()
-                .trim(from: 0, to: grown)
-                .stroke(Palette.ink, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-                .padding(0.75)
-            // Back from a first page that closes — a small window, or a tab
-            // — closes, and says so.
+                .fill(Palette.swipeDisc)
+            // Back from a first page that closes — a small window, a peek or
+            // a tab — closes, and says so; otherwise the way it is going.
             Image(systemName: pull.leaves ? "xmark" : pull.back ? "arrow.left" : "arrow.right")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Palette.ink.opacity(0.4 + 0.6 * grown))
+                .font(.system(size: Self.glyph, weight: .bold))
+                .foregroundStyle(Palette.swipeGlyph)
         }
-        .frame(width: 52, height: 52)
-        .shadow(color: .black.opacity(0.12), radius: 16, y: 6)
+        .frame(width: Self.width, height: Self.width)
+        .shadow(color: .black.opacity(0.28), radius: 26, y: 10)
         .scaleEffect(scale)
         .opacity(pull.going ? 0 : 1)
-        // Whole from the first point, a little way in from the edge, drawn
-        // further in as the fingers go — and a step further on its way out
-        // with the page.
-        .offset(x: (pull.back ? 1 : -1) * (10 + reach * 0.2 + (pull.going ? 12 : 0)))
+        // Against the edge from the start, pressed further into it as the
+        // fingers go, and a step further on its way out with the page.
+        .offset(x: (pull.back ? 1 : -1) * (Self.inset + Self.press * grown + (pull.going ? 10 : 0)))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: pull.back ? .leading : .trailing)
         .allowsHitTesting(false)
         .animation(.easeOut(duration: 0.22), value: pull.going)
