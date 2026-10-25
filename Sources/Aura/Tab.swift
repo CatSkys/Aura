@@ -910,8 +910,8 @@ final class Tab: ObservableObject, Identifiable {
         // The list's own scripts, in the page's world and before its first
         // script: what answers a site's check for a blocker (Scriptlets.swift).
         let going = Curtain.host(of: url ?? address)
-        if Shield.shared.carriesScriptlets(for: going), let scriptlets = Scriptlets.watch {
-            controller.addUserScript(scriptlets)
+        if Shield.shared.carriesScriptlets(for: going), let watch = Scriptlets.watch(for: going) {
+            controller.addUserScript(watch)
         }
         // The store's "Add to Aura" only where Aura can add extensions.
         // Before macOS 15.4 it was drawn all the same, and pressing it did

@@ -343,7 +343,7 @@
                     }));
                 }
             } catch (error) { }
-            return real.apply(this, arguments);
+            return real.apply(window, arguments);
         };
     };
 
@@ -377,6 +377,107 @@
             }
             return send.apply(this, arguments);
         };
+    };
+
+    // A property that throws the moment it is read, or the moment it is
+    // written: the script doing the reaching is the one taken down, because
+    // the throw happens inside it.
+    scripts['abort-on-property-read'] = function (args) {
+        const path = args[0];
+        if (!path) { return; }
+        const apply = function () {
+            const where = place(path, true);
+            if (!where) { return; }
+            replace(where, function () { throw new ReferenceError(''); });
+        };
+        apply();
+        again(apply);
+    };
+
+    scripts['abort-on-property-write'] = function (args) {
+        const path = args[0];
+        if (!path) { return; }
+        const where = place(path, true);
+        if (!where) { return; }
+        const saved = read(where);
+        replace(where, function () { return saved; }, function () { throw new ReferenceError(''); });
+    };
+
+    // A timer the list knows by the text it would run: it is never armed. The
+    // detector that waits a second and then looks again is the usual one.
+    function defuseTimer(name) {
+        return function (args) {
+            const needle = args[0];
+            const only = args[1];
+            const real = window[name];
+            if (typeof real !== 'function') { return; }
+            window[name] = function (handler, delay) {
+                try {
+                    const source = typeof handler === 'function' ? String(handler) : String(handler || '');
+                    const wanted = needle === undefined || needle === '' || says(source, needle);
+                    const timed = only === undefined || only === '' || Number(only) === Number(delay);
+                    if (wanted && timed) { return 0; }
+                } catch (error) { }
+                return real.apply(window, arguments);
+            };
+        };
+    }
+
+    scripts['no-setTimeout-if'] = defuseTimer('setTimeout');
+    scripts['no-setInterval-if'] = defuseTimer('setInterval');
+    scripts['setInterval-defuser'] = defuseTimer('setInterval');
+    scripts['setTimeout-defuser'] = defuseTimer('setTimeout');
+
+    // Text handed to `eval` that the list knows: not run.
+    scripts['no-eval-if'] = function (args) {
+        const needle = args[0];
+        const real = window.eval;
+        if (typeof real !== 'function') { return; }
+        window.eval = function (text) {
+            try {
+                if (says(String(text), needle)) { return undefined; }
+            } catch (error) { }
+            return real.apply(window, arguments);
+        };
+    };
+
+    // A timer that waits a long time before looking again, and the wait is the
+    // point: armed with a short one instead, so the page gets past it sooner
+    // than the detection does.
+    function boostTimer(name) {
+        return function (args) {
+            const after = Number(args[0]) || 1000;
+            const before = Number(args[1]) || 50;
+            const real = window[name];
+            if (typeof real !== 'function') { return; }
+            window[name] = function (handler, delay) {
+                if (Number(delay) === after && Number.isFinite(before) && before >= 0) {
+                    delay = before;
+                }
+                return real.apply(window, arguments);
+            };
+        };
+    }
+
+    scripts['nano-setTimeout-booster'] = boostTimer('setTimeout');
+    scripts['nano-setInterval-booster'] = boostTimer('setInterval');
+
+    // The same as a stored item, for the store a page keeps only while opened.
+    scripts['set-session-storage-item'] = function (args) {
+        const key = args[0];
+        if (!key) { return; }
+        const wanted = args[1];
+        const apply = function () {
+            try {
+                if (wanted === '$remove$') {
+                    sessionStorage.removeItem(key);
+                } else {
+                    sessionStorage.setItem(key, wanted === undefined ? '' : String(wanted));
+                }
+            } catch (error) { }
+        };
+        apply();
+        again(apply);
     };
 
     // MARK: - running what this document asked for

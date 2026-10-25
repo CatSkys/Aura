@@ -13,30 +13,62 @@
       "url": "https://easylist.to/easylist/easyprivacy.txt",
       "licence": "CC BY-SA 3.0",
       "lines": 56820
+    },
+    {
+      "name": "uBlock filters",
+      "url": "https://ublockorigin.github.io/uAssets/filters/filters.min.txt",
+      "licence": "GPL-3.0",
+      "lines": 26185
+    },
+    {
+      "name": "uBlock quick fixes",
+      "url": "https://ublockorigin.github.io/uAssets/filters/quick-fixes.min.txt",
+      "licence": "GPL-3.0",
+      "lines": 588
+    },
+    {
+      "name": "uBlock unbreak",
+      "url": "https://ublockorigin.github.io/uAssets/filters/unbreak.min.txt",
+      "licence": "GPL-3.0",
+      "lines": 2882
+    },
+    {
+      "name": "uBlock privacy",
+      "url": "https://ublockorigin.github.io/uAssets/filters/privacy.min.txt",
+      "licence": "GPL-3.0",
+      "lines": 2195
+    },
+    {
+      "name": "uBlock Lite extras",
+      "url": "https://ublockorigin.github.io/uAssets/filters/ubol-filters.txt",
+      "licence": "GPL-3.0",
+      "lines": 337
     }
   ],
   "files": {
     "network": {
-      "rules": 113421,
-      "size": 23739427,
-      "bytes": 1077715,
-      "hash": "07cf46dfccd62fdfdd03c35ab35e2ca569a5c863f783fcb28f357857d7cbb6d2"
+      "rules": 118959,
+      "size": 24895835,
+      "bytes": 1196379,
+      "hash": "1644d51e7860eb67990a5b6846ba41032bc1824f3ad0a2ac2600b5fd45eb7981"
     },
     "extra": {
-      "rules": 691,
-      "size": 102096,
-      "bytes": 6696,
-      "hash": "e857b906918a13a529799a4b4654fe7c80d161d7672bb022a03742be68f36893"
+      "rules": 818,
+      "size": 149068,
+      "bytes": 10769,
+      "hash": "625e64ee51e136a02f9511e314f73418bcadb2620fdb45bb1aa1c04191039f8d"
     },
     "cosmetic": {
-      "rules": 10478,
-      "size": 1783672,
-      "bytes": 265864,
-      "hash": "bd9c9cd48d2fa20a7eeeed7817b83b21b37228c1705befc434187558a0184752"
+      "rules": 14877,
+      "size": 2536982,
+      "bytes": 383733,
+      "hash": "c3fbcfe92ed3ba47c38a8f2474d2a6e60eea15d700903a1724b42976450b6d65"
     },
     "scriptlets": {
-      "rules": 29,
-      "bytes": 9684
+      "rules": 9047,
+      "size": 1173742,
+      "bytes": 257977,
+      "hash": "a15347ae19ce400b9b118d62bc897c6e0ce41db4e0cb62a2e574b72f57772378"
     }
   }
 }

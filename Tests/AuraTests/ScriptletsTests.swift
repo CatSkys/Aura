@@ -16,6 +16,29 @@ final class ScriptletsTests: XCTestCase {
         .deletingLastPathComponent()
         .appendingPathComponent("Resources/Shield")
 
+    /// The rules the lists asked for, as the browser reads them.
+    private func shipped() throws -> String {
+        let packed = try Data(contentsOf: Self.root.appendingPathComponent("scriptlets.json.z"))
+        return try XCTUnwrap(Shield.unpack(packed))
+    }
+
+    /// A page is given the rules that name it: a few, not five thousand.
+    func testAPageIsGivenTheRulesThatNameIt() throws {
+        let rules = try XCTUnwrap(Scriptlets.parse(shipped()))
+        let runtime = "/* the runtime */"
+        let page = try XCTUnwrap(Scriptlets.source(rules, runtime, "usatoday.com"),
+                                 "usatoday.com is checked by Admiral and has rules")
+        // Five thousand rules name twenty thousand sites; a page is given the
+        // few that name it, not the file.
+        XCTAssertLessThan(page.count, try shipped().count / 20)
+        XCTAssertTrue(page.hasSuffix(runtime))
+        XCTAssertNil(Scriptlets.source(rules, runtime, "example.invalid"))
+
+        // A list's `*` is the end of a host it did not know.
+        let tickets = try XCTUnwrap(Scriptlets.source(rules, runtime, "ticketmaster.co.uk"))
+        XCTAssertTrue(tickets.contains("globalPrivacyControl"))
+    }
+
     /// A page to run in: the host it is on, and nothing of a real browser.
     private func page(host: String, rules: String, setup: String = "") throws -> JSContext {
         let runtime = try String(
@@ -118,13 +141,53 @@ final class ScriptletsTests: XCTestCase {
         XCTAssertEqual(context.evaluateScript("localStorage.getItem('browser-ids')")?.toString(), "true")
     }
 
+    /// Reading a property the list knows is what a detector does; the throw
+    /// is inside the detector's own script, so the detector stops there.
+    func testAPropertyThatThrowsWhenItIsRead() throws {
+        let context = try page(
+            host: "example.com",
+            rules: try rules([(["example.com"], ["abort-on-property-read", "detector"])]))
+        XCTAssertEqual(context.evaluateScript("try { detector.tag; 0 } catch (e) { 1 }")?.toInt32(), 1)
+    }
+
+    /// Written is the moment a page sets its own flag; the throw is there.
+    func testAPropertyThatThrowsWhenItIsWritten() throws {
+        let context = try page(
+            host: "example.com",
+            rules: try rules([(["example.com"], ["abort-on-property-write", "detector"])]))
+        XCTAssertEqual(context.evaluateScript("try { detector.armed = 1; 0 } catch (e) { 1 }")?.toInt32(), 1)
+    }
+
+    /// The timer a detection waits on never gets armed, and the ones beside it
+    /// do: it is the text the page would have run that says which.
+    func testATimerTheListNamesIsNeverArmed() throws {
+        let context = try page(
+            host: "example.com",
+            rules: try rules([(["example.com"], ["no-setTimeout-if", "adblock"])]),
+            setup: """
+            var timers = [];
+            // WebKit's timers throw when the receiver is not the window, and
+            // the patch that stands in for them has to keep that true.
+            setTimeout = function (handler, delay) {
+                if (this !== window) { throw new TypeError('Illegal invocation'); }
+                timers.push(String(handler));
+                return timers.length;
+            };
+            """)
+        context.evaluateScript("""
+        setTimeout(function () { adblockCheck(); }, 1000);
+        setTimeout(function () { ordinaryWork(); }, 1000);
+        """)
+        XCTAssertEqual(context.evaluateScript("timers.length")?.toInt32(), 1)
+        XCTAssertEqual(context.evaluateScript("timers[0]")?.toString().contains("ordinaryWork"), true)
+    }
+
     /// What the shipped file asks for has to be something the runtime has: a
     /// rule naming a scriptlet that is not here would be injected and do
     /// nothing at all, quietly, forever.
     func testTheShippedRulesOnlyAskForScriptsThatExist() throws {
-        let data = try Data(contentsOf: Self.root.appendingPathComponent("scriptlets.json"))
         let entries = try XCTUnwrap(
-            try JSONSerialization.jsonObject(with: data) as? [[String: Any]])
+            try JSONSerialization.jsonObject(with: Data(shipped().utf8)) as? [[String: Any]])
         XCTAssertFalse(entries.isEmpty)
 
         let runtime = try String(

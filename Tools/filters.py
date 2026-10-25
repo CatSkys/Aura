@@ -45,11 +45,24 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "Resources" / "Shield"
 CACHE = ROOT / ".filters-cache"
 
-# The two lists that between them are the ad blocking everyone compares to.
-# Both are CC BY-SA 3.0; the credit they ask for is kept in sources.json.
+# The lists the blocking everyone compares to is made of. EasyList and
+# EasyPrivacy are the adverts and the trackers; uBlock Origin's own are what
+# answers the sites that fight back — the checks, the site-specific fixes, and
+# the exceptions that keep a page a rule broke readable. Each licence is
+# recorded in sources.json and in LICENSES.md beside it.
 LISTS = (
     ("EasyList", "https://easylist.to/easylist/easylist.txt", "CC BY-SA 3.0"),
     ("EasyPrivacy", "https://easylist.to/easylist/easyprivacy.txt", "CC BY-SA 3.0"),
+    ("uBlock filters",
+     "https://ublockorigin.github.io/uAssets/filters/filters.min.txt", "GPL-3.0"),
+    ("uBlock quick fixes",
+     "https://ublockorigin.github.io/uAssets/filters/quick-fixes.min.txt", "GPL-3.0"),
+    ("uBlock unbreak",
+     "https://ublockorigin.github.io/uAssets/filters/unbreak.min.txt", "GPL-3.0"),
+    ("uBlock privacy",
+     "https://ublockorigin.github.io/uAssets/filters/privacy.min.txt", "GPL-3.0"),
+    ("uBlock Lite extras",
+     "https://ublockorigin.github.io/uAssets/filters/ubol-filters.txt", "GPL-3.0"),
 )
 
 # What a rule blocks when it does not say. `document` is left out on purpose:
@@ -86,6 +99,7 @@ TYPES = {
 # everything", which is worse than not blocking at all.
 UNSUPPORTED = (
     "csp", "permissions", "removeparam", "queryprune", "rewrite", "urltransform",
+    "uritransform",
     "replace", "redirect", "redirect-rule", "empty", "mp4", "inline-script",
     "inline-font", "genericblock", "popup", "popunder", "websocket", "webrtc",
     "method", "to", "from", "all", "strict1p", "strict3p", "header", "denyallow",
@@ -116,20 +130,46 @@ PROCEDURAL = (
 ALIASES = {
     "set": "set-constant",
     "acs": "abort-current-script",
+    "acis": "abort-current-script",
     "aost": "abort-on-stack-trace",
+    "aopr": "abort-on-property-read",
+    "aopw": "abort-on-property-write",
     "aeld": "addEventListener-defuser",
     "rmnt": "remove-node-text",
+    "nowoif": "no-setTimeout-if",
     "nostif": "no-setTimeout-if",
-    "nano-sib": "nano-something",
+    "nosiif": "no-setInterval-if",
+    "noeval-if": "no-eval-if",
+    "noeval": "no-eval-if",
+    "nano-stb": "nano-setTimeout-booster",
+    "nano-sib": "nano-setInterval-booster",
+    "remove-cookie": "cookie-remover",
 }
 
 # What the runtime carries. A rule naming a scriptlet that is not here is left
 # out and counted, rather than sent to a page to do nothing at all.
 SCRIPTLETS = (
     "set-constant", "abort-current-script", "abort-on-stack-trace",
+    "abort-on-property-read", "abort-on-property-write",
     "addEventListener-defuser", "remove-node-text", "set-local-storage-item",
-    "set-cookie", "cookie-remover", "no-xhr-if", "no-fetch-if",
+    "set-session-storage-item", "set-cookie", "cookie-remover",
+    "no-xhr-if", "no-fetch-if", "no-setTimeout-if", "no-setInterval-if",
+    "setTimeout-defuser", "setInterval-defuser", "no-eval-if",
+    "nano-setTimeout-booster", "nano-setInterval-booster",
 )
+
+# What an option looks like where it has leaked into the URL part: a list whose
+# option value holds a comma (`ipaddress=/…{1,2}…/`) cannot be split, and the
+# leftover would be matched as a URL. A filter that still has one is dropped,
+# because a filter that reaches WebKit with it takes the whole file down.
+STRAY_OPTION = re.compile(
+    r"\\?\$(?:script|image|stylesheet|css|font|media|object|xmlhttprequest|xhr|"
+    r"ping|beacon|other|document|doc|subdocument|frame|popup|popunder|websocket|"
+    r"webrtc|third-party|3p|1p|first-party|match-case|important|badfilter|"
+    r"elemhide|generichide|specifichide|genericblock|domain=|denyallow=|header=|"
+    r"method=|to=|from=|ipaddress=|rewrite=|replace=|removeparam=|queryprune=|"
+    r"urlskip=|urltransform=|uritransform=|csp=|permissions=|redirect|inline-script|"
+    r"inline-font|empty|mp4|jsonprune|xmlprune|hls|application|network\b)")
 
 # How many selectors go into one rule. A selector WebKit refuses takes its
 # rule with it, so a rule is small enough to be worth losing.
@@ -206,16 +246,63 @@ def as_regex(pattern: str) -> str:
     return "".join(out)
 
 
-def split_options(text: str):
-    """A filter split into what matches a URL and the options after it. The
-    last `$` starts the options; a `$` in the URL part is the URL's own
-    character and stays put."""
-    if "$" not in text:
-        return text, ""
-    body, options = text.rsplit("$", 1)
-    if not options or not re.fullmatch(r"[a-z0-9~=,.|*_\-]+", options):
-        return text, ""
-    return body, options
+def looks_like_options(text: str) -> bool:
+    """Whether what follows a `$` is the list of options, rather than a dollar
+    sign the URL happens to contain. An option is a word, or a word and a value
+    — and the value can hold anything but a comma, which is what makes
+    `$header=server:/^openresty\/` an option and not a URL."""
+    for part in text.split(","):
+        if not part or not re.fullmatch(r"~?[A-Za-z0-9_\-]+(=[^,]*)?", part):
+            return False
+    return True
+
+
+def split_filter(text: str):
+    """A filter split into what matches a URL, the options after it, and
+    whether it was written as a regular expression.
+
+    Written between slashes, the slashes bound the expression and are not part
+    of what matches — `/banner$/` is a `banner` that ends a URL, and the `$` in
+    it is not where options begin. Otherwise the last `$` starts the options,
+    and a `$` in the URL part is the URL's own character and stays put.
+    """
+    if text.startswith("$"):
+        # Options with no URL to match: nothing to say in a content blocker.
+        return "", text[1:], False
+    if len(text) > 2 and text.startswith("/"):
+        # The slash that closes the expression is the last one. Options are
+        # what follows it — `/re/$script` — or, as uBlock's own lists write
+        # them, what sits between a `$` inside it and the closing slash, so
+        # that a `$header=…/:` value keeps the slashes it is made of.
+        closing = text.rfind("/")
+        if closing > 1:
+            after = text[closing + 1:]
+            if not after:
+                boundary = text.rfind("$", 1, closing)
+                if boundary > 1:
+                    tail = text[boundary + 1:closing]
+                    if looks_like_options(tail):
+                        return text[1:boundary], tail, True
+                return text[1:closing], "", True
+            if after.startswith("$") and looks_like_options(after[1:]):
+                return text[1:closing], after[1:], True
+    if "$" in text:
+        # An option's own value can hold a `$` — `ipaddress=/^…$/` — so the
+        # boundary is the last `$` whose tail reads as options, not the last
+        # `$` in the line.
+        position = len(text)
+        while position > 1:
+            index = text.rfind("$", 0, position)
+            if index <= 0:
+                break
+            position = index
+            if text[index - 1] == "\\":
+                continue
+            options = text[index + 1:]
+            if options and looks_like_options(options):
+                return text[:index], options, False
+        return text, "", False
+    return text, "", False
 
 
 def site_of(pattern: str):
@@ -226,13 +313,6 @@ def site_of(pattern: str):
         return None
     host = re.split(r"[\^/|*$]", pattern[2:], 1)[0]
     return host if re.fullmatch(r"[a-z0-9][a-z0-9.\-]*\.[a-z]{2,}", host) else None
-
-
-def is_expression(body: str) -> bool:
-    """Whether a filter is written as a regular expression. A filter list says
-    so by putting the whole thing between slashes; `/ad/*` is a path that
-    starts that way, not an expression."""
-    return len(body) > 2 and body.startswith("/") and body.endswith("/")
 
 
 def scriptlet_args(text: str):
@@ -281,7 +361,7 @@ def translate(text: str) -> dict:
     """One line of a filter list, as the trigger half of a rule. Raises
     Refused when the line asks for something a content blocker has no way to
     do."""
-    body, options = split_options(text)
+    body, options, expression = split_filter(text)
     parts = [part for part in options.split(",") if part]
 
     kinds, negated = set(), set()
@@ -305,6 +385,10 @@ def translate(text: str) -> dict:
         elif part.startswith("domain="):
             for entry in part[len("domain="):].split("|"):
                 entry = entry.strip().lower()
+                if entry.lstrip("~").startswith("/"):
+                    # A site can be named by a pattern here too — `domain=/^a
+                    # \.b\.c$/` — and a pattern is not a domain condition.
+                    raise Refused("a site named by a pattern")
                 if entry.startswith("~"):
                     not_for.append(entry[1:])
                 elif entry:
@@ -319,13 +403,15 @@ def translate(text: str) -> dict:
     if len(body) < 2:
         raise Refused("nothing to match")
 
-    if is_expression(body):
-        expression = body[1:-1]
-        if REFUSED_REGEX.search(expression):
+    if expression:
+        if REFUSED_REGEX.search(body):
             raise Refused("a regular expression WebKit may refuse")
-        trigger = {"url-filter": expression}
+        trigger = {"url-filter": body}
     else:
         trigger = {"url-filter": as_regex(body)}
+    if STRAY_OPTION.search(trigger["url-filter"]):
+        raise Refused("options the list wrote into the URL")
+    trigger["__expression"] = expression
 
     if negated:
         if "document" in negated:
@@ -355,6 +441,13 @@ def translate(text: str) -> dict:
     elif not_for:
         trigger["unless-domain"] = ["*" + d for d in not_for]
     return trigger
+
+
+def expression_of(trigger: dict) -> bool:
+    """Whether a trigger came from a filter written as a regular expression.
+    Those rules are kept apart: a regular expression WebKit refuses takes the
+    whole file it is in down with it."""
+    return trigger.pop("__expression", False)
 
 
 # MARK: - the files WebKit is given
@@ -480,12 +573,12 @@ def main(argv) -> int:
             if "$badfilter" not in line:
                 continue
             text = line[2:] if line.startswith("@@") else line
-            bare, opts = split_options(text)
+            bare, opts, _ = split_filter(text)
             taken_back.add((line.startswith("@@"), bare,
                             ",".join(p for p in opts.split(",") if p != "badfilter")))
 
     def is_taken_back(exceptioned: bool, text: str) -> bool:
-        bare, opts = split_options(text)
+        bare, opts, _ = split_filter(text)
         return (exceptioned, bare,
                 ",".join(p for p in opts.split(",") if p != "badfilter")) in taken_back
 
@@ -509,6 +602,11 @@ def main(argv) -> int:
                 selector = selector.strip()
                 if not selectable(selector) or selector.startswith("+js("):
                     continue
+                if "/" in domains:
+                    # A site named by a regular expression is not a site: what
+                    # the page is called cannot be said in a domain condition.
+                    cosmetic_file.refuse("a site named by a pattern")
+                    continue
                 if not domains.strip():
                     # "Never hide this anywhere": the selector is taken out of
                     # the everywhere rule rather than argued with.
@@ -524,6 +622,9 @@ def main(argv) -> int:
             domains, _, selector = line.partition("##")
             selector = selector.strip()
             if not selectable(selector) or selector.startswith("+js("):
+                continue
+            if "/" in domains:
+                cosmetic_file.refuse("a site named by a pattern")
                 continue
             sites = [d.strip().lower() for d in domains.split(",") if d.strip()]
             for_sites = [d for d in sites if not d.startswith("~")]
@@ -591,10 +692,11 @@ def main(argv) -> int:
     # how a blocker answers a site's own check for one: the check is a script,
     # and the script can be made to see what it wants to see.
     asked, canceled = [], []
+    pattern_sites = {}
     for body in lists:
         for line in body:
             line = line.strip()
-            if "+js(" not in line:
+            if "+js(" not in line or line[0] in "![":
                 continue
             if "#@#" in line:
                 domains, _, rest = line.partition("#@#")
@@ -612,6 +714,13 @@ def main(argv) -> int:
                 continue
             call = [ALIASES.get(args[0], args[0]), args[1:]]
             sites = [d.strip().lower() for d in domains.split(",") if d.strip()]
+            # A site named by a regular expression is not a site this can keep:
+            # the expression's own commas are not site separators, so splitting
+            # the line has already broken it. The rule goes rather than being
+            # kept for a site that matches nothing — or for every site.
+            if any(site.lstrip("~").startswith("/") for site in sites):
+                pattern_sites[call[0]] = pattern_sites.get(call[0], 0) + 1
+                continue
             (canceled if exceptioned else asked).append((sites, call))
 
     scripts = []
@@ -626,14 +735,15 @@ def main(argv) -> int:
         if entry not in scripts:
             scripts.append(entry)
 
-    (OUT / "scriptlets.json").write_text(
-        json.dumps(scripts, ensure_ascii=False, separators=(",", ":")) + "\n",
-        encoding="utf-8")
+    packed_scripts = pack(json.dumps(scripts, ensure_ascii=False, separators=(",", ":")))
+    (OUT / "scriptlets.json.z").write_bytes(packed_scripts)
     sites_named = sum(1 for entry in scripts if entry["sites"])
     print(f"scriptlets: {len(scripts)} rules, {sites_named} for a named site, "
           f"{len(scripts) - sites_named} everywhere")
     for name, count in sorted(unseen.items(), key=lambda pair: -pair[1]):
         print(f"    left out: {count} {name} — no such scriptlet here")
+    for name, count in sorted(pattern_sites.items(), key=lambda pair: -pair[1]):
+        print(f"    left out: {count} {name} — its site is a pattern, not a site")
 
     # MARK: requests
 
@@ -641,7 +751,11 @@ def main(argv) -> int:
     for body in lists:
         for line in body:
             line = line.strip()
-            if not line or line[0] in "![" or ("#" in line and not line.startswith("/")):
+            # A line with a hiding marker in it hides something, whatever it
+            # starts with — a site named by a pattern starts with a slash and
+            # is still not a request to block.
+            if not line or line[0] in "![" or any(
+                    mark in line for mark in ("##", "#@", "#?#", "#$#", "#%#", "$$")):
                 continue
             # Asking for hiding to stop is said in the file that hides; here
             # it is neither a request to block nor one that cannot be made.
@@ -654,15 +768,15 @@ def main(argv) -> int:
             try:
                 trigger = translate(text)
             except Refused as reason:
-                (extra if is_expression(split_options(text)[0]) else network).refuse(str(reason))
+                (extra if text.startswith("/") else network).refuse(str(reason))
                 continue
 
-            expression = is_expression(split_options(text)[0])
+            expression = expression_of(trigger)
             document = trigger["resource-type"] == ["document"]
             if exceptioned and document:
                 # "This page and all of it": the blocks it answers live in
                 # another file and match other URLs, so it is said as a site.
-                site = site_of(split_options(text)[0])
+                site = site_of(split_filter(text)[0])
                 if site:
                     site_only = {"if-domain": ["*" + site]}
                     exceptions.append(hide_off(site_only))
@@ -696,7 +810,9 @@ def main(argv) -> int:
         "lists": sources,
         "files": dict(written, scriptlets={
             "rules": len(scripts),
-            "bytes": (OUT / "scriptlets.json").stat().st_size,
+            "size": len(json.dumps(scripts, ensure_ascii=False, separators=(",", ":"))),
+            "bytes": len(packed_scripts),
+            "hash": hashlib.sha256(packed_scripts).hexdigest(),
         }),
     }, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"{len(common)} selectors in the everywhere rule, {len(site_rules)} rules naming a site")
