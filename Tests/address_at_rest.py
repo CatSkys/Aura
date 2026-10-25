@@ -71,16 +71,12 @@ def main():
         sv.cmd({"do": "go", "id": first, "url": f"http://localhost:{PORT}/one"})
         time.sleep(1)
 
-        # On for everyone who never touched it (24 Oct 2026), with nothing
-        # written for it.
+        # Off for everyone who never touched it, with nothing written for it:
+        # a tab says its title.
         key = subprocess.run(["defaults", "read", sv.SUITE, "tabs.address"], capture_output=True, text=True)
-        t.ok("on by default: no setting written", key.returncode != 0, key.stdout)
-        t.ok("on by default: the front tab says its site", shown() == [first], shown())
-        # Turned off, as some will.
-        ui(address=False)
-        time.sleep(0.3)
-        t.ok("off: no tab says its address", shown() == [], shown())
-        t.ok("off: the line is still worked out for the bench", tabs()[first]["atRest"] == f"localhost:{PORT}", tabs()[first])
+        t.ok("off by default: no setting written", key.returncode != 0, key.stdout)
+        t.ok("off by default: the front tab keeps its title", shown() == [], shown())
+        t.ok("off by default: the line is still worked out for the bench", tabs()[first]["atRest"] == f"localhost:{PORT}", tabs()[first])
 
         # Off, the front tab still warns: plain http and look-alike names.
         warn_http = sv.sp("open", url="http://example.com/off")["resultID"]
