@@ -83,7 +83,7 @@ struct Page: View {
 
             Swiping(pull: tab.pull)
 
-            // The page on its way: a light along its top edge, crossing one
+            // The page on its way: the bar along its top edge, crossing one
             // way and back (see Beam.swift). The ring in the tab says which
             // tab is loading where the tabs are; this says it on the page,
             // where you are looking.
