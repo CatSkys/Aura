@@ -128,11 +128,15 @@ sv.srv.RequestHandlerClass = H
 
 
 def launch():
-    """sv.launch, with the stand-in translator."""
+    """sv.launch, with the stand-in translator, in the app's English: the
+    strings here are the English keys, and what is translated into is the
+    Mac's first language, which is also the language the menu names —
+    both would follow the Mac and make the assertions below say so."""
     if os.path.exists(sv.SOCK):
         os.remove(sv.SOCK)
     before = sv.running()
-    subprocess.run(["open", "-n", "-g", "-j", "--env", f"AURA_PROBE={sv.W}", "--env", "AURA_TRANSLATE_FAKE=1", sv.APP])
+    subprocess.run(["open", "-n", "-g", "-j", "--env", f"AURA_PROBE={sv.W}", "--env", "AURA_TRANSLATE_FAKE=1", sv.APP,
+                    "--args", "-AppleLanguages", "(en)"])
     for _ in range(150):
         if os.path.exists(sv.SOCK):
             break
