@@ -377,6 +377,7 @@ struct SettingsPanel: View {
             title: title(of: item),
             detail: counts ? detail(of: item) : SettingsIndex.needs(item),
             more: counts ? item.more : nil,
+            tint: SettingsIndex.tint(of: item.group),
             note: notes,
             indent: item.hangs && !searched,
             wide: item.kind == .wide,
@@ -737,6 +738,7 @@ struct SettingsPanel: View {
                 SettingRow(icon: "checkmark.shield", title: Localized("On \(host)"),
                            detail: "",
                            more: "Everything blocks and hides. Requests blocks only, where hiding broke a site. Off, the page is as the site wrote it. Each switch reloads the page.",
+                           tint: SettingsIndex.tint(of: "blocking"),
                            note: notes,
                            indent: true) {
                     Segmented(options: Shield.Level.allCases.map { ($0, $0.title) },
@@ -761,7 +763,8 @@ struct SettingsPanel: View {
             if !searched, !Vault.never.isEmpty {
                 Rule(inset: SettingsPanel.textInset)
                 SettingRow(icon: "hand.raised.slash", title: "Sites never asked",
-                           detail: Localized("\(Vault.never.count) sites told to stop offering")) {
+                           detail: Localized("\(Vault.never.count) sites told to stop offering"),
+                           tint: SettingsIndex.tint(of: "passwords")) {
                     Pill("Forget") {
                         Vault.never = []
                         browser.announce("Every site can ask again")
@@ -1033,6 +1036,9 @@ struct SettingRow<Control: View>: View {
     let title: String
     let detail: String
     var more: String? = nil
+    /// The colour of the tile the symbol sits in, the group's own; nil keeps
+    /// the plain grey tile a row outside the groups gets.
+    var tint: Color? = nil
     /// Where this row's note goes when its (i) is pointed at.
     var note: NoteSpot? = nil
     var indent = false
@@ -1048,10 +1054,10 @@ struct SettingRow<Control: View>: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center, spacing: 12) {
                 Image(systemName: icon)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Palette.ink.opacity(0.78))
+                    .font(.system(size: 12, weight: tint == nil ? .medium : .semibold))
+                    .foregroundStyle(tint == nil ? Palette.ink.opacity(0.78) : .white)
                     .frame(width: 26, height: 26)
-                    .background(Palette.wash, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    .background(tint ?? Palette.wash, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 5) {
                         Text(title.localized)

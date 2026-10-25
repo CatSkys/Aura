@@ -57,6 +57,15 @@ enum Palette {
     /// The arrow on it, and the cross where letting go would close.
     static let swipeGlyph = Color.white
 
+    /// The four colours a setting's icon tile wears, one to a group: rows are
+    /// told apart by colour before their symbol is read, as Arc's own
+    /// settings are. The system's own four, which keep their strength in
+    /// both appearances, with a white symbol on top.
+    static let tileBlue = Color(nsColor: .systemBlue)
+    static let tileGreen = Color(nsColor: .systemGreen)
+    static let tilePurple = Color(nsColor: .systemPurple)
+    static let tileRed = Color(nsColor: .systemRed)
+
     /// The only two that aren't grey: a connection nobody can read on the
     /// way, and one anybody can (see SiteCard.swift).
     static let safe = Color(nsColor: NS.safe)           // green-700 · green-400

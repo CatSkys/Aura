@@ -314,7 +314,8 @@ struct HomePageLine: View {
             let current = extensions.newTabPageID
             if !askers.isEmpty {
                 Rule(inset: SettingsPanel.textInset)
-                SettingRow(icon: "house", title: "Home page", detail: detail(askers, current)) {
+                SettingRow(icon: "house", title: "Home page", detail: detail(askers, current),
+                           tint: SettingsIndex.tint(of: "search")) {
                     Picker("", selection: Binding(
                         get: { current ?? "" },
                         set: { extensions.setNewTabPage($0.isEmpty ? nil : $0) }
