@@ -39,8 +39,9 @@ enum Swipe {
     /// Set only by a test run (see Bench), never by the browser people use.
     @MainActor static var testing: Bool?
 
-    /// Settings › Tabs › Close a tab with a swipe back: back from a tab's
-    /// first page closes it, as ⌘W does, instead of the gesture dying there.
+    /// Settings › Keyboard & Mouse › Close a tab with a swipe back: back from
+    /// a tab's first page closes it, as ⌘W does, instead of the gesture dying
+    /// there.
     /// Off unless asked for, since the two gestures look the same until the
     /// disc comes up wearing a cross, and closing is what a stray one costs.
     @MainActor static var closesTab = false
