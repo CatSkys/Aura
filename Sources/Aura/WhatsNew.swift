@@ -134,21 +134,19 @@ enum WhatsNew {
     static let notes: [Notes] = [
         Notes(
             version: "0.1.0", date: "25 October 2026",
-            headline: "Aura, made for the day Arc stops: the ideas worth keeping, in a window that stays out of the way, in English and in 简体中文.",
+            headline: "The first version, made for the day Arc stops.",
             new: [
                 "Tabs in a row across the top, or down a side as a column; spaces for the different parts of your life; pinned tabs that keep their place, as squares or as rows with their names.",
-                "A page that takes the window, one field for addresses and searches, and the commands you can type there: settings, history, downloads, a new tab.",
-                "Every sentence in English and in 简体中文, chosen by the Mac's own language, with the English kept as the key — so a sentence no translation has reached yet shows in English rather than as a blank.",
+                "One field for addresses and searches, and the page takes the rest of the window. Settings, history, downloads and a new tab are commands you can type there.",
                 "It runs on the WebKit already inside every Mac: it opens at once, weighs about 7 MB, and keeps no second copy of anything in memory.",
-                "Chrome extensions from the Chrome Web Store on macOS 15.4 or later, with the parts WebKit leaves out filled in: bookmarks, history, downloads, side panels, offscreen documents.",
-                "Ads and trackers refused before a request is made, and the boxes they leave behind hidden before the first frame — EasyList's, EasyPrivacy's and uBlock Origin's own lists, kept in the app, with the checks sites make for a blocker answered as they want to hear it.",
-                "Reading mode, a floating video, profiles with their own sign-ins and history, pages translated on this Mac, and passwords in your keychain.",
+                "Chrome extensions from the Chrome Web Store on macOS 15.4 or later, with bookmarks, history, downloads, side panels and offscreen documents filled in where WebKit leaves them out.",
+                "Ads and trackers refused before a request is made, and their empty boxes hidden before the first frame — EasyList's, EasyPrivacy's and uBlock Origin's own lists, with the checks sites make for a blocker answered as they want to hear it.",
+                "Reading mode, a floating video, profiles with their own sign-ins and history, pages translated on this Mac, and passwords in the keychain.",
+                "Every sentence in English and in 简体中文, by the Mac's own language, with the English kept as the key — a sentence no translation has reached yet shows in English rather than as a blank.",
+                "No account, no sync, no telemetry: tabs, history and passwords stay on this Mac, and the only things that leave it are the pages you ask for and one request a day to see whether there is a newer version.",
+                "Passkeys are not in this version: the entitlement they need is granted to organization accounts only.",
             ],
-            better: [
-                "No account, no sync, no telemetry: your tabs, history and passwords stay on your Mac, and the only things that leave it are the pages you ask for and one request a day to see whether there is a newer version.",
-                "Updates come from Aura's own feed, and Help › Send Feedback opens an issue with the version already in it.",
-                "Passkeys are not in this release: the entitlement they need is granted to organization accounts only.",
-            ],
+            better: [],
             fixed: []
         ),
         Notes(
