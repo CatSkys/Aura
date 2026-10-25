@@ -41,12 +41,17 @@ VERSION                      版本号；发版才动，前两位由用户定
 ./build.sh release dmg | ship             # + DMG/ZIP/appcast；ship 再公证装钉
 AURA_ARCH=x86_64 ./build.sh release dmg   # Intel 档，出 build/intel/
 
-# 快速验证 —— 小修走这条：文案、译文、注释、文档、脚本、样式微调
-swift build                               # 秒级；要零新增警告
+# 快速腿 —— 默认这条：文案、译文、注释、文档、脚本、样式微调
+./check.sh                                # 编译＋零新增警告＋译文表语法＋缺口计数，秒级
 
-# 全量验证 —— 改行为走这条：Swift 逻辑、WebKit 交互、扩展、拦截规则
-swift test                                # Tests/AuraTests 全套（XCTest）
-python3 Tests/<名字>.py                   # 只跑受影响的那个探针（先 ./build.sh）
+# 窄腿 —— 改了行为、且有同名套件时：只跑那一套
+swift test --filter ExtensionWorkerPortTests   # 改成 --filter <套件名>
+
+# 全量 —— 只在跨模块、动契约时才跑
+swift test                                # 218 例 / 64 秒；既有 2 例红见「已知遗留」
+
+# 界面行为 —— 只跑受影响的那个探针
+python3 Tests/<名字>.py                   # 先 ./build.sh
 ./Tests/AddressRegression/run.sh          # 解析类回归；脚本里的源码路径已失效，见「已知遗留」
 
 # 交付：合并 → 构建 → 清场
@@ -75,8 +80,9 @@ gitleaks git --pre-commit --staged        # 提交前扫密钥（.gitleaks.toml�
 
 ## 完成的定义：快速 → 全量 → 交付
 
-- **两种验证，按改动性质选，别混着用**：改文案/译文/注释/文档/脚本/样式微调 → `swift build`（秒级）。改行为（Swift 逻辑、WebKit 交互、扩展、拦截规则）→ `swift test` 全套 + 受影响的那个探针。**拿不准算不算行为改动，按行为改动跑。** 全量的标准是"没有新增失败"，不是"全绿"——既有红在「已知遗留」。
-- **测试纪律**：一条命令一次跑完；同一轮最多重跑两次，仍红就带着输出停下报告；探针先确认世界在答（`./bench --test tabs`）再等它。不为一句话改动去跑全量。
+- **默认 `./check.sh`，别默认全量**：文案、译文、注释、文档、脚本、样式微调，编译通过加零新增警告就够（秒级）。全量是最贵的动作，不是稳妥的选择。
+- **什么才算行为改动**：`Sources/Aura` 里除注释与文案字面量之外的改动、`Resources/Shield` 的生成物、`Engine/`、`Package.swift`。这时先窄后全：改了 `X.swift` 而 `Tests/AuraTests/XTests.swift` 在 → `swift test --filter XTests`；没有同名套件 → 只跑 `./check.sh`，并在报告里写明这块没有测试覆盖；跨模块或动契约才 `swift test`。
+- **测试纪律**：一条命令一次跑完；同一轮最多重跑两次，仍红就带着输出停下报告；全量看"没有新增失败"，不是"全绿"；探针先确认世界在答（`./bench --test tabs`）再等它。
 - **自证在测试世界，验收归用户**：世界由启动方式决定（`AURA_PROBE` 有值或可执行文件在 `/.build/` 下＝测试世界；`build/Aura.app` 不带变量＝真身）。改界面、装扩展、窗口尺寸、真键盘事件一律 `--test`/`--world`；不自行截图当验收、不擅自换 `/Applications/Aura.app`。
 - **交付**：`./deliver.sh <slug>`。只改文档/脚本（不碰 `Sources/`、`Resources/`、`Engine/`、`Package.swift`、`VERSION`）就不重建产物；主仓有别处的活时也不重建。产物只代表主仓 HEAD。
 - 改变行为的改动同轮补 `CHANGELOG.md` 的 `Unreleased`；`NOTES.md` 只在发版时写（第一段进 appcast）。
@@ -141,6 +147,7 @@ gitleaks git --pre-commit --staged        # 提交前扫密钥（.gitleaks.toml�
 - **改名遗留**：`Tests/AddressRegression/run.sh`、`Tests/HistoryRegression/run.sh`、`Tests/DuskHarness.swift`、`Tests/popup_gesture_script.js`、`Tests/ExtensionWorkerRecovery/run.js` 仍写 `Sources/Search/…`，源码已在 `Sources/Aura/` —— 直接跑报 `No such file`。修脚本，**不要**建兼容目录。
 - **引擎命名两套**：源码是 `Engine/aura-ai-engine.cpp`，`engine.sh` 产物是 `aura-ai-engine-<arch>`，运行时找的下载程序叫 `search-ai-engine`；以 `engine.sh` 与 `AIEngine.swift` 为准。
 - `AI.shipped = false` 是 AI 附加功能的总闸（1.0.5 起收起）：动 AI 代码前先读这一行。
+- **译文表有既有缺口**（2026-10-25：662/707，缺 45、未用 282）：`./Tools/i18n.py check` 因此恒红，当诊断用，不当门槛；`./check.sh` 只报数字。
 - **`swift test` 有 2 个既有失败**（2026-10-25 实测，218 例 / 64 秒）：`ExtensionWorkerPortTests.testRealShimEntryCoversContentScriptsAndExtensionPages`（shim 里 `__AURA_VERBOSE__` 未定义）、`SidebarPressTests.testOtherButtonsDoNotSelectOnPress`（右键也选中了）。全量验证看有没有新增，别去追这两个而不先问用户。
 - 工作区常有其他会话未提交的活：提交前 `git status` 复核，只 `git add` 本轮文件。
 

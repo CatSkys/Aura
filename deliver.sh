@@ -46,6 +46,11 @@ trap 'rm -rf "$lock"' EXIT
 echo "$$ $(date '+%F %T') $slug" > "$lock/who"
 
 git show-ref --verify --quiet "refs/heads/$branch" || refuse "没有分支 $branch"
+# The tree is the one with this branch checked out, whatever it was named.
+found="$(git worktree list --porcelain | awk -v b="refs/heads/$branch" '
+  $1 == "worktree" { where = $2 }
+  $1 == "branch" && $2 == b { print where }')"
+[ -z "$found" ] || tree="$found"
 [ -d "$tree" ] || refuse "没有树 $tree（先 git worktree add ../Aura-$slug -b $branch）"
 
 # What the merge brings, so a main checkout busy with someone else's task can
