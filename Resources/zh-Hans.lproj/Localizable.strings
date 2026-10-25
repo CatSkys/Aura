@@ -1296,13 +1296,29 @@
 "Until Aura quits. Accounts show under sign-in boxes; macOS may ask for Touch ID before one is filled." = "保持到 Aura 退出。账户显示在登录框下方；填入前 macOS 可能要求 Touch ID。";
 " — this window" = "（本窗口）";
 
-/* —— 设置页的页名，与上一段删除后仍需保留的句子 —— */
+/* —— 设置页的页名 —— */
+"Translate Page to {1}" = "翻译页面为{1}";
+"Show Original" = "显示原文";
+"Translating…" = "正在翻译…";
+"Translating from {1}…" = "正在翻译{1}…";
+"Translated" = "已翻译";
+"Translated from {1}" = "译自{1}";
+"Translated on this Mac. Nothing is sent anywhere." = "翻译在这台 Mac 上完成，什么都不会发送出去。";
+"Always Translate {1}" = "始终翻译{1}";
+"Translate {1} in This Tab" = "在这个标签页翻译{1}";
+"Always translate {1}" = "始终翻译{1}";
+"Pages in {1} are translated as they open" = "{1}页面一打开就翻译";
+"Only until this private tab closes" = "只到这个无痕浏览标签页关闭为止";
+"Settings › Browsing › Pages lists the languages always translated" = "可在「设置 › 浏览 › 页面」里看到始终翻译的语言";
+"Aura couldn't tell which language this page is in" = "Aura 判断不出这个页面用的是什么语言";
+"This page is already in {1}" = "这个页面已经是{1}了";
+"{1} to {2} can't be translated on this Mac" = "这台 Mac 上无法把{1}翻译成{2}";
+"Translate Page needs macOS 15 or later" = "翻译页面需要 macOS 15 或更高版本";
+"Translate Page needs the tab in a window" = "翻译页面需要标签页在一个窗口里";
 "Browsing" = "浏览";
 "Spaces & Pins" = "空间与固定项";
 "Keyboard & Mouse" = "键盘与鼠标";
 "Open {1} at {2}" = "打开 {1} 里的 {2}";
-"Show Original" = "显示原文";
-"Translate Page to {1}" = "翻译页面为 {1}";
 
 /* —— 菜单、查找栏、扩展与配置文件里的句子 —— */
 "A page in this group has unsaved form entries. The group will reopen in “{1}” with that Space’s sign-ins, so the entries may be lost." = "这个组里有页面还没提交的表单内容。改组会在「{1}」里以那个空间的登录状态重新打开，这些内容可能会丢。";

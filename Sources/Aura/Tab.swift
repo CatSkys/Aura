@@ -510,6 +510,11 @@ final class Tab: ObservableObject, Identifiable {
     /// A sideways swipe in progress, for the disc that shows it.
     @Published var pull: Pull?
 
+    /// How far the page has leaned away from its edge under a sideways swipe
+    /// that has nowhere to go, in points — Chromium's elastic overscroll (see
+    /// Elastic, and Page's offset). Zero when nothing is being pulled.
+    @Published var stretch: CGFloat = 0
+
     /// What going back from the first page does, for a tab where it does
     /// anything: a small window's page, which takes its window with it (see
     /// PageView.leave). A tab in a window's row goes by `onSwipeClose`.
@@ -2367,6 +2372,12 @@ final class PageView: WKWebView {
     private var asked: Date?
     /// Already went somewhere, or was refused: nothing more this gesture.
     private var spent = false
+    /// The page leans under the fingers: back from the first page, forward
+    /// from the last, where the page itself has nowhere to go (see Elastic).
+    private var follows = false
+    /// ...and that is the whole of this gesture: nothing to go to, and nothing
+    /// at the end of it to close or open, so no disc either.
+    private var leaning = false
     private var armedNow = false
     private var showing = false
     private var going = false
@@ -2509,6 +2520,8 @@ final class PageView: WKWebView {
             holding = nil
             stops = nil
             items = []
+            follows = false
+            leaning = false
             // A disc still on its way out belongs to the last gesture. It is
             // already invisible; it is only taken off the stage so the next
             // one arrives fresh rather than fading back in.
@@ -2518,6 +2531,13 @@ final class PageView: WKWebView {
                 onPull?(nil)
             }
         case .changed:
+            // A lean reads every point of the fingers, all the way through:
+            // there is nothing at the end of the pull to be armed for.
+            if leaning {
+                sideways += event.scrollingDeltaX
+                lean()
+                return
+            }
             guard !spent else { return }
             if axis == nil {
                 // A few points in, the gesture has shown which way it means
@@ -2532,9 +2552,18 @@ final class PageView: WKWebView {
                     return
                 }
                 back = sideways > 0
+                // Where the page itself has nowhere to go — back from the
+                // first page, forward from the last — it leans with the
+                // fingers and goes home afterwards, as Chromium's elastic
+                // overscroll does (see Elastic). That is the whole gesture
+                // when there is nothing to close as well; where there is, the
+                // disc comes too and says how far there is to go.
+                follows = back ? !canGoBack : !canGoForward
+                if follows { lean() }
                 // Nowhere to go that way: nothing to show, and nothing more
-                // to read from this gesture.
+                // to act on from this gesture.
                 if back ? !canGoBack && !canLeave : !canGoForward {
+                    leaning = follows
                     spent = true
                     return
                 }
@@ -2543,6 +2572,7 @@ final class PageView: WKWebView {
                 return
             }
             sideways += event.scrollingDeltaX
+            if follows { lean() }
             if stops != nil { climb(event) }
             tell()
         case .ended:
@@ -2550,6 +2580,7 @@ final class PageView: WKWebView {
         case .cancelled:
             spent = true
             settle(nil)
+            home()
         default:
             break
         }
@@ -2557,7 +2588,15 @@ final class PageView: WKWebView {
 
     /// The page has said whether the swipe would scroll something.
     func answer(free yes: Bool) {
-        guard axis != .down, !spent else { return }
+        guard axis != .down else { return }
+        if leaning, !yes {
+            // A carousel of the page's own took the swipe: no lean of ours.
+            leaning = false
+            follows = false
+            home()
+            return
+        }
+        guard !spent else { return }
         guard yes else {
             free = false
             spent = true
@@ -2567,6 +2606,23 @@ final class PageView: WKWebView {
         guard free == nil else { return }
         free = true
         tell()
+    }
+
+    /// The page follows the fingers out from its edge, by Chromium's share of
+    /// what they travel (see Elastic). The distance is `travel` — the same one
+    /// the disc's arming is measured in, so the two can never disagree.
+    private func lean() {
+        let out = Elastic.stretch(travel, in: bounds.width)
+        owner?.stretch = back ? out : -out
+    }
+
+    /// Let go: the page goes home on Chromium's curve, and the gesture with it.
+    private func home() {
+        follows = false
+        guard let tab = owner, tab.stretch != 0 else { return }
+        withAnimation(.easeOut(duration: Elastic.settles(from: tab.stretch))) {
+            tab.stretch = 0
+        }
     }
 
     /// Going back from the first page does something here: a small window
@@ -2669,6 +2725,12 @@ final class PageView: WKWebView {
 
     private func release() {
         defer { spent = true }
+        if leaning {
+            // Nothing to do but let go.
+            leaning = false
+            home()
+            return
+        }
         // Let go before the list came: it doesn't come now.
         holding?.cancel()
         holding = nil
@@ -2689,6 +2751,7 @@ final class PageView: WKWebView {
         } else {
             goForward()
         }
+        home()
         pulls += 1
         let mine = pulls
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) { [weak self] in

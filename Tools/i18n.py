@@ -167,7 +167,20 @@ def sentences(path):
         i = text.find('"', i)
         if i < 0:
             break
-        if i and text[i - 1] in "#\\":
+        # A raw or a multi-line string — #"…"#, """…""", #"""…"""# — is a
+        # script or a pattern rather than a sentence shown to anybody, and its
+        # quotes do not pair up the way a sentence's do: skipped whole, or a
+        # single `#"\[\d+\]"#` leaves every literal after it read from the
+        # wrong end, and the sentences of the file go missing in silence.
+        hashes = 0
+        while i - hashes - 1 >= 0 and text[i - hashes - 1] == "#":
+            hashes += 1
+        quote = '"""' if text.startswith('"""', i) else '"'
+        if hashes or quote == '"""':
+            close = text.find(quote + "#" * hashes, i + len(quote))
+            i = len(text) if close < 0 else close + len(quote) + hashes
+            continue
+        if i and text[i - 1] == "\\":
             i += 1
             continue
         # What comes before the quote decides whether it is a sentence.

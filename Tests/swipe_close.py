@@ -17,6 +17,13 @@ same way and needs no switch: back from its first page puts the panel away and
 the page underneath is what comes back, as Arc's floating pages do. Nothing is
 lost there, so the row above it is none of its business.
 
+With nowhere to go, the page itself leans out from its edge under the fingers
+and goes home when they let go — Chromium's elastic overscroll, by its own
+numbers (see Elastic.swift): a twentieth of the fingers, nothing at all for the
+first ten points, and under a point within a third of a second. `wheel` with
+"hold" leaves the fingers down so that lean can be read back, and "release"
+lifts them.
+
 The swipe is the bench's `wheel`: two fingers, with a trackpad's phases, which
 is the only kind PageView reads. `ui swipepages` stands in for the Mac's own
 Swipe between pages setting, and `ui swipeclose` for the switch.
@@ -118,6 +125,23 @@ def main():
         sv.cmd({"do": "select", "id": f}); time.sleep(0.4)
         wheel(f, 300)
         t.ok("off again: nothing closes", where(f) == "f", names())
+
+        # ---- the page leans out of its edge, and goes home ----
+        sv.cmd({"do": "wheel", "id": f, "dx": 300, "dy": 0, "steps": 10, "ms": 150, "hold": True})
+        time.sleep(0.5)
+        leaned = sv.cmd({"do": "probe"})["stretch"]
+        t.ok("the page leans out from its edge under a pull with nowhere to go",
+             leaned > 0, leaned)
+        # The share itself (a twentieth of the fingers, after the first ten
+        # points) is Chromium's and is checked in ElasticTests: the bench's
+        # synthesized deltas are not in the unit a real trackpad's are, so what
+        # is asked here is only that the page leaned, and not the whole page.
+        t.ok("…but only a little of the way", 0 < leaned < 300, leaned)
+        sv.cmd({"do": "wheel", "id": f, "release": True})
+        time.sleep(0.8)
+        t.ok("…and goes home when they let go", sv.cmd({"do": "probe"})["stretch"] == 0,
+             sv.cmd({"do": "probe"})["stretch"])
+        t.ok("…leaving the tab where it was", where(f) == "f", names())
 
         # ---- a peek, which needs no switch ----
         sv.cmd({"do": "peek", "url": f"{BASE}/peeked"}); time.sleep(0.8)
