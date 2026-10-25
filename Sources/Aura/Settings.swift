@@ -313,8 +313,7 @@ struct SettingsPanel: View {
             groups(of: page)
         case .keyboard:
             groups(of: page)
-            GroupBlock(title: "Shortcuts", icon: "command",
-                       blurb: "Every menu command and its key. Click a key, then press the new one.") {
+            GroupBlock(title: "Shortcuts", icon: "command") {
                 ShortcutsPage(browser: browser, store: .shared, prefs: prefs)
             }
         case .extensions:
@@ -328,7 +327,7 @@ struct SettingsPanel: View {
 
     private func groups(of page: Page) -> some View {
         ForEach(SettingsIndex.groups(of: page)) { group in
-            GroupBlock(title: group.title, icon: group.icon, blurb: group.blurb) {
+            GroupBlock(title: group.title, icon: group.icon) {
                 Card { rows(SettingsIndex.items(in: group.id).filter(shown), searched: false) }
             }
         }
@@ -369,7 +368,7 @@ struct SettingsPanel: View {
     private var results: some View {
         let found = hits
         if found.isEmpty {
-            Card { Nothing("No setting called that. Try other words, like dark, tabs or video") }
+            Card { Nothing("No setting found") }
         }
         let byGroup = Dictionary(grouping: found, by: \.group)
         ForEach(SettingsIndex.groups.filter { byGroup[$0.id] != nil }) { group in
@@ -648,7 +647,7 @@ struct SettingsPanel: View {
         case "bookmarks.off": Switch(on: $prefs.bookmarks)
         case "sites.keep": Switch(on: Binding(get: { !prefs.keepsSignIns }, set: { prefs.keepsSignIns = !$0 }))
         case "notifications.ask": Switch(on: $prefs.siteNotifications)
-        case "privacy.forget": Pill("Forget choices") { browser.forgetCaptureChoices() }
+        case "privacy.forget": Pill("Reset choices") { browser.forgetCaptureChoices() }
         case "clear.history": Pill("Clear") { browser.clearHistory() }
         case "clear.cookies": Pill("Sign out of everything") { browser.clearSites() }
         case "clear.cache": Pill("Clear") { browser.clearCache() }
@@ -673,8 +672,8 @@ struct SettingsPanel: View {
         case "note.switcher": Always()
         case "updates.version": versionControl
         case "updates.auto": Switch(on: $prefs.installsUpdates)
-        case "about.feedback": Pill("Send Feedback") { Links.writeFeedback() }
-        case "about.notes": Pill("What's New…") { browser.lead(to: InternalPage(.notes)) }
+        case "about.feedback": Pill("Send…") { Links.writeFeedback() }
+        case "about.notes": Pill("Open…") { browser.lead(to: InternalPage(.notes)) }
         case "bench": Switch(on: $prefs.bench)
         default: EmptyView()
         }
@@ -695,7 +694,7 @@ struct SettingsPanel: View {
         case "shield":
             if let trouble = shield.trouble {
                 Rule(inset: SettingsPanel.textInset)
-                Line(trouble, "Nothing is being blocked until this clears. Try again, or restart Aura") {
+                Line(trouble, "Nothing is blocked until this clears. Try again, or restart Aura.") {
                     Pill("Try again") { shield.compile() }
                 }
                 .padding(.leading, SettingsPanel.textInset - 14)
@@ -706,7 +705,8 @@ struct SettingsPanel: View {
                 // hiding broke still wants its requests refused, and that is a
                 // third answer a switch can't give (see Shield.Level).
                 SettingRow(icon: "checkmark.shield", title: Localized("On \(host)"),
-                           detail: "Everything blocks and hides. Requests only blocks, for a site the hiding broke. Off, the page is as the site wrote it. The page reloads",
+                           detail: "",
+                           more: "Everything blocks and hides. Requests blocks only, where hiding broke a site. Off, the page is as the site wrote it. Each switch reloads the page.",
                            indent: true) {
                     Segmented(options: Shield.Level.allCases.map { ($0, $0.title) },
                               selection: Binding(
@@ -839,7 +839,7 @@ struct SettingsPanel: View {
     private var keywordDetail: String {
         guard let draft else { return SettingsIndex.item("search.keywords")?.detail ?? "" }
         if draft.keyword.isEmpty, draft.template.isEmpty {
-            return "A word, then the site's search address with %s where the words go"
+            return "A word, then the site's search address, with %s where the search goes"
         }
         return draftProblem ?? Localized("\(draft.keyword.trimmingCharacters(in: .whitespacesAndNewlines)) will search \(draft.name)")
     }
@@ -857,7 +857,7 @@ struct SettingsPanel: View {
     private var suggestDetail: String {
         let name = prefs.engine.name(custom: prefs.customEngine)
         guard EngineSuggest.endpoint(for: prefs.engine) != nil else {
-            return "A custom engine has no suggestions to give, so nothing is sent"
+            return "A custom engine has no suggestions, so nothing is sent"
         }
         return Localized("What you type is sent to \(name) as you type")
     }
@@ -865,7 +865,7 @@ struct SettingsPanel: View {
     private var searchDetail: String {
         guard prefs.engine == .custom else { return "Where words that aren't an address go" }
         guard Engine.accepts(prefs.customEngine) else {
-            return "An http or https address with %s where the words go. Until then, Google"
+            return "An http or https address with %s where the words go. Google until then"
         }
         return Localized("Words go to \(prefs.engine.name(custom: prefs.customEngine))")
     }
@@ -875,7 +875,7 @@ struct SettingsPanel: View {
         if #available(macOS 15.4, *), let name = Extensions.shared.passwordSavingTakenBy {
             return Localized("\(name) does the saving; it asked Aura not to offer")
         }
-        return "Asked once per site, never again for a site you refuse"
+        return ""
     }
 
     private func setUpLikeArc() {
@@ -919,16 +919,16 @@ struct SettingsPanel: View {
     private var versionDetail: String {
         switch updater.stage {
         case .none:
-            return updater.lastChecked.map { Localized("Checked \($0.formatted(.relative(presentation: .named))), every hour on its own") }
-                ?? Localized("Checked every hour on its own")
+            return updater.lastChecked.map { Localized("Checked \($0.formatted(.relative(presentation: .named))). Every hour on its own.") }
+                ?? Localized("Checked every hour on its own.")
         case .fetching(let next):
-            return next.notes ?? "Quietly, in the background. Nothing you have set is touched"
+            return next.notes ?? "Downloaded in the background. Nothing you have set is touched."
         case .ready(let next):
-            return next.notes ?? "It's there the next time you open Aura"
+            return next.notes ?? "In place the next time you open Aura."
         case .offered(let next):
-            return next.notes ?? "Open the disk image, the same as the first time"
+            return next.notes ?? "Open the disk image to install it."
         case .waiting(let next):
-            return next.notes ?? "Checked and put in place when you press Install"
+            return next.notes ?? "Checked and put in place when you press Install."
         }
     }
 
@@ -970,30 +970,23 @@ struct SettingsPanel: View {
 
 // MARK: - pieces
 
-/// A group of a section: its small heading with an icon, a line saying what
-/// it is for, then its card.
+/// A group of a section: its small heading with an icon, then its card. No
+/// line under the heading: a row says what it is, and its (i) says the rest.
 struct GroupBlock<Content: View>: View {
     let title: String
     let icon: String
-    let blurb: String
     @ViewBuilder let content: () -> Content
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
-                    Image(systemName: icon)
-                        .font(.system(size: 10.5, weight: .semibold))
-                    Text(title.localized.uppercased())
-                        .font(.system(size: 10.5, weight: .semibold))
-                        .tracking(0.5)
-                }
-                .foregroundStyle(Palette.ink.opacity(0.62))
-                Text(blurb.localized)
-                    .font(.system(size: 11.5))
-                    .foregroundStyle(Palette.muted)
-                    .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 10.5, weight: .semibold))
+                Text(title.localized.uppercased())
+                    .font(.system(size: 10.5, weight: .semibold))
+                    .tracking(0.5)
             }
+            .foregroundStyle(Palette.ink.opacity(0.62))
             .padding(.leading, 2)
             content()
         }

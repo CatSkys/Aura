@@ -33,7 +33,7 @@ struct ShortcutsPage: View {
         VStack(alignment: .leading, spacing: 18) {
             Hunt(text: $hunt, prompt: "Search commands or keys", focus: $hunting)
             let found = Command.all.filter(shown)
-            if found.isEmpty { Nothing("No command called that, or on that key") }
+            if found.isEmpty { Nothing("No command found") }
             ForEach(Command.Section.allCases, id: \.self) { section in
                 let commands = found.filter { $0.section == section }
                 if !commands.isEmpty {

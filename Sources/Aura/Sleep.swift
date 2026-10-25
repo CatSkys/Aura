@@ -53,12 +53,12 @@ enum SleepPace: String, CaseIterable, Identifiable {
         }
     }
 
-    /// What the line in Settings says under the choice.
+    /// The wait, as the line under the choice reads it.
     var detail: String {
         switch self {
-        case .later: return "After two hours away."
-        case .normal: return "After half an hour away."
-        case .sooner: return "After ten minutes away."
+        case .later: return Localized("for two hours")
+        case .normal: return Localized("for half an hour")
+        case .sooner: return Localized("for ten minutes")
         }
     }
 

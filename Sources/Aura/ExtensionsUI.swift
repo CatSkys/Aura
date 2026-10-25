@@ -11,7 +11,7 @@ struct ExtensionsPage: View {
             Installer(browser: browser, extensions: .shared)
         } else {
             Card {
-                Line("Chrome extensions", "Need macOS 15.4 or later — the version whose WebKit can run them.") { EmptyView() }
+                Line("Chrome extensions", "Requires macOS 15.4 or later.") { EmptyView() }
             }
         }
     }
@@ -57,7 +57,7 @@ struct ExtensionsPage: View {
                                     .disabled(Crx.id(in: link) == nil)
                             }
                         }
-                        Text("Or find it in the store and press Add to Aura on its page.")
+                        Text("Or open its page in the store and press Add to Aura.")
                             .font(.system(size: 11.5))
                             .foregroundStyle(Palette.muted)
                             .fixedSize(horizontal: false, vertical: true)
@@ -66,7 +66,7 @@ struct ExtensionsPage: View {
                 }
 
                 Card {
-                    Line("From another browser", "What Chrome, Arc, Brave and the others added from the Chrome Web Store — installed fresh from the store, you say yes to each one") {
+                    Line("From another browser", "Installed again from the Chrome Web Store, each one confirmed") {
                         Pill("Bring them over…") {
                             browser.bringingExtensions = true
                             browser.lead(to: InternalPage(.importing))
@@ -83,7 +83,7 @@ struct ExtensionsPage: View {
                             Row(item: item, extensions: extensions)
                         }
                     }
-                    Text("Each extension stays out of private tabs until you allow it in its … menu. One you allow can tell which tabs are private, but may still keep what you visit in them.")
+                    Text("Extensions stay out of private tabs until allowed in their ⋯ menu. An allowed extension can tell which tabs are private, and may keep what you visit in them.")
                         .font(.system(size: 11.5))
                         .foregroundStyle(Palette.muted)
                         .fixedSize(horizontal: false, vertical: true)
@@ -92,7 +92,7 @@ struct ExtensionsPage: View {
                 Recorders()
 
                 Card {
-                    Line("Load an unpacked extension", "A folder with a manifest.json — your own, or one exported from another browser. Reload picks up what you've changed in it since.") {
+                    Line("Load an unpacked extension", "A folder with a manifest.json. Reload picks up what you change in it.") {
                         Pill("Choose…") { extensions.installFolder() }
                     }
                 }
@@ -118,7 +118,7 @@ struct ExtensionsPage: View {
                     VStack(spacing: 0) {
                         ForEach(Array(ids.enumerated()), id: \.element) { index, id in
                             if index > 0 { Rule() }
-                            Line(Browser.extensionName(id), "Can record your screen — macOS asks what to share each time") {
+                            Line(Browser.extensionName(id), "Can record your screen. macOS asks what to share each time") {
                                 Pill("Remove") { ExtensionCapture.forget(id) }
                             }
                         }
@@ -208,7 +208,7 @@ struct ExtensionsPage: View {
                         set: { extensions.setPrivate(item.id, $0) }
                     ))
                     .accessibilityLabel(Localized("Allow \(item.name) in private tabs"))
-                    .help("Private tabs opened before any extension was allowed need reopening. Turned off, a script already running in one stops only when the page reloads.")
+                    .help("Private tabs opened before an extension was allowed need reopening. Turned off, a running script stops when the page reloads.")
                 }
             }
             Divider()
@@ -332,11 +332,11 @@ struct HomePageLine: View {
 
         private func detail(_ askers: [Installed], _ current: String?) -> String {
             if let current, let name = askers.first(where: { $0.id == current })?.name {
-                return "New tabs show \(name)'s page, since you let it replace them"
+                return Localized("New tabs show \(name)'s page")
             }
             return askers.count == 1
-                ? "New tabs open blank. \(askers[0].name) asked to show its page instead"
-                : "New tabs open blank. \(askers.count) extensions asked to show their page instead"
+                ? Localized("Blank. \(askers[0].name) asked to show its page instead")
+                : Localized("Blank. \(askers.count) extensions asked to show their page instead")
         }
     }
 }
