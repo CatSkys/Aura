@@ -1,0 +1,28 @@
+#!/bin/sh
+# Refuses a commit made in the main checkout — that tree is for merges only,
+# so two sessions running at once cannot write into each other's work
+# (AGENTS.md §并行任务). A linked worktree passes, a merge being finished in
+# the main checkout passes, and so does an explicit `git commit --no-verify`.
+set -eu
+
+main_tree=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
+here=$(git rev-parse --show-toplevel)
+[ "$here" = "$main_tree" ] || exit 0
+
+# A merge the main checkout exists for: finishing the one under way is not
+# the direct commit this refuses (git runs this hook again for it).
+git_dir=$(git rev-parse --absolute-git-dir)
+if [ -f "$git_dir/MERGE_HEAD" ]; then exit 0; fi
+
+cat >&2 <<'MSG'
+主仓只收合并：这次提交被拒了。
+
+  这次改动开一棵树做（AGENTS.md「并行任务」）：
+      git worktree add ../Aura-<slug> -b feat/<slug>
+      cd ../Aura-<slug> && git commit …      # 树里改、树里提交
+      cd - && git merge --no-ff feat/<slug>  # 主仓只收合并
+  收尾：git worktree remove ../Aura-<slug> && git branch -d feat/<slug>
+
+  确实要在主仓直接提交（显式绕过）：git commit --no-verify
+MSG
+exit 1

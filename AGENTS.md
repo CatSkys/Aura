@@ -61,11 +61,13 @@ gitleaks git --pre-commit --staged        # 提交前扫密钥（.gitleaks.toml�
 
 git worktree add ../Aura-<slug> -b feat/<slug>   # 开一棵任务树，改动全在树里做
 git worktree remove ../Aura-<slug>               # 收尾清场，再 git branch -d feat/<slug>
+./hooks.sh [on|off]                              # 机械卡点：主仓检出上拒收直接提交（不带参数＝看状态）
 ```
 
 ## 并行任务：一棵树一个世界
 
-- **一个任务一棵树**：`git worktree add ../Aura-<slug> -b feat/<slug>` 动手，主仓（`main` 的检出）只收 `git merge --no-ff feat/<slug>`（一个任务一个合并提交），收尾 `git worktree remove` + `git branch -d`，不留残树。没装机械卡点（`core.hooksPath` 为空），纪律靠自觉。
+- **一个任务一棵树**：`git worktree add ../Aura-<slug> -b feat/<slug>` 动手，主仓（`main` 的检出）只收 `git merge --no-ff feat/<slug>`（一个任务一个合并提交），收尾 `git worktree remove` + `git branch -d`，不留残树。
+- **机械卡点已装**（`./hooks.sh on`，`core.hooksPath` 指向 `.git-hooks/`）：主仓检出上的 `git commit` 直接被拒；worktree 里照常，收尾合并（`MERGE_HEAD` 在）放行，真要在主仓直接提交用 `git commit --no-verify`（绕过得是显式动作）。配置在共享 config 里，一棵树启用、所有树生效。
 - **一棵树一个测试世界**：`./fresh.sh` 与 `./bench --test` 用的是固定的 `test` 世界，两棵树同时用会撞在同一个 `Aura (test)` 上——同一个 bundle id、同一个 WebKit store、同一个 bench socket，后开的把前一个顶掉。并行时各自起名：`AURA_PROBE=<slug> ./fresh.sh` 配 `./bench --world <slug>`。`Tests/*.py` 探针不用管：它们按检出路径自己分世界（`AURA_PROBE=<suite>-<checkout 哈希>`，见 `Tests/split_view.py` 的 `use()`）。
 - **`../aura-pages` 不是任务树**：那是 `gh-pages` 的检出，`publish.sh` 认这个路径；别拿它当工作区，也别删。
 - **新树的 `.build/` 是冷的**：第一次 `swift build` 从头编译，属正常；不为省时间在两棵树间共享构建目录（一个任务一棵树的意义就在于两棵互不干扰）。
