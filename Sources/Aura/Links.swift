@@ -347,9 +347,19 @@ final class Links: NSObject, NSApplicationDelegate {
     private static let probe = URL(string: "https://example.com")!
 
     /// True when this app is where links from other apps go.
+    ///
+    /// macOS knows the default browser by its bundle identifier, not by where
+    /// it sits, and hands back whichever copy it holds — so a build of Aura
+    /// running from its folder, with the copy in Applications being the Mac's
+    /// default, is another path for the same app. Compared path for path, that
+    /// one said "not the default" while every link was coming here already.
     static var isDefault: Bool {
         guard let handler = NSWorkspace.shared.urlForApplication(toOpen: probe) else { return false }
-        return handler.standardizedFileURL == Bundle.main.bundleURL.standardizedFileURL
+        if handler.standardizedFileURL == Bundle.main.bundleURL.standardizedFileURL { return true }
+        guard let mine = Bundle.main.bundleIdentifier,
+              let theirs = Bundle(url: handler)?.bundleIdentifier
+        else { return false }
+        return mine == theirs
     }
 
     /// Asks macOS to send http and https here. The system puts up its own
