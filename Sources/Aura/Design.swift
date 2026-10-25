@@ -21,6 +21,15 @@ enum Palette {
     /// you are on stands out from them as a live row does from the white.
     static let pinLive = Color(nsColor: NS.pinLive)
     static let hover = Color(nsColor: NS.hover)         // the one under the pointer
+    /// The fill a card takes where it used to take a hairline round its edge:
+    /// a step off the window's ground, so a page reads as blocks of colour
+    /// rather than as boxes, and the tiles, fields and pictures inside it
+    /// keep the greys they already had.
+    static let card = Color(nsColor: NS.card)
+    /// A row on one of those cards, under the pointer or the one Find lit:
+    /// ink laid over the card rather than a grey of its own, so it shows as
+    /// much on a card as on the ground, in both appearances.
+    static let rowHover = Color(nsColor: NS.ink).opacity(0.045)
     /// The row the keys are on in the command bar's list, and the row under
     /// the pointer: one grey, since the two never show at once — the pointer
     /// takes the mark over the moment it is on a row. Deep enough to be a
@@ -64,6 +73,7 @@ enum Palette {
         static let wash = pair(0.937, 0.175)
         static let pinLive = pair(0.90, 0.21)
         static let hover = pair(0.965, 0.15)
+        static let card = pair(0.966, 0.155)
         static let pick = pair(0.90, 0.20)
         static let frame = pair(0.955, 0.075)
         static let sideWash = pair(0.895, 0.155)

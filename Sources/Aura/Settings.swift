@@ -1099,7 +1099,7 @@ struct SettingRow<Control: View>: View {
         .padding(.leading, indent ? 38 : 14)
         .padding(.trailing, 14)
         .padding(.vertical, 10)
-        .background(lit ? Palette.hover : .clear)
+        .background(lit ? Palette.rowHover : .clear)
     }
 }
 
