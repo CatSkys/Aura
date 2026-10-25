@@ -4,7 +4,9 @@ import SwiftUI
 // The light along the top edge of a page while it is coming: a streak of the
 // window's ink that fades out to both sides — and down into the page, so what
 // you see is a glow thrown off the edge rather than a rule drawn under it —
-// crossing one way and back for as long as the page is still loading.
+// crossing one way and back for as long as the page is still loading. It keeps
+// to the middle third of the page: a browser that is working says so at the top
+// of what it is working on, not across the whole of it.
 //
 // Arc's page shows a bar running along its top while it loads. This is the same
 // promise said in light instead of a rule, and it is the field's own breath
@@ -31,9 +33,13 @@ struct Beam: NSViewRepresentable {
     /// Whether the page is still coming.
     var loading: Bool
 
-    /// The streak, in points: long enough to read as something crossing the
-    /// page rather than as a blob, and shallow enough to stay on its edge.
-    static let width: CGFloat = 260
+    /// The whole of what the light touches: a third of the page's width, over
+    /// its middle, and never more of the page than that.
+    static let region: CGFloat = 1.0 / 3
+    /// The streak itself, as a share of that region. Half of it, so the light
+    /// has the other half of the third to travel in.
+    static let streak: CGFloat = 0.5
+    /// How far the light falls into the page.
     static let height: CGFloat = 20
     /// As dark as the light is where it meets the edge; it fades to nothing at
     /// the bottom of `height`.
@@ -64,8 +70,10 @@ final class Streak: NSView {
     /// The size the light was last laid out for, so a layout pass that changed
     /// nothing doesn't put the crossing back to the start.
     private var laid: CGSize = .zero
-    /// The streak's length at that size.
+    /// The streak's length at that size, and how far its middle may travel
+    /// either side of the page's middle.
     private var reach: CGFloat = 0
+    private var lane: CGFloat = 0
 
     /// Whether the page is coming. Faded, so the light arrives and goes rather
     /// than blinking.
@@ -119,10 +127,13 @@ final class Streak: NSView {
         super.layout()
         guard bounds.width > 0, bounds.height > 0, bounds.size != laid else { return }
         laid = bounds.size
-        // The page as a card has round corners and a fine edge; the light keeps
-        // its own width clear of them at either end, so the crossing never
-        // slides under them.
-        reach = min(Beam.width, bounds.width * 0.4)
+        // The middle third of the page, with the light's own length taken out
+        // of it: what is left is the room its middle may travel in, so the
+        // light never leaves that third. On a card the round corners stay well
+        // clear of it.
+        let region = bounds.width * Beam.region
+        reach = region * Beam.streak
+        lane = (region - reach) / 2
         let size = CGSize(width: reach, height: Beam.height)
         CATransaction.begin()
         CATransaction.setDisableActions(true)
@@ -152,14 +163,13 @@ final class Streak: NSView {
         }
     }
 
-    /// From just inside one end of the edge to just inside the other, and back,
-    /// for as long as the light is lit.
+    /// Across the middle third and back, for as long as the light is lit.
     private func carry() {
         light.removeAnimation(forKey: "carry")
-        guard lit, window != nil, !Motion.reduced, reach > 0 else { return }
+        guard lit, window != nil, !Motion.reduced, lane > 0 else { return }
         let cross = CABasicAnimation(keyPath: "position.x")
-        cross.fromValue = reach / 2
-        cross.toValue = bounds.width - reach / 2
+        cross.fromValue = bounds.midX - lane
+        cross.toValue = bounds.midX + lane
         cross.duration = Beam.crossing
         cross.autoreverses = true
         cross.repeatCount = .infinity
