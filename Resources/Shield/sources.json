@@ -6,7 +6,7 @@
       "name": "EasyList",
       "url": "https://easylist.to/easylist/easylist.txt",
       "licence": "CC BY-SA 3.0",
-      "lines": 86126
+      "lines": 86129
     },
     {
       "name": "EasyPrivacy",
@@ -59,10 +59,10 @@
   ],
   "files": {
     "network": {
-      "rules": 131012,
-      "size": 27361408,
-      "bytes": 1331931,
-      "hash": "06dfc7cf4526a1e2503d22eef79380470235a97bf467760155142d46e0bd87dc"
+      "rules": 131015,
+      "size": 27362030,
+      "bytes": 1331967,
+      "hash": "c6f0bf355b600260afaea5fc3c42cf31613d7d5707a879a8ed631f9ab6b4e87c"
     },
     "extra": {
       "rules": 864,
@@ -71,10 +71,10 @@
       "hash": "a40111f2bfa1d54cb1725b35a21bf17937e8f741ba2e32245397a8155f289f80"
     },
     "cosmetic": {
-      "rules": 21453,
-      "size": 3467049,
-      "bytes": 497803,
-      "hash": "2043d93ea2ac26c74d7defb6cce1d345d6a67199bc083213579bdebe5feecb8e"
+      "rules": 21609,
+      "size": 3492730,
+      "bytes": 501490,
+      "hash": "3df097681dd0ffab7e994c206b5536c26465db0e9a90ce4a31900765442bb838"
     },
     "scriptlets": {
       "rules": 9254,
