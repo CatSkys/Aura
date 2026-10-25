@@ -233,7 +233,8 @@ struct TabBar: View {
             let row = space.id == browser.spaceID
                 ? Parked(tabs: browser.tabs, active: browser.activeID, splits: browser.splits)
                 : browser.parked[space.id] ?? Parked(tabs: [], active: nil)
-            let shown = rowTabs(row.tabs, splits: row.splits)
+            // A folded group is a name and the tab in front, here as there.
+            let shown = rowTabs(row.tabs, splits: row.splits).filter { !browser.foldedAway($0, in: row) }
             let each = width(in: strip, tabs: shown, splits: row.splits)
             // The neighbour draws no group headings, so its line only ever
             // stands between its pins and its own loose tabs.

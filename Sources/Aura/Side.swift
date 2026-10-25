@@ -278,7 +278,10 @@ struct SideBar: View {
         let pins = row.tabs.filter { $0.pin != nil && !($0.listed && prefs.showsPinRows) }
         let listed = prefs.showsPinRows ? row.tabs.filter { $0.pin != nil && $0.listed } : []
         let rest = row.tabs.filter { tab in
-            tab.pin == nil && (!prefs.splitView || !row.splits.contains(where: { $0.right == tab.id }))
+            tab.pin == nil
+                && (!prefs.splitView || !row.splits.contains(where: { $0.right == tab.id }))
+                // A folded group is a name and the tab in front, here as there.
+                && !browser.foldedAway(tab, in: row)
         }
         let cells = pinCells(pins.count)
         return VStack(alignment: .leading, spacing: 0) {

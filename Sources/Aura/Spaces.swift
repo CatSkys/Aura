@@ -235,6 +235,11 @@ extension Browser {
         }
         editing = active?.isBlank ?? true
         typed = ""
+        // The field belongs to the row that just came on screen. An empty
+        // field that was already empty would keep the list — and the row the
+        // arrows were on — of the space you left, and a Return meant for
+        // nothing would take that row.
+        guess()
         // A row read from its file just now may hold tabs whose time ran out
         // while it wasn't in memory (see Closing.swift).
         closeLeftAlone()

@@ -308,6 +308,7 @@ final class Browser: NSObject, ObservableObject {
         didSet {
             if !editing, siteChip != nil { siteChip = nil }
             if !editing, launching { launching = false }
+            if editing { restLooks() }
         }
     }
     /// True while the field is up over a page for a tab that doesn't exist
@@ -357,7 +358,13 @@ final class Browser: NSObject, ObservableObject {
 
     /// Typed plus whatever the field is quietly finishing for you.
     var completed: String {
-        if let picked, offers.indices.contains(picked) { return offers[picked].key }
+        // With nothing typed the field holds nothing. Walking the arrows down
+        // the resting list marks a row there; lifting its name into the field
+        // would put words there that nobody typed, and put them in the path of
+        // the next keystroke.
+        if let picked, offers.indices.contains(picked), !(typed.isEmpty && !summoning) {
+            return offers[picked].key
+        }
         return typed + (ending ?? "")
     }
 
@@ -2137,7 +2144,20 @@ final class Browser: NSObject, ObservableObject {
     /// pin new to this window, and the tab of a pin taken away closed. A
     /// pinned tab from before pins had ids is matched by letter and page,
     /// then by place.
-    func reconcilePins(_ row: [Tab], space: UUID) -> [Tab] {
+    ///
+    /// `adding` is whether a pin the row has no tab for is one to seat. It is
+    /// when another window says the pins changed, that being what the message
+    /// means. It is not when a row is read from disk. A space's row and its
+    /// pins in pins.json are written together, so a pin pins.json knows and
+    /// the row hasn't got is not a new one: it was taken out of the space and
+    /// left behind in the file — a window closing its tab there, or a build
+    /// that wrote the one without the other. Seating it again is how a fixed
+    /// tab nobody asked for came back, and its page with it, every time that
+    /// space was read: the row is the truth at that point, and the space's
+    /// next write has pins.json agree with it. A pin in *every* space is
+    /// seated either way — it belongs to every row by definition, and no
+    /// row is written without it.
+    func reconcilePins(_ row: [Tab], space: UUID, adding: Bool = true) -> [Tab] {
         let showing = prefs.showsSharedPins
         let shared = showing ? Pins.shared : []
         let sharedIDs = Set(shared.map(\.id))
@@ -2153,10 +2173,14 @@ final class Browser: NSObject, ObservableObject {
             if let found {
                 pinned.removeAll { $0 === found }
                 tab = found
-            } else {
+            } else if adding || sharedIDs.contains(def.id) {
                 tab = Tab(configuration: Web.configuration(space: space))
                 prepare(tab)
                 tab.restore(url: URL(string: def.home) ?? URL(string: "about:blank")!, title: def.title, name: def.name)
+            } else {
+                // The row has no tab for it and nobody said the pins moved:
+                // a leftover in pins.json, not a pin this space has.
+                continue
             }
             tab.pinID = def.id
             tab.everywhere = sharedIDs.contains(def.id)
@@ -2886,6 +2910,7 @@ final class Browser: NSObject, ObservableObject {
             blank.draft = ""
             editing = false
             focusRequest += 1
+            restLooks()
             rememberSession()
             // Asked here too: the blank a window opens with is the one the
             // first ⌘T after adding an extension lands on.
@@ -2901,6 +2926,7 @@ final class Browser: NSObject, ObservableObject {
         typed = ""
         editing = false
         focusRequest += 1
+        restLooks()
         rememberSession()
         if #available(macOS 15.4, *) { Extensions.shared.offerNewTabPage(into: tab) }
     }
@@ -2952,6 +2978,7 @@ final class Browser: NSObject, ObservableObject {
         if floating == tab.id { land() }
         if floatPrevious { leaving() }
         activeID = tab.id
+        if tab.isBlank { restLooks() }
         tab.touch()
         // A tab brought back from last time, or waking from ⌘W while pinned,
         // opens the moment you look at it — and only if there was nothing to
@@ -3597,6 +3624,17 @@ final class Browser: NSObject, ObservableObject {
         return group.collapsed ? shown.filter { $0.id == (activeSplit?.left ?? activeID) } : shown
     }
 
+    /// A tab one of another space's folded groups hides, for that space shown
+    /// beside this one while two fingers bring it in: every tab of the group
+    /// but the one in front, as on screen (see visibleTabs).
+    func foldedAway(_ tab: Tab, in row: Parked) -> Bool {
+        guard prefs.usesTabGroups, let id = tab.groupID,
+              let group = row.groups?.first(where: { $0.id == id }), group.collapsed
+        else { return false }
+        let front = row.active.flatMap { active in row.splits.first { $0.contains(active) }?.left ?? active }
+        return tab.id != front
+    }
+
     /// A group lasts as long as its tabs: the last one gone, it goes too.
     private func removeEmptyGroup(_ id: UUID?) {
         guard let id, !tabs.contains(where: { $0.groupID == id }) else { return }
@@ -4118,7 +4156,9 @@ final class Browser: NSObject, ObservableObject {
             bySavedIndex[savedIndex] = tab
         }
         let said = bySavedIndex[saved.active]?.id
-        row = reconcilePins(row, space: space)
+        // The row as it was written, pins and all: a pin it hasn't got is
+        // one this space is done with (see reconcilePins).
+        row = reconcilePins(row, space: space, adding: false)
         // Pairs, whether Split View is on or not: off, they wait, as groups
         // do. Each tab in one pair at most, and only a pair that still holds.
         var restoredSplits: [TabSplit] = []
@@ -4552,10 +4592,15 @@ final class Browser: NSObject, ObservableObject {
         summoning = true
         typed = ""
         editing = true
+        // An empty field that was already empty didn't change, so nothing
+        // recomputed the list: the switcher asks for its own again.
+        guess()
         focusRequest += 1
     }
 
-    private func guess() {
+    /// The list under the field and the ending inside it, worked out again
+    /// from what is typed. Not private: a space switch asks for it too.
+    func guess() {
         // Only a plain field asks the engine (see askEngine, at the end).
         if summoning || siteChip != nil || typed.trimmingCharacters(in: .whitespaces).isEmpty {
             suggester.stop()
@@ -4583,7 +4628,11 @@ final class Browser: NSObject, ObservableObject {
         }
 
         guard !typed.trimmingCharacters(in: .whitespaces).isEmpty else {
-            offers = []
+            // Nothing typed, so nothing to answer but the question the field
+            // is always asked when it comes up empty: where could I go from
+            // here. An empty field with nothing under it is a cursor on a
+            // blank page; this one is already replying.
+            offers = resting()
             ending = nil
             picked = nil
             siteOffer = nil
@@ -4717,6 +4766,41 @@ final class Browser: NSObject, ObservableObject {
             }
     }
 
+    /// What the field offers with nothing typed in it: the pages already
+    /// open, then the last few places you were. Arc's command bar says the
+    /// same thing under an empty field, and it is the difference between a
+    /// field that waits to be told and one that is already answering.
+    ///
+    /// The page on screen is left out of both lists, being where you are,
+    /// and the places are held to what is not already open, so nothing is
+    /// offered twice. Few of each: a list that reaches the bottom of the
+    /// window is a page, and this is a field.
+    private func resting() -> [Suggestion] {
+        let open = Array(openPages(matching: "").prefix(5))
+        var seen = Set(open.map { History.identity(for: $0.url) })
+        // Where you already are is the one place the field must not offer to
+        // take you: not open (openPages leaves it out) and not somewhere to
+        // go back to either.
+        if let here = active?.address { seen.insert(History.identity(for: here)) }
+        let recent = history.recent().compactMap { trace -> Suggestion? in
+            let key = History.identity(for: trace.url)
+            guard !seen.contains(key) else { return nil }
+            seen.insert(key)
+            return Suggestion(key: Address.pretty(trace.url), title: trace.title, url: trace.url, kind: .visited)
+        }
+        return open + Array(recent.prefix(3))
+    }
+
+    /// The field just came up, or down, or a tab changed under it: an empty
+    /// field offers the resting list again, so what is open now is in it.
+    private func restLooks() {
+        guard !summoning, typed.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        offers = resting()
+        picked = nil
+        ending = nil
+        siteOffer = nil
+    }
+
     /// A row clicked in the list, taken directly rather than through the
     /// keyboard's selection. The pointer and the arrow keys are answering the
     /// same question but must not share an answer: a list that appears under a
@@ -4827,6 +4911,14 @@ final class Browser: NSObject, ObservableObject {
     /// tab you were on is left as it was, behind it unless `front` (⇧⌘Return)
     /// asks to go there.
     func submit(aside: Bool = false, front: Bool = false) {
+        // An empty field is asking nothing. The list under it is there to be
+        // pointed at, and Return puts the field away rather than shaking at
+        // the nothing that was typed — and rather than going to whichever
+        // row happened to be first.
+        if picked == nil, typed.trimmingCharacters(in: .whitespaces).isEmpty {
+            dismiss()
+            return
+        }
         // A page already open is switched to, not opened again.
         if let picked, offers.indices.contains(picked),
            let id = offers[picked].tab,

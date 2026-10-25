@@ -35,12 +35,14 @@ struct Omnibox: View {
     private func content(width: CGFloat) -> some View {
         ZStack {
             if over {
-                // The page is still there, just out of the way.
-                Rectangle()
-                    .fill(Palette.ground.opacity(0.74))
+                // The page stays as it was, the panel over it as Arc's command
+                // bar is over its page: nothing dimmed, because the page is
+                // still yours to read behind the field. This sheet is clear —
+                // it is here only to take the press that puts the field away.
+                Color.clear
+                    .contentShape(Rectangle())
                     .ignoresSafeArea(.all, edges: fitted ? [] : .all)
                     .onTapGesture { browser.dismiss() }
-                    .transition(.opacity)
             }
 
             field
@@ -104,7 +106,7 @@ struct Omnibox: View {
                     )
                     .allowsHitTesting(false)
             )
-            .shadow(color: .black.opacity(0.06), radius: 24, y: 8)
+            .shadow(color: .black.opacity(0.12), radius: 28, y: 10)
             .modifier(Shake(travel: shake))
             .onChange(of: browser.refusals) { _, _ in
                 shake = 0
@@ -131,7 +133,7 @@ struct Omnibox: View {
                     .onTapGesture { _ = browser.lockSiteOffer() }
             }
             ForEach(Array(browser.offers.enumerated()), id: \.element.id) { index, offer in
-                Row(offer: offer, picked: browser.picked == index)
+                Row(offer: offer, picked: browser.picked == index, showsHint: !browser.summoning)
                     .contentShape(Rectangle())
                     .onTapGesture { browser.take(offer) }
             }
@@ -142,7 +144,7 @@ struct Omnibox: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .strokeBorder(Palette.hairline, lineWidth: 1)
         )
-        .shadow(color: .black.opacity(0.07), radius: 20, y: 6)
+        .shadow(color: .black.opacity(0.18), radius: 38, y: 14)
         .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
     }
 
@@ -152,6 +154,9 @@ struct Omnibox: View {
         /// Where the arrow keys have walked to. The pointer gets its own,
         /// quieter mark, and changes nothing but the look of the row.
         let picked: Bool
+        /// Whether a row for a page already open says so at its end. The
+        /// switcher is nothing but those, so it says it once, by being.
+        var showsHint = true
 
         @State private var hovering = false
 
@@ -183,17 +188,48 @@ struct Omnibox: View {
                         .foregroundStyle(Palette.muted)
                 case .open:
                     // Already open: naming it takes you back to it rather than
-                    // opening a second copy.
-                    Circle()
-                        .fill(Palette.ink.opacity(0.55))
-                        .frame(width: 5, height: 5)
-                        .padding(.horizontal, 2)
+                    // opening a second copy. Its own icon when this Mac has it,
+                    // as a tab's row does; the dot when it hasn't.
+                    Group {
+                        if let site = Favicons.site(offer.url), let icon = Favicons.shared.cached(site) {
+                            Image(nsImage: icon)
+                                .resizable()
+                                .interpolation(.high)
+                                .frame(width: 14, height: 14)
+                                .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+                        } else {
+                            Circle()
+                                .fill(Palette.ink.opacity(0.55))
+                                .frame(width: 5, height: 5)
+                        }
+                    }
+                    .frame(width: 14, height: 14)
+                case .visited:
+                    // Somewhere you have been: its icon where the Mac has one,
+                    // and no mark at all where it hasn't — a grey square
+                    // standing in for a site nobody has drawn yet is worse
+                    // than the address saying it plainly.
+                    Group {
+                        if let site = Favicons.site(offer.url), let icon = Favicons.shared.cached(site) {
+                            Image(nsImage: icon)
+                                .resizable()
+                                .interpolation(.high)
+                                .frame(width: 14, height: 14)
+                                .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+                        } else {
+                            // No icon: the mark's place is still held, or this
+                            // row's address would start further left than the
+                            // ones above it and read as a different list.
+                            Color.clear.frame(width: 14, height: 14)
+                        }
+                    }
+                    .frame(width: 14, height: 14)
                 case .command:
                     Image(systemName: "command")
                         .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(Palette.muted)
                 default:
-                    EmptyView()
+                    Color.clear.frame(width: 14, height: 14)
                 }
                 // The row reads as 1.0.4's did, without the www; the key
                 // itself keeps it, for completing and going there.
@@ -209,7 +245,24 @@ struct Omnibox: View {
                         .lineLimit(1)
                         .truncationMode(.tail)
                 }
-                Spacer(minLength: 0)
+                Spacer(minLength: 8)
+                if showsHint, case .open = offer.kind {
+                    // What taking this row does, at the end of it: Arc's
+                    // "Switch to Tab", with the arrow its rows carry. The
+                    // switcher is told not to ask, every row there being one.
+                    Text(Localized("Switch to Tab"))
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(Palette.muted)
+                        .fixedSize()
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 9.5, weight: .semibold))
+                        .foregroundStyle(Palette.muted)
+                        .frame(width: 18, height: 18)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 5, style: .continuous)
+                                .strokeBorder(Palette.hairline, lineWidth: 1)
+                        )
+                }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 9)
