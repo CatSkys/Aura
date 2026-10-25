@@ -242,12 +242,12 @@ final class DownloadLifecycleTests: XCTestCase {
         let privateSource = Tab(shy: true)
         let tab = browser.open(URL(string: "about:blank")!, foreground: true, from: privateSource)
         page = tab
-        window.contentView = tab.web
+        window.contentView = tab.web.view
         tab.go(to: fixture.url("/page"))
         try await waitUntil { tab.committed == fixture.url("/page") && !tab.loading }
         try await waitUntil { fixture.completed("/page") == 1 }
 
-        _ = try await requestDownload("/private.bin", from: tab.web)
+        _ = try await requestDownload("/private.bin", from: tab.web.webKit)
         XCTAssertTrue(browser.fetches.entries.isEmpty)
 
         try await waitUntil {
@@ -262,7 +262,7 @@ final class DownloadLifecycleTests: XCTestCase {
     private func openFixturePage() async throws -> BrowserTab {
         let tab = browser.open(URL(string: "about:blank")!, foreground: true)
         page = tab
-        window.contentView = tab.web
+        window.contentView = tab.web.view
         tab.go(to: fixture.url("/page"))
         try await waitUntil { tab.committed == fixture.url("/page") && !tab.loading }
         try await waitUntil { fixture.completed("/page") == 1 }
@@ -270,7 +270,7 @@ final class DownloadLifecycleTests: XCTestCase {
     }
 
     private func startDownload(_ path: String, in tab: BrowserTab) async throws -> FetchEntry {
-        let download = try await requestDownload(path, from: tab.web)
+        let download = try await requestDownload(path, from: tab.web.webKit)
         return try XCTUnwrap(browser.fetches.entry(for: download))
     }
 

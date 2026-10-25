@@ -123,8 +123,8 @@ extension Browser {
         let screen = NSEvent.mouseLocation
         guard let window = webView.window else { return }
         let atWindow = window.convertPoint(fromScreen: screen)
-        let atView = webView.convert(atWindow, from: nil)
-        menu.popUp(positioning: nil, at: atView, in: webView)
+        let atView = webView.view.convert(atWindow, from: nil)
+        menu.popUp(positioning: nil, at: atView, in: webView.view)
     }
 
     /// Fetched once, written as an actual image rather than a reference to
@@ -176,7 +176,7 @@ extension Browser {
         """
         let frame = tab.imageFrame
         let answer: Any? = await withCheckedContinuation { done in
-            web.callAsyncJavaScript(read, arguments: ["src": url.absoluteString], in: frame, in: Web.world) { result in
+            web.webKit.callAsyncJavaScript(read, arguments: ["src": url.absoluteString], in: frame, in: Web.world) { result in
                 done.resume(returning: try? result.get())
             }
         }
@@ -199,7 +199,7 @@ extension Browser {
     /// The same WKDownload this app already knows how to finish — asked for
     /// directly, since a context menu's "Download Image" never reaches
     /// WKNavigationDelegate to ask for one on its own.
-    func downloadImage(at url: URL, from webView: WKWebView) {
+    func downloadImage(at url: URL, from webView: any PageSurface) {
         webView.startDownload(using: URLRequest(url: url)) { [weak self] download in
             self?.keep(download)
         }

@@ -4591,7 +4591,7 @@ enum ExtensionShims {
     /// with the sign-ins of the page it's made through, and a private tab's
     /// are its own, whatever the extension may see.
     static func downloadPage(active: Tab?, tabs: [Tab]) -> WKWebView? {
-        ([active].compactMap { $0 } + tabs).filter { !$0.shy }.lazy.compactMap(\.built).first
+        ([active].compactMap { $0 } + tabs).filter { !$0.shy }.lazy.compactMap(\.built).first?.webKit
     }
 
     /// Downloads an extension asked for, by address, until they land; then

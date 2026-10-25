@@ -93,7 +93,7 @@ final class ShortcutTests: XCTestCase {
         func policy(_ flags: NSEvent.ModifierFlags, type: WKNavigationType = .linkActivated,
                     download: Bool = false) async -> WKNavigationActionPolicy {
             await withCheckedContinuation { continuation in
-                browser.webView(tab.web, decidePolicyFor: LinkAction(target, flags, type, download),
+                browser.webView(tab.web.webKit, decidePolicyFor: LinkAction(target, flags, type, download),
                                 preferences: WKWebpagePreferences()) { answer, _ in
                     continuation.resume(returning: answer)
                 }

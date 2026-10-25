@@ -704,7 +704,7 @@ final class DuskRelay: NSObject, WKScriptMessageHandler {
             guard frame.isMainFrame else {
                 guard said["frame"] as? Bool == true else { return }
                 tab.duskFrames.append(frame)
-                DuskRelay.tell(frame, tab.dusked, in: web) { gone in if gone { tab.duskFrames.removeAll { $0 === frame } } }
+                DuskRelay.tell(frame, tab.dusked, in: web.webKit) { gone in if gone { tab.duskFrames.removeAll { $0 === frame } } }
                 return
             }
             let on = said["on"] as? Bool ?? false
@@ -719,10 +719,10 @@ final class DuskRelay: NSObject, WKScriptMessageHandler {
                 Dusk.shared.heard()
                 // Every frame on the page follows it.
                 for frame in tab.duskFrames {
-                    DuskRelay.tell(frame, on, in: web) { gone in if gone { tab.duskFrames.removeAll { $0 === frame } } }
+                    DuskRelay.tell(frame, on, in: web.webKit) { gone in if gone { tab.duskFrames.removeAll { $0 === frame } } }
                 }
             }
-            web.underPageBackgroundColor = on ? Dusk.underPage : nil
+            web.webKit.underPageBackgroundColor = on ? Dusk.underPage : nil
         }
     }
 

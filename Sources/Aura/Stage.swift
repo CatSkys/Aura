@@ -27,7 +27,7 @@ struct Page: View {
             // the stage was never told to take it back when it landed, and
             // the tab stayed empty. Nothing, then the page, is a change.
             if holdsPage {
-                WebStage(page: tab.isBlank || tab.asleep || tab.floating ? nil : tab.web, corner: corner)
+                WebStage(page: tab.isBlank || tab.asleep || tab.floating ? nil : tab.web.view, corner: corner)
             }
 
             if let cover = tab.cover {

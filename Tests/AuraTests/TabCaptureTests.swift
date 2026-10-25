@@ -41,8 +41,8 @@ final class TabCaptureTests: XCTestCase {
     func testClosingTabEndsCaptureWithoutStoppingAnotherTab() async throws {
         let tab = try await capture()
         let other = try await capture()
-        let web = tab.web
-        let otherWeb = other.web
+        let web = tab.web.webKit
+        let otherWeb = other.web.webKit
         browser.close(tab)
         try await ended(web)
         XCTAssertTrue(browser.tabs.contains { $0 === other })
@@ -52,7 +52,7 @@ final class TabCaptureTests: XCTestCase {
 
     func testClosingLastTabEndsCaptureAndLeavesBlankTab() async throws {
         let tab = try await capture()
-        let web = tab.web
+        let web = tab.web.webKit
         XCTAssertEqual(browser.tabs.count, 1)
         browser.close(tab)
         try await ended(web)
@@ -63,7 +63,7 @@ final class TabCaptureTests: XCTestCase {
     func testClosingPinnedTabEndsCaptureAndKeepsPin() async throws {
         let tab = try await capture()
         tab.pin = "C"
-        let web = tab.web
+        let web = tab.web.webKit
         browser.close(tab)
         try await ended(web)
         XCTAssertTrue(browser.tabs.contains { $0 === tab })
@@ -73,7 +73,7 @@ final class TabCaptureTests: XCTestCase {
 
     func testClosingAllTabsEndsItsCapture() async throws {
         let tab = try await capture()
-        let web = tab.web
+        let web = tab.web.webKit
         browser.closeAll()
         try await ended(web)
         XCTAssertTrue(browser.tabs.isEmpty)
@@ -88,7 +88,7 @@ final class TabCaptureTests: XCTestCase {
         let tab = Tab(shy: true, configuration: configuration)
         browser.prepare(tab)
         browser.insert(tab, at: browser.tabs.count)
-        let web = tab.web
+        let web = tab.web.webKit
         web.uiDelegate = permission
         let window = NSWindow(contentRect: NSRect(x: -20000, y: -20000, width: 640, height: 480),
                               styleMask: [.borderless], backing: .buffered, defer: false)

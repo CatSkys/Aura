@@ -38,7 +38,7 @@ extension Browser {
     /// no page to look at.
     private func inspector() -> NSObject? {
         guard let tab = active, !tab.isBlank else { return nil }
-        let web = tab.web
+        let web = tab.web.view
         let get = NSSelectorFromString("_inspector")
         guard web.responds(to: get) else { return nil }
         return web.perform(get)?.takeUnretainedValue() as? NSObject

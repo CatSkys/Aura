@@ -42,12 +42,12 @@ final class PDFExportTests: XCTestCase {
 
     private func page(_ text: String, in browser: Browser) async throws -> Aura.Tab {
         let tab = browser.open(try XCTUnwrap(URL(string: "about:blank")), foreground: true)
-        tab.web.frame = NSRect(x: 0, y: 0, width: 700, height: 500)
+        tab.web.view.frame = NSRect(x: 0, y: 0, width: 700, height: 500)
         tab.web.loadHTMLString("<html><body><h1>\(text)</h1></body></html>", baseURL: URL(string: "https://example.invalid/"))
         let deadline = Date().addingTimeInterval(15)
         while Date() < deadline {
             if !tab.web.isLoading,
-               let body = try? await tab.web.evaluateJavaScript("document.body.innerText"),
+               let body = try? await tab.web.webKit.evaluateJavaScript("document.body.innerText"),
                (body as? String)?.contains(text) == true {
                 XCTAssertFalse(tab.isBlank)
                 return tab

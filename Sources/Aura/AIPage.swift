@@ -41,7 +41,7 @@ enum AIPage {
     static func read(_ tab: Tab) async -> Read? {
         guard let web = tab.built else { return nil }
         let value: Any? = await withCheckedContinuation { done in
-            web.evaluateJavaScript(script, in: nil, in: Web.world) { result in done.resume(returning: try? result.get()) }
+            web.webKit.evaluateJavaScript(script, in: nil, in: Web.world) { result in done.resume(returning: try? result.get()) }
         }
         guard let found = value as? [String: Any], let text = found["text"] as? String,
               !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty

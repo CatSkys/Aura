@@ -132,7 +132,7 @@ final class SiteNotifications: NSObject {
             else { return completionHandler(nil) }
             let tab = browser.open(url, foreground: true)
             Browsers.show(browser)
-            completionHandler(tab.web)
+            completionHandler(tab.web.webKit)
         }
     }
 

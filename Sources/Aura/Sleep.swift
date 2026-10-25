@@ -165,8 +165,8 @@ extension Browser {
         if tab.floating || floating == tab.id { return "its video is out" }
         if let web = tab.built {
             if web.cameraCaptureState != .none || web.microphoneCaptureState != .none { return "on a call" }
-            if #available(macOS 15.4, *), ExtensionCapture.screen(web) { return "recording the screen" }
-            if downloading.contains(where: { $0.webView === web }) { return "downloading" }
+            if #available(macOS 15.4, *), ExtensionCapture.screen(web.webKit) { return "recording the screen" }
+            if downloading.contains(where: { $0.webView === web.webKit }) { return "downloading" }
         }
         if heldDialogs[tab.id]?.isEmpty == false || paneQuestions.contains(where: { $0.tab == tab.id }) {
             return "a question waiting"
