@@ -130,14 +130,23 @@ extension Browser {
 /// The peek over the page: the page dimmed around it, and the panel.
 struct PeekLayer: View {
     @ObservedObject var browser: Browser
+    /// The page's corners, as a card (see CardEdge). The dimming is cut to
+    /// them as well as laid out to the page's edges (see ContentView's
+    /// `pageEdges`): a rectangle inside a rounded card left a darker notch
+    /// at each of the card's corners, on the window's own ground rather than
+    /// on the page. A click that closes the peek is a click on the page, so
+    /// the dimming's own shape is what takes it.
+    var corner: CGFloat = 0
 
     var body: some View {
         ZStack {
             // The dimming only fades. Grown and shrunk with the panel, its
             // edges travelled across the window as it came (Drice, 24 Sep 2026).
             if browser.peekTab != nil {
+                let page = RoundedRectangle(cornerRadius: corner, style: .continuous)
                 Color.black.opacity(0.22)
-                    .contentShape(Rectangle())
+                    .clipShape(page)
+                    .contentShape(page)
                     .onTapGesture { browser.closePeek() }
                     .transition(.opacity)
             }
