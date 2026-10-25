@@ -1,3 +1,4 @@
+import Compression
 import CryptoKit
 import Foundation
 import WebKit
@@ -20,6 +21,10 @@ import WebKit
 //             ones that take a whole page away instead of an advert
 //   cosmetic  what to hide — a stylesheet applied before the first frame, so
 //             the empty box where an advert was never shows
+//
+// Each file is shipped squeezed (see Tools/filters.py): every rule repeats the
+// same keys and the same kinds of request, so twenty-four megabytes of JSON
+// read as one and a bit. It is unpacked here before WebKit compiles it.
 //
 // Which of them a site gets is the site's level. Off is off. Requests is the
 // blocking alone, for a site whose layout the hiding broke. Everything is all
@@ -114,15 +119,35 @@ final class Shield: ObservableObject {
     /// launch after that does.
     private func listing(_ part: Part) -> (identifier: String, json: String)? {
         guard let folder = Bundle.main.url(forResource: "Shield", withExtension: nil),
-              let json = try? String(
-                contentsOf: folder.appendingPathComponent("\(part.rawValue).json"),
-                encoding: .utf8)
+              let packed = try? Data(
+                contentsOf: folder.appendingPathComponent("\(part.rawValue).json.z")),
+              let json = Shield.unpack(packed)
         else { return nil }
-        let hash = SHA256.hash(data: Data(json.utf8))
+        let hash = SHA256.hash(data: packed)
             .map { String(format: "%02x", $0) }
             .joined()
             .prefix(16)
         return ("aura-shield-\(part.rawValue)-\(hash)", json)
+    }
+
+    /// The rules as the bundle holds them: how big they were in four bytes,
+    /// then the deflate stream it was squeezed into. WebKit is given the JSON
+    /// this grows back into.
+    nonisolated static func unpack(_ packed: Data) -> String? {
+        guard packed.count > 4 else { return nil }
+        let size = Int(packed[packed.startIndex]) << 24
+            | Int(packed[packed.startIndex + 1]) << 16
+            | Int(packed[packed.startIndex + 2]) << 8
+            | Int(packed[packed.startIndex + 3])
+        guard size > 0 else { return nil }
+        var raw = [UInt8](repeating: 0, count: size)
+        let written = packed.dropFirst(4).withUnsafeBytes { source -> Int in
+            guard let start = source.bindMemory(to: UInt8.self).baseAddress else { return 0 }
+            return compression_decode_buffer(
+                &raw, size, start, source.count, nil, COMPRESSION_ZLIB)
+        }
+        guard written == size else { return nil }
+        return String(decoding: raw, as: UTF8.self)
     }
 
     func compile() {

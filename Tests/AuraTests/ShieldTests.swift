@@ -17,8 +17,9 @@ final class ShieldTests: XCTestCase {
         .appendingPathComponent("Resources/Shield")
 
     private func rules(_ part: String) throws -> [[String: Any]] {
-        let data = try Data(contentsOf: Self.root.appendingPathComponent("\(part).json"))
-        let parsed = try JSONSerialization.jsonObject(with: data)
+        let packed = try Data(contentsOf: Self.root.appendingPathComponent("\(part).json.z"))
+        let json = try XCTUnwrap(Shield.unpack(packed), "\(part) would not unpack")
+        let parsed = try JSONSerialization.jsonObject(with: Data(json.utf8))
         return try XCTUnwrap(parsed as? [[String: Any]], part)
     }
 

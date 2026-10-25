@@ -32,8 +32,10 @@ import argparse
 import hashlib
 import json
 import re
+import struct
 import sys
 import urllib.request
+import zlib
 from datetime import date
 from pathlib import Path
 
@@ -109,6 +111,22 @@ PROCEDURAL = (
 # How many selectors go into one rule. A selector WebKit refuses takes its
 # rule with it, so a rule is small enough to be worth losing.
 CHUNK = 400
+
+
+def pack(text: str) -> bytes:
+    """The rules, as the bundle holds them.
+
+    Four bytes saying how big the text was, then a deflate stream. Every rule
+    in the JSON repeats the same keys, the same kinds of request and the same
+    protocol-and-subdomain prefix, so the file is a twentieth of what it reads
+    as — and WebKit wants the JSON, which is unpacked once per launch from
+    Shield.swift. The four bytes are there because deflate keeps no record of
+    what it grew from, and reading the whole stream to find out is worse than
+    saying.
+    """
+    raw = text.encode("utf-8")
+    squeeze = zlib.compressobj(9, zlib.DEFLATED, -15)
+    return struct.pack(">I", len(raw)) + squeeze.compress(raw) + squeeze.flush()
 
 
 def fetch(force: bool) -> None:
@@ -333,12 +351,15 @@ class File:
                 trigger["resource-type"] = sorted(kinds)
             rules.append({"trigger": trigger, "action": action})
         text = json.dumps(rules, ensure_ascii=False, separators=(",", ":"))
-        (OUT / f"{self.name}.json").write_text(text, encoding="utf-8")
-        digest = hashlib.sha256(text.encode()).hexdigest()
-        print(f"{self.name}: {len(rules)} rules, {len(text)} bytes, {digest[:12]}")
+        packed = pack(text)
+        (OUT / f"{self.name}.json.z").write_bytes(packed)
+        digest = hashlib.sha256(packed).hexdigest()
+        print(f"{self.name}: {len(rules)} rules, {len(text)} bytes read as, "
+              f"{len(packed)} as it is shipped, {digest[:12]}")
         for reason, count in sorted(self.refused.items(), key=lambda pair: -pair[1]):
             print(f"    left out: {count} {reason}")
-        return {"rules": len(rules), "bytes": len(text), "hash": digest}
+        return {"rules": len(rules), "size": len(text), "bytes": len(packed),
+                "hash": digest}
 
 
 def rule(trigger: dict, action: str, selector: str = "") -> dict:

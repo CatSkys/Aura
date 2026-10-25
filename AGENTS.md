@@ -29,7 +29,7 @@ Engine/                      AI 引擎源码与沙盒 entitlements（./engine.sh
 Icon/  Installer/            logo 种子（Tools/mark.py 写进 AuraMark.swift）、DMG 背景
 build.sh  fresh.sh  engine.sh  publish.sh  tap.sh  bench  ideas      根目录脚本，头部注释即用法
 Tools/i18n.py  Tools/mark.py  Tools/filters.py                     翻译扫描 / logo 路径生成 / 过滤表转成规则表
-Resources/Shield/            生成的 network/extra/cosmetic.json，Shield.swift 编译它；sources.json 记来源与授权
+Resources/Shield/            生成的 network/extra/cosmetic.json.z（前 4 字节原大小，其余 raw deflate），Shield.swift 解开交 WebKit；sources.json 记来源与授权
 Aura.sdef                    AppleScript 字典；实现是 Scripting.swift，build.sh 放进 bundle
 VERSION                      版本号；发版才动，前两位由用户定
 ```

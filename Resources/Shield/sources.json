@@ -18,18 +18,21 @@
   "files": {
     "network": {
       "rules": 113421,
-      "bytes": 23739427,
-      "hash": "709cfc4456c17cdd0bf8e4c6405ce85f3ef3cfcf700294ffeb187eb5b4b89c10"
+      "size": 23739427,
+      "bytes": 1077715,
+      "hash": "07cf46dfccd62fdfdd03c35ab35e2ca569a5c863f783fcb28f357857d7cbb6d2"
     },
     "extra": {
       "rules": 691,
-      "bytes": 102096,
-      "hash": "1d65ef2c5aa53a803b8ade6c0f3c15913c62e85a32ebcd20069be41c408483ea"
+      "size": 102096,
+      "bytes": 6696,
+      "hash": "e857b906918a13a529799a4b4654fe7c80d161d7672bb022a03742be68f36893"
     },
     "cosmetic": {
       "rules": 10508,
-      "bytes": 1795945,
-      "hash": "774bf6317efc69e8d62b9d087d4deda507f312d6d729fff9c64145ebb3ba1858"
+      "size": 1795945,
+      "bytes": 269039,
+      "hash": "ccc2cf6aa4435b21f43f0a3504493714bbb65e979e26943b184aa6c81c88d1c8"
     }
   }
 }
