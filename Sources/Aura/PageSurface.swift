@@ -62,6 +62,8 @@ protocol PageSurface: AnyObject {
     func stopLoading()
     @discardableResult func goBack() -> WKNavigation?
     @discardableResult func goForward() -> WKNavigation?
+    /// Straight to a page several steps away, as one step.
+    @discardableResult func go(to item: WKBackForwardListItem) -> WKNavigation?
 
     /// The page laid out again at a size of its own (⌘+ and ⌘−), and the
     /// picture pushed around under a pinch — two different things that both
@@ -82,6 +84,16 @@ protocol PageSurface: AnyObject {
     func open(_ url: URL)
 
     var isInspectable: Bool { get set }
+
+    /// Translate Page to <your language>, or Show Original once it is: the
+    /// item the page's own menu offers, worked out from the page's state (see
+    /// Translate.swift). Nothing while the switch is off.
+    func translateItem() -> NSMenuItem?
+
+    /// Whether the page is translated, and Translate Page / Show Original
+    /// (see Translate.swift): read by the page's own menu, set by the tab.
+    var translating: (() -> Bool)? { get set }
+    var onTranslate: (() -> Void)? { get set }
 
     // MARK: - what Aura's page does on its own
 
@@ -134,4 +146,9 @@ protocol PageSurface: AnyObject {
 extension PageSurface {
     /// Most of the calls in Aura want the answer and nothing else.
     func evaluateInSearch(_ js: String) { evaluateInSearch(js, then: nil) }
+
+    /// The same for a script with nothing to say back. WebKit's own method
+    /// defaults its handler; a protocol requirement can't, so the short call
+    /// is a method of its own here rather than at every call site.
+    func evaluateJavaScript(_ js: String) { evaluateJavaScript(js, completionHandler: nil) }
 }

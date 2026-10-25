@@ -14,4 +14,4 @@ swiftc \
   "$repo_root/Tests/HistoryRegression/main.swift" \
   -o "$test_root/history-regression"
 
-SEARCH_HISTORY_TEST_ROOT="$test_root/store" "$test_root/history-regression"
+AURA_HISTORY_TEST_ROOT="$test_root/store" "$test_root/history-regression"

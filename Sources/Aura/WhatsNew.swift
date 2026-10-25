@@ -35,17 +35,22 @@ enum WhatsNew {
         Toggle(title: "AI on pages", detail: "Summarize a page or ask about it. Choose where it runs in Settings › AI.",
                since: "1.0.5", get: { $0.ai }, set: { $0.ai = $1 }),
     ] : []) + [
-        Toggle(title: "Split View", detail: "Two tabs side by side: drag a tab to the edge of a page, or press ⌥⌘N.",
-               since: "1.0.5", get: { $0.splitView }, set: { $0.splitView = $1 }),
-        Toggle(title: "Search a site from the address field", detail: "The start of a site's name, then Tab: red, Tab, and your words search Reddit.",
-               since: "1.0.5", get: { $0.searchesSites }, set: { $0.searchesSites = $1 }),
+        Toggle(title: "Suggestions from your search engine", detail: "Searches suggested as you type. What you type is sent to your engine; never from a private tab.",
+               since: "1.0.6", get: { $0.engineSuggests }, set: { $0.engineSuggests = $1 }),
+        Toggle(title: "Pins keep their site", detail: "Links elsewhere open in a peek, and ⌘W takes a pin back to its page, as in Arc.",
+               since: "1.0.6", get: { $0.pinsKeepSite }, set: { $0.pinsKeepSite = $1 }),
+        Toggle(title: "Darken light pages", detail: "While Search is dark, pages with no dark look of their own are darkened.",
+               since: "1.0.6", get: { $0.darkensPages }, set: { $0.darkensPages = $1 }),
+        Toggle(title: "Roomier tabs", detail: "Taller rows and larger titles in the sidebar.",
+               since: "1.0.6", get: { $0.roomyTabs }, set: { $0.roomyTabs = $1 }),
+        Toggle(title: "New tab in a floating field", detail: "⌘T raises the address field over the page you are on, as in Arc.",
+               since: "1.0.6", get: { $0.floatingNewTab }, set: { $0.floatingNewTab = $1 }),
+
         Toggle(title: "Pinned rows", detail: "Pins as rows with their names, under the squares, as in Arc. Right-click a tab to pin it as a row.",
                since: "1.0.5", get: { $0.listsPins }, set: { $0.listsPins = $1 }),
         Toggle(title: "Start with a fresh window", detail: "Your pinned tabs, tab groups and named tabs, and none of last time's others.",
                since: "1.0.5", get: { $0.startsFresh }, set: { $0.startsFresh = $1 }),
 
-        Toggle(title: "Tab groups", detail: "Named sections of tabs. Right-click a tab to start one.",
-               since: "1.0.4", get: { $0.usesTabGroups }, set: { $0.usesTabGroups = $1 }),
         Toggle(title: "Sidebar on the right", detail: "The tabs down the right edge of the window.",
                since: "1.0.4", get: { $0.sidebar && $0.sidePosition == .right },
                set: { prefs, on in
@@ -68,14 +73,15 @@ enum WhatsNew {
         Toggle(title: "Bookmarks bar", detail: "Your bookmarks in a row above the page.",
                since: "1.0.2", get: { $0.bookmarksBar }, set: { $0.bookmarksBar = $1 }),
         Toggle(title: "Float the video when you switch apps", detail: "A playing video follows you out into a small window.",
-               since: "1.0.2", get: { $0.floatsAway }, set: { $0.floatsAway = $1 }),
+               since: "1.0.2", get: { $0.floatsAway }, set: { prefs, on in if on { prefs.floatOwn = .tabsOrApps } else { prefs.floatsAway = false } }),
         Toggle(title: "Pages at 120 Hz", detail: "Smoother scrolling and animations on screens that can. Uses more battery.",
-               since: "1.0.2", get: { $0.fastPages != .never }, set: { $0.fastPages = $1 ? .always : .never }),
+               since: "1.0.2", get: { $0.fastPages != .never }, set: { $0.fastPages = $1 ? .onPower : .never }),
         Toggle(title: "Scroll with the middle button", detail: "Click the wheel, then move the mouse to scroll, as on Windows.",
                since: "1.0.3", get: { $0.autoScroll }, set: { $0.autoScroll = $1 }),
     ]
 
     static let releases: [Release] = [
+        Release(version: "1.0.6"),
         Release(version: "1.0.5"),
         Release(version: "1.0.4"),
     ]
@@ -136,10 +142,44 @@ enum WhatsNew {
                 "Signing in to OpenRouter is not offered, since its callback lives on a server Aura doesn't have; a key pasted into Settings › AI works the same, and the model on this Mac is untouched.",
             ],
             better: [
-                "Everything Search 1.0.5 did, which is everything below this line.",
+                "Everything Search 1.0.6 did, which is everything below this line.",
                 "Sentence by sentence, the app says what it means in two languages now: a missing translation shows in English rather than as a blank.",
             ],
             fixed: []
+        ),
+        Notes(
+            version: "1.0.6", date: "24 October 2026",
+            headline: "A side panel, blocked pop-ups you can open, and a month of your fixes. What's new is off until you turn it on, and the card after the update offers it.",
+            new: [
+                "An extension's side panel, as in Chrome: Claude's, ChatGPT's or Sider's panel opens beside the page instead of in a tab.",
+                "A pop-up refused because no click asked for it says so beside the tab's title, with Open and Always Allow, as in Safari.",
+                "Suggestions from your search engine as you type, never from a private tab.",
+                "Extensions in private tabs, each with its own switch in Settings › Extensions.",
+                "Pins go back home and keep their site, with links elsewhere in a peek; pins can sit above every space.",
+                "Tabs can close themselves after a while, and chosen sites can stay awake.",
+                "⇧⌘W closes the window, the mouse's side buttons change space, and media keys reach the page.",
+                "New tabs at the top or the bottom, a floating ⌘T, roomier tabs, and light pages darkened in dark mode.",
+                "Select several tabs with ⌘- or ⇧-click, export a page as a PDF, and Open With from the Finder.",
+            ],
+            better: [
+                "The page as a card can be turned off, and full screen goes edge to edge.",
+                "Leaving a video's full screen happens in one move.",
+                "Pins in spaces you aren't in sleep and give their memory back.",
+                "A bookmark opens in a tab of its own, never in a pin's place.",
+                "Claude in Chrome signs in, and signs in again quietly each time Aura starts.",
+                "Stylus and Vimium C work.",
+            ],
+            fixed: [
+                "A pop-up rewritten by the page that opened it is no longer offered that site's saved passwords.",
+                "Sites you allow to know your location get it.",
+                "Start with a fresh window keeps your tab groups and named tabs.",
+                "A Gmail link opens one tab, not two.",
+                "A video file opened as a page plays.",
+                "Links between files on your Mac open, and links in AI chats' answers too.",
+                "Saved accounts show with Split View on.",
+                "Dragging a tab across the top moves the tab, not the window.",
+                "And many more, most from your messages and pull requests.",
+            ]
         ),
         Notes(
             version: "1.0.5", date: "14 October 2026",
@@ -375,7 +415,7 @@ struct ReleaseNotesPanel: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .textSelection(.enabled)
             }
-            .frame(maxHeight: 480)
+            .listHeight(480)
         }
     }
 

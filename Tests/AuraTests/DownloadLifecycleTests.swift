@@ -90,7 +90,7 @@ final class DownloadLifecycleTests: XCTestCase {
         XCTAssertTrue(entry.canResume, "WebKit should return resume data for the ranged fixture")
         XCTAssertTrue(entry.canRetry)
 
-        if let snapshotPath = ProcessInfo.processInfo.environment["SEARCH_DOWNLOAD_SNAPSHOT"], !snapshotPath.isEmpty {
+        if let snapshotPath = ProcessInfo.processInfo.environment["AURA_DOWNLOAD_SNAPSHOT"], !snapshotPath.isEmpty {
             let paused = try await startDownload("/range.bin", in: tab)
             try await waitUntil { paused.completedBytes >= 64 * 1024 && paused.destination != nil }
             browser.pauseDownload(paused)

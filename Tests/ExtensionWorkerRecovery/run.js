@@ -10,7 +10,7 @@ const drain = async () => { for (let i = 0; i < 40; i++) await Promise.resolve()
 function load(content, generation = 0, alter = () => {}) {
   const state = fixture(content, generation);
   alter(state);
-  vm.runInNewContext(script.replaceAll('__SEARCH_WORKER_GENERATION__', String(generation)), state.root);
+  vm.runInNewContext(script.replaceAll('__AURA_WORKER_GENERATION__', String(generation)), state.root);
   return state;
 }
 let passed = 0;

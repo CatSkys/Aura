@@ -172,7 +172,7 @@ enum AIAssist {
         case .gemini:
             text += "\n\nOn Gemini's free tier, outside the EEA, Switzerland and the UK, Google may use this to improve its products, and people may read it. Don't use it on sensitive pages."
         case .openRouter:
-            text += "\n\nSearch asks OpenRouter to use only providers that keep nothing (zero data retention)."
+            text += "\n\nAura asks OpenRouter to use only providers that keep nothing (zero data retention)."
         default:
             break
         }
@@ -185,7 +185,7 @@ extension Browser {
     func askAboutPage() { startAssistant(summary: false) }
 
     private func startAssistant(summary: Bool) {
-        guard AI.shipped || Store.testing, let tab = active, !tab.isBlank else { return }
+        guard AI.shipped || Store.testing, let tab = active, tab.isWeb else { return }
         guard prefs.ai, let provider = prefs.aiProvider else {
             settingsPage = .ai
             tuning = true

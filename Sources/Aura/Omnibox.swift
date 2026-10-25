@@ -211,9 +211,47 @@ struct Omnibox: View {
 
         var body: some View {
             HStack(spacing: 10) {
-                mark
-                    .frame(width: 16, height: 16)
-                Text(head)
+                switch offer.kind {
+                case .search:
+                    // The engine's own icon when this Mac already has it: a
+                    // search sent to a site you have been to says so with the
+                    // site rather than a magnifying glass. Nothing is fetched
+                    // for one that isn't known; the glass is what the row
+                    // wears until then.
+                    if let icon = Favicons.shared.cached(for: offer.url) {
+                        Image(nsImage: icon)
+                            .resizable()
+                            .interpolation(.high)
+                            .frame(width: 14, height: 14)
+                            .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+                    } else {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(Palette.muted)
+                    }
+                case .suggested:
+                    // The engine's own words: always the glass, so they read
+                    // as searches rather than places.
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(Palette.muted)
+                case .open:
+                    // Already open: naming it takes you back to it rather than
+                    // opening a second copy.
+                    Circle()
+                        .fill(Palette.ink.opacity(0.55))
+                        .frame(width: 5, height: 5)
+                        .padding(.horizontal, 2)
+                case .command:
+                    Image(systemName: "command")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(Palette.muted)
+                default:
+                    EmptyView()
+                }
+                // The row reads as 1.0.4's did, without the www; the key
+                // itself keeps it, for completing and going there.
+                Text(offer.kind == .suggested ? offer.key : Address.withoutWWW(offer.key))
                     .font(.system(size: 13))
                     .foregroundStyle(Palette.ink)
                     .lineLimit(1)

@@ -4,7 +4,7 @@
 Build Search.app first (on Intel, copy build/intel/Search.app to build/Search.app)
 then run: python3 Tests/ExtensionWorkerRecovery/live.py
 
-Uses split_view's isolated SEARCH_PROBE lifecycle and the existing bench
+Uses split_view's isolated AURA_PROBE lifecycle and the existing bench
 ext-folder, ext-page and eval commands. No accounts, model calls, Web Inspector,
 private process-killing hooks or production test APIs are required. All fixture
 traffic is local. Exit 0 means the assertions ran and passed, not just that the
@@ -113,7 +113,7 @@ def parse_args(argv=None):
 
 def direct_environment(world, inherited=None):
     result = dict(os.environ if inherited is None else inherited)
-    result['SEARCH_PROBE'] = world
+    result['AURA_PROBE'] = world
     return result
 
 
@@ -183,7 +183,7 @@ def lldb_command(debugger, app, world, support):
               ' --stderr ' + json.dumps(str(support / 'lldb-stderr.log')))
     command = [str(debugger), '--batch', '--no-lldbinit', '--file', str(executable),
                '--one-line', 'settings set target.disable-aslr false',
-               '--one-line', 'settings set target.env-vars ' + json.dumps('SEARCH_PROBE=' + world)]
+               '--one-line', 'settings set target.env-vars ' + json.dumps('AURA_PROBE=' + world)]
     # The copied Intel app may have its matching dSYM beside the original.
     relative = Path('Search.app.dSYM/Contents/Resources/DWARF/Search')
     candidates = [Path(app).parent / relative, Path(app).parent / 'intel' / relative]
@@ -331,7 +331,7 @@ def search_addresses(report):
 def symbolicate_report(report, app):
     selected = search_addresses(report)
     if selected is None:
-        print('SEARCH_SYMBOLICATION unavailable: no owned Search frames with image offsets', flush=True)
+        print('AURA_SYMBOLICATION unavailable: no owned Search frames with image offsets', flush=True)
         return
     image, base, addresses = selected
     build = Path(app).parent
@@ -341,17 +341,17 @@ def symbolicate_report(report, app):
         candidates.reverse()
     dwarf = next((path for path in candidates if path.is_file()), None)
     if dwarf is None:
-        print('SEARCH_SYMBOLICATION unavailable: release Search dSYM missing', flush=True)
+        print('AURA_SYMBOLICATION unavailable: release Search dSYM missing', flush=True)
         return
     command = ['/usr/bin/atos', '-arch', platform.machine(), '-o', str(dwarf), '-l', hex(base)]
     command.extend(hex(address) for address in addresses)
     try:
         result = subprocess.run(command, capture_output=True, text=True, timeout=5)
-        print('SEARCH_SYMBOLICATION', json.dumps({'dSYM': str(dwarf), 'imageUUID': image.get('uuid'),
+        print('AURA_SYMBOLICATION', json.dumps({'dSYM': str(dwarf), 'imageUUID': image.get('uuid'),
               'base': hex(base), 'addresses': [hex(address) for address in addresses],
               'exit': result.returncode, 'symbols': result.stdout[:24000], 'stderr': result.stderr[:3000]}, sort_keys=True), flush=True)
     except (OSError, subprocess.TimeoutExpired) as error:
-        print('SEARCH_SYMBOLICATION unavailable:', str(error), flush=True)
+        print('AURA_SYMBOLICATION unavailable:', str(error), flush=True)
 
 
 def capture_os_reports(*, pids, launched_at, app, wait=20):
@@ -431,9 +431,9 @@ def self_test():
     assert parse_args(['--self-test']).self_test
     assert parse_args(['--direct-launch', '--admission-only']).direct_launch
     assert not parse_args([]).direct_launch
-    inherited = {'PATH': '/usr/bin', 'SEARCH_PROBE': 'old-world'}
-    assert direct_environment('isolated-world', inherited) == {'PATH': '/usr/bin', 'SEARCH_PROBE': 'isolated-world'}
-    assert inherited['SEARCH_PROBE'] == 'old-world'
+    inherited = {'PATH': '/usr/bin', 'AURA_PROBE': 'old-world'}
+    assert direct_environment('isolated-world', inherited) == {'PATH': '/usr/bin', 'AURA_PROBE': 'isolated-world'}
+    assert inherited['AURA_PROBE'] == 'old-world'
     assert process_status(-6)['signal'] == 'SIGABRT'
     assert process_status(0) == {'state': 'exited', 'returncode': 0}
     assert process_status(None)['state'] == 'running'
@@ -444,7 +444,7 @@ def self_test():
     assert '--batch' in command and '--no-lldbinit' in command
     assert '--attach-pid' not in command and '--attach-name' not in command
     assert 'settings set target.disable-aslr false' in command
-    assert any('SEARCH_PROBE=safe-probe' in item for item in command)
+    assert any('AURA_PROBE=safe-probe' in item for item in command)
     assert '--one-line-on-crash' in command
     assert 'range(min(p.GetNumThreads(), 32))' in lldb_capture_command()
     assert 'thread backtrace --count 48' in lldb_capture_command()
