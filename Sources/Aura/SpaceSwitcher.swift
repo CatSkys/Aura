@@ -8,11 +8,15 @@ import SwiftUI
 /// under a chevron, and the spaces — the one thing this card is for — came
 /// out as three and a half of them. Rows of our own are as many as the list
 /// is: past eight, the list itself scrolls, and the rest of the card stays
-/// where it is. The look is Arc's switcher: a symbol, a name, the key beside
-/// it, one line of grey between the groups.
+/// where it is.
+///
+/// It is drawn as a card over the window rather than handed to a popover, so
+/// it is made of the window's own glass (`CardGlass`, the liquid glass on 26
+/// and later) and rounds its own corners: a popover brings the system's
+/// corner, its own margin, and a tail on top.
 struct SpaceSwitcher: View {
     @ObservedObject var browser: Browser
-    /// Puts the card away: it is a popover on the space's dot (see SpaceDot).
+    /// Puts the card away (see SpaceCardOverlay).
     let close: () -> Void
 
     @State private var page: Page = .spaces
@@ -24,7 +28,14 @@ struct SpaceSwitcher: View {
 
     /// The card's width, and the colour page's: the editor's 27 swatches need
     /// the wider one.
-    private var width: CGFloat { page == .colour ? 300 : 264 }
+    private var width: CGFloat { page == .colour ? 300 : 272 }
+
+    /// How the card is cut: its corner, and the room it leaves around its rows.
+    static let radius: CGFloat = 18
+    private static let room: CGFloat = 9
+    /// The line between the groups, in the ink the names are written in, so it
+    /// reads as the card's own hairline rather than a grey of another kind.
+    private static let rule = 0.12
     /// The spaces listed before the list scrolls, eight rows of them.
     private static let rowsShown = 8
 
@@ -41,8 +52,7 @@ struct SpaceSwitcher: View {
             }
         }
         .frame(width: width)
-        .padding(7)
-        .animation(Motion.quick, value: page)
+        .padding(Self.room)
     }
 
     // MARK: - the spaces
@@ -71,6 +81,9 @@ struct SpaceSwitcher: View {
                 close()
                 browser.askForSpace()
             }
+            SpaceCardRow(title: "Space Settings".localized, symbol: "slider.horizontal.3", next: true) {
+                page = .settings
+            }
 
             divider
             SpaceCardRow(title: "Show History…".localized, symbol: "clock.arrow.circlepath") {
@@ -83,8 +96,9 @@ struct SpaceSwitcher: View {
             }
 
             divider
-            SpaceCardRow(title: "Space Settings".localized, symbol: "slider.horizontal.3", next: true) {
-                page = .settings
+            SpaceCardRow(title: "Settings…".localized, symbol: "gearshape") {
+                close()
+                browser.tuning = true
             }
         }
     }
@@ -169,8 +183,8 @@ struct SpaceSwitcher: View {
                 }
             }
             .padding(.horizontal, 8)
-            .padding(.top, 6)
-            .padding(.bottom, 2)
+            .padding(.top, 7)
+            .padding(.bottom, 3)
         }
     }
 
@@ -191,15 +205,14 @@ struct SpaceSwitcher: View {
 
     private var divider: some View {
         Rectangle()
-            .fill(Palette.hairline)
+            .fill(Palette.ink.opacity(Self.rule))
             .frame(height: 1)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 5)
+            .padding(.vertical, 6)
     }
 
     /// Asked over the window once the card is out of the way: a sheet and a
-    /// popover are two different things on screen at once, and the sheet goes
-    /// under the popover if the popover is still there.
+    /// card are two things on screen at once, and the sheet goes under the
+    /// card if the card is still there.
     private func afterwards(_ ask: @escaping () -> Void) {
         close()
         DispatchQueue.main.async(execute: ask)
@@ -231,6 +244,104 @@ struct SpaceSwitcher: View {
     }
 }
 
+// MARK: - the card over the window
+
+/// The card, up over the window's whole height: above the dot when it stands
+/// at the column's foot, below it when it sits in the row of tabs, and with
+/// the rest of the window under the pointer to put it away again.
+struct SpaceCardOverlay: View {
+    @ObservedObject var browser: Browser
+    /// The card's own size, measured: the dot says where it stands, and the
+    /// card has to know how tall it is to end above the dot rather than over
+    /// it (its pages are not all the same height).
+    @State private var size: CGSize = .zero
+
+    var body: some View {
+        if browser.spaceCardUp {
+            GeometryReader { geo in
+                let dot = anchor(in: geo.size)
+                let above = dot.midY > geo.size.height / 2
+                ZStack(alignment: .topLeading) {
+                    // Everything else puts it away: the page, the column, the
+                    // bar. The card itself takes the clicks that are its own.
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .onTapGesture { close() }
+
+                    card
+                        .offset(x: max(8, dot.minX - 6),
+                                y: max(8, above ? dot.minY - size.height - 8 : dot.maxY + 8))
+                        // The first pass has no size to place it by: drawn a
+                        // moment later rather than a card's height wrong.
+                        .opacity(size.height > 0 ? 1 : 0)
+                }
+                .onPreferenceChange(SpaceCardSize.self) { measured in
+                    MainActor.assumeIsolated {
+                        if size != measured { size = measured }
+                    }
+                }
+            }
+            .ignoresSafeArea()
+            .transition(.opacity)
+            .animation(Motion.quick, value: browser.spaceCardUp)
+        }
+    }
+
+    /// The card itself: made of the window's own glass — liquid glass on 26
+    /// and later (see Glass.swift) — rounded and edged as one thing.
+    private var card: some View {
+        SpaceSwitcher(browser: browser, close: close)
+            .background(GeometryReader { box in
+                Color.clear.preference(key: SpaceCardSize.self, value: box.size)
+            })
+            .background {
+                CardGlass(theme: browser.space.spaceTheme, radius: SpaceSwitcher.radius)
+                    .clipShape(RoundedRectangle(cornerRadius: SpaceSwitcher.radius, style: .continuous))
+            }
+            .clipShape(RoundedRectangle(cornerRadius: SpaceSwitcher.radius, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: SpaceSwitcher.radius, style: .continuous)
+                    .strokeBorder(Palette.hairline, lineWidth: 1)
+            }
+            .shadow(color: .black.opacity(0.20), radius: 24, y: 8)
+            .fixedSize()
+    }
+
+    /// Where the dot stands, in the window's own coordinates. The dot reports
+    /// it (see `SpaceDot`); until it has, the corner it would be in.
+    private func anchor(in size: CGSize) -> CGRect {
+        let frame = browser.spaceDotFrame
+        guard frame.width > 0 else {
+            return browser.prefs.sidebar
+                ? CGRect(x: 10, y: size.height - 40, width: 26, height: 26)
+                : CGRect(x: 90, y: 6, width: 26, height: 26)
+        }
+        return frame
+    }
+
+    private func close() { browser.spaceCardUp = false }
+}
+
+/// How big the card came out, for the overlay that places it (see
+/// SpaceCardOverlay).
+private struct SpaceCardSize: PreferenceKey {
+    static let defaultValue: CGSize = .zero
+    static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
+        let next = nextValue()
+        if next != .zero { value = next }
+    }
+}
+
+/// Where the space's dot stands in the window: the card sits over it (see
+/// SpaceCardOverlay).
+struct SpaceDotFrame: PreferenceKey {
+    static let defaultValue: CGRect = .zero
+    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
+        let next = nextValue()
+        if next != .zero { value = next }
+    }
+}
+
 /// One line of the card: the space's own symbol, its name, the key beside it,
 /// and a tick for the one on screen. The pointer's row takes a grey pill, as
 /// the menus this replaces did.
@@ -247,11 +358,11 @@ private struct SpaceCardRow: View {
 
     @State private var hovering = false
 
-    static let height: CGFloat = 30
+    static let height: CGFloat = 32
 
     var body: some View {
         Button(action: run) {
-            HStack(spacing: 9) {
+            HStack(spacing: 10) {
                 SpaceIcon(symbol: symbol, size: 13, shade: back ? Palette.muted : Palette.ink)
                     .frame(width: 18)
                 Text(title)
@@ -262,26 +373,28 @@ private struct SpaceCardRow: View {
                 Spacer(minLength: 6)
                 if !hint.isEmpty {
                     Text(hint)
-                        .font(.system(size: 10.5, weight: .medium))
+                        .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(Palette.faint)
                         .lineLimit(1)
                 }
                 if checked {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 9.5, weight: .bold))
+                        .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(Palette.muted)
                 } else if next {
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 9, weight: .semibold))
+                        .font(.system(size: 9.5, weight: .semibold))
                         .foregroundStyle(Palette.faint)
                 }
             }
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 9)
             .frame(height: Self.height)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(hovering ? Palette.hover : (checked ? Palette.faint : .clear)))
-            .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+            // The tick says which space you are in; the row keeps no colour
+            // of its own but the pointer's.
+            .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(hovering ? Palette.hover : .clear))
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
