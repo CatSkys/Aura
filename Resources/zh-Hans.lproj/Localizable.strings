@@ -46,7 +46,7 @@
 "Flick the floating video to a corner" = "把浮动视频甩到角落";
 "Two fingers on it send it to the corner or edge they point at, instead of pushing it along; a strong swipe at the side of the screen it is against tucks it in there, a sliver left to bring it back by. Dragging still puts it anywhere" = "在上面用两根手指轻扫，会把它甩向所指的角落或边缘，而不是推着走；在它贴着的那一侧用力轻扫会把它收进去，只留一条细边，便于再拉出来。拖动仍然可以把它放在任意位置";
 "Videos wait for a click" = "视频需点击才播放";
-"Videos don't start by themselves, even without sound; they play when you press play. Tabs already open follow from their next page, or once reloaded" = "视频不会自行开始，即使没有声音；按下播放才开始。已打开的标签页从下一个页面或重新载入后生效";
+"Off, videos start by themselves, sound and all, as with Safari's Allow All Auto-Play; a site's card can quiet that one site. On, nothing starts by itself, even without sound, and a video plays when you press play. Tabs already open follow from their next page, or once reloaded" = "关闭时，视频会自行开始并带声音，如同 Safari 的「允许所有自动播放」；站点卡片里可以单独让某个站点静音开播。开启后，任何视频都不会自行开始，即使没有声音，按下播放才开始。已打开的标签页从下一个页面或重新载入后生效";
 "Float the video when you switch tabs" = "切换标签页时浮动视频";
 "A video playing on YouTube and the like comes out into its floating window when you go to another tab, and back when you return. ⇧⌘P still floats one by hand" = "在 YouTube 等网站播放的视频，切到其他标签页时会进入浮动窗口，回来时又回到标签页。⇧⌘P 仍可手动浮动";
 "Float the video when you switch apps" = "切换 App 时浮动视频";

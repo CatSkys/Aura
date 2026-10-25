@@ -287,9 +287,10 @@ struct SiteCard: View {
         }
     }
 
-    /// Whether the site may play sound by itself (see Autoplay), a switch at
-    /// the end of its line. Not in a private tab, which remembers nothing,
-    /// nor with Settings › Videos wait for a click on, which lets no site.
+    /// Whether this site's videos start without their sound (see Autoplay),
+    /// a switch at the end of its line. Not in a private tab, which remembers
+    /// nothing, nor with Settings › Videos wait for a click on, which already
+    /// lets no site play by itself.
     @ViewBuilder private var sound: some View {
         if !tab.shy, !Store.settings.bool(forKey: Preferences.waitsKey),
            let url = tab.pageAddress, ["http", "https"].contains(url.scheme?.lowercased()),
@@ -334,13 +335,13 @@ struct SiteCard: View {
 
         init(host: String) {
             self.host = host
-            was = Autoplay.allowed(host)
+            was = Autoplay.quiet(host)
             _on = State(initialValue: was)
         }
 
         var body: some View {
             HStack(spacing: 0) {
-                Text("Play Sound by Itself")
+                Text("Don't Play Sound by Itself")
                     .font(MenuMetrics.font)
                     .foregroundStyle(Color(nsColor: .labelColor))
                     .fixedSize()

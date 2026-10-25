@@ -10,11 +10,13 @@ release's Aura.app) for the cases a relaunch can show.
 
 The page holds a muted <video autoplay>, an unmuted one, and two that the
 page's own script starts with play(), no click: one muted, one not. With
-the switch off, a muted video may start by itself and one with sound waits
-(Safari's default); with it on, none may start. A hidden page can hold a
-video back for not being seen, so what counts is WebKit's answer, not the
-clock: play()'s promise rejected with NotAllowedError, or an autoplay
-video never sent "play", is the policy; one that sent "play" was let start.
+the switch off, both a muted video and one with sound may start by
+themselves (Safari's Allow All Auto-Play); with it on, neither may. A site
+the card quiets plays its videos without sound, the "muted plays" answer.
+A hidden page can hold a video back for not being seen, so what counts is
+WebKit's answer, not the clock: play()'s promise rejected with
+NotAllowedError, or an autoplay video never sent "play", is the policy; one
+that sent "play" was let start.
 
 WebKit fixes mediaTypesRequiringUserActionForPlayback when a page's view is
 made, so a tab made before the switch moved, and a link opened from it with
@@ -114,16 +116,20 @@ def state(tab, settle=3.0):
 
 
 def verdict(s):
-    """'waits' when no video started without a click, 'follows Safari' when
-    muted ones may and sound waits, else what was seen."""
+    """'waits' when no video started without a click, 'plays' when one with
+    sound did, 'muted plays' when only the muted ones may, else what was
+    seen."""
     if not s or "promise" not in s:
         return f"no page: {s}"
     ev, p = s["ev"], s["promise"]
     muted_ok = p.get("sm") == "ok" and "play" in ev.get("m", [])
+    sound_ok = p.get("s") == "ok" and "play" in ev.get("u", [])
     muted_refused = p.get("sm") == "NotAllowedError" and "play" not in ev.get("m", [])
     sound_refused = p.get("s") == "NotAllowedError" and "play" not in ev.get("u", [])
     if muted_refused and sound_refused:
         return "waits"
+    if muted_ok and sound_ok:
+        return "plays"
     if muted_ok and sound_refused:
         return "muted plays"
     return f"mixed: {json.dumps(s)}"
@@ -166,7 +172,7 @@ def reload(tab):
 
 def runtime(t):
     """The switch moved while tabs are open."""
-    want = {False: "muted plays", True: "waits"}
+    want = {False: "plays", True: "waits"}
     for start in (False, True):
         end = not start
         sv.setup(**{WAITS: start}); sv.launch()
@@ -194,7 +200,7 @@ def runtime(t):
 
 def relaunch(t):
     """The switch changed between two launches: restored tabs follow."""
-    want = {False: "muted plays", True: "waits"}
+    want = {False: "plays", True: "waits"}
     for start in (False, True):
         end = not start
         sv.setup(**{WAITS: start}); sv.launch()

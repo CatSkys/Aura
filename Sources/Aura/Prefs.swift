@@ -388,8 +388,10 @@ final class Preferences: ObservableObject {
     @Published var floatsAway: Bool {
         didSet { store.set(floatsAway, forKey: "float.away") }
     }
-    /// Videos wait for a click instead of starting by themselves, as Safari's
-    /// Never Auto-Play has it (see Web.configuration). Off unless asked for.
+    /// Videos wait for a click instead of starting by themselves, sound and
+    /// all, as Safari's Never Auto-Play has it (see Web.configuration). Off
+    /// unless asked for, so videos start with their sound as in Chrome and
+    /// Safari's Allow All Auto-Play; a site's card quiets that one site.
     @Published var waitsForPlay: Bool {
         didSet { store.set(waitsForPlay, forKey: Preferences.waitsKey) }
     }

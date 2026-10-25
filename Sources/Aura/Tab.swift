@@ -116,18 +116,23 @@ enum Web {
         // The UI delegate instead consumes a recent trusted interaction
         // recorded in Aura's isolated world (see PopupGesture.swift).
         config.preferences.javaScriptCanOpenWindowsAutomatically = true
-        // Sound waits for a click, as everywhere; video too when Settings
-        // says videos wait (Never Auto-Play, in Safari's words).
+        // Sound and picture start by themselves, as with Safari's Allow All
+        // Auto-Play; neither does with Settings › Videos wait for a click on
+        // (Never Auto-Play, in its words).
         config.mediaTypesRequiringUserActionForPlayback = Web.playback
         if Store.testing, !Store.measuring { config.preferences.inactiveSchedulingPolicy = .none }
         inspector(config.preferences)
         return config
     }
 
-    /// What a page may not play until it is clicked or a key pressed: sound,
-    /// and video as well with Settings › General › Videos wait for a click.
+    /// What a page may not play until it is clicked or a key pressed:
+    /// nothing, somewhere a video site starts a video with its sound the way
+    /// Chrome and Safari let it, unless Settings › General › Videos wait for
+    /// a click is on, which holds back both sound and picture. An empty set
+    /// is why a site no longer opens on "muted, tap to unmute": with sound
+    /// held back and no click yet, that is all it could do.
     static var playback: WKAudiovisualMediaTypes {
-        Store.settings.bool(forKey: Preferences.waitsKey) ? .all : .audio
+        Store.settings.bool(forKey: Preferences.waitsKey) ? .all : []
     }
 
     /// Every page view there is, for the bench.
@@ -166,54 +171,53 @@ enum Muter {
     }
 }
 
-/// Sites you let play sound by themselves, from the site card: Safari's
-/// per-site Allow All Auto-Play (#223). Every other site keeps the default,
-/// sound waiting for a click. Remembered for the site, as its zoom is, and
-/// never from a private tab. Settings › Videos wait for a click wins: with
-/// it on, no site plays by itself.
+/// Whether a site's videos start with their sound, from the site card:
+/// sound by itself everywhere by default, as Safari's Allow All Auto-Play
+/// has it, and a site the card quiets playing its videos without, sound
+/// waiting for a click as Stop Media with Sound does (#223). Remembered for
+/// the site, as its zoom is. Settings › Videos wait for a click wins: with
+/// it on, no site plays by itself, quieted or not.
 ///
 /// WebKit takes it for each page as it loads, through the page's own
 /// preferences, under a name outside the public framework — asked for
-/// first, as `Muter` asks, so a WebKit without it only leaves the site
-/// waiting for a click. Its values, checked on macOS 26: 0 the default,
-/// 1 allow, 2 allow without sound, 3 deny. Allow lets video play whatever
-/// `mediaTypesRequiringUserActionForPlayback` says, which is why the
-/// global switch is asked here and not left to that.
+/// first, as `Muter` asks, so a WebKit without it leaves the page to
+/// `mediaTypesRequiringUserActionForPlayback`, which says the same thing.
+/// Its values, checked on macOS 26: 0 the default, 1 allow, 2 allow without
+/// sound, 3 deny. Allow lets video play whatever
+/// `mediaTypesRequiringUserActionForPlayback` says, which is why the global
+/// switch is asked here and not left to that.
 enum Autoplay {
-    private static func key(_ host: String) -> String { "autoplay." + host }
+    private static func key(_ host: String) -> String { "quiet." + host }
 
-    static func allowed(_ host: String) -> Bool {
+    /// A site whose videos start without their sound.
+    static func quiet(_ host: String) -> Bool {
         Store.settings.bool(forKey: key(host))
     }
 
     /// Off keeps nothing, as a site at the usual zoom keeps nothing.
-    static func set(_ on: Bool, for host: String) {
-        if on {
+    static func set(_ quiet: Bool, for host: String) {
+        if quiet {
             Store.settings.set(true, forKey: key(host))
         } else {
             Store.settings.removeObject(forKey: key(host))
         }
     }
 
-    /// For a page about to load at `url`, in a view made with `made`:
-    /// allowed to play, held to what Settings › Videos wait for a click says
-    /// now, or left alone. WebKit fixes `made` when the view is made, so a
-    /// tab open before the switch moved — and a link opened from it, with a
-    /// copy of its configuration — kept the old answer until it slept: with
-    /// the switch off again, its videos still waited for a click. The page's
-    /// own policy says what the switch says instead, from its next load.
-    static func apply(to preferences: WKWebpagePreferences, for url: URL, shy: Bool,
-                      made: WKAudiovisualMediaTypes) {
+    /// For a page about to load at `url`: what Settings and the site's card
+    /// say now, said again in the page's own policy — so a tab open when
+    /// either moved follows from its next page. WebKit fixes what a view was
+    /// made with, and a tab open before the switch moved, and a link opened
+    /// from it with a copy of its configuration, kept the old answer until
+    /// it slept.
+    static func apply(to preferences: WKWebpagePreferences, for url: URL) {
         let waits = Store.settings.bool(forKey: Preferences.waitsKey)
         let policy: Int
-        if !waits, !shy, let host = url.host(), allowed(host) {
-            policy = 1
-        } else if waits, !made.contains(.video) {
+        if waits {
             policy = 3
-        } else if !waits, made.contains(.video) {
+        } else if let host = url.host(), quiet(host) {
             policy = 2
         } else {
-            return
+            policy = 1
         }
         let set = NSSelectorFromString("_setAutoplayPolicy:")
         guard preferences.responds(to: set) else { return }

@@ -5004,9 +5004,7 @@ extension Browser: WKNavigationDelegate, WKUIDelegate {
                 self?.popupTab(for: webView)?.popupGesture.clear()
             }
             if policy == .allow, action.targetFrame?.isMainFrame ?? true, let url = action.request.url {
-                let shy = self?.tab(for: webView)?.shy == true || !webView.configuration.websiteDataStore.isPersistent
-                Autoplay.apply(to: preferences, for: url, shy: shy,
-                               made: webView.configuration.mediaTypesRequiringUserActionForPlayback)
+                Autoplay.apply(to: preferences, for: url)
             }
             decisionHandler(policy, preferences)
         }
