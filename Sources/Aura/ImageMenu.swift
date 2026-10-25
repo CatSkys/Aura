@@ -104,18 +104,18 @@ extension Browser {
         guard let webView = tab.built else { return }
         let menu = NSMenu()
         menu.autoenablesItems = false
-        menu.addItem(ImageMenuItem("Open Image in New Tab") { [weak self] in
+        menu.addItem(ClosureMenuItem("Open Image in New Tab") { [weak self] in
             self?.open(url, foreground: true, from: tab)
         })
         menu.addItem(.separator())
-        menu.addItem(ImageMenuItem("Copy Image") { [weak self] in
+        menu.addItem(ClosureMenuItem("Copy Image") { [weak self] in
             self?.copyImage(at: url, in: tab)
         })
-        menu.addItem(ImageMenuItem("Download Image") { [weak self] in
+        menu.addItem(ClosureMenuItem("Download Image") { [weak self] in
             self?.downloadImage(at: url, from: webView)
         })
         menu.addItem(.separator())
-        menu.addItem(ImageMenuItem("Copy Image Address") {
+        menu.addItem(ClosureMenuItem("Copy Image Address") {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(url.absoluteString, forType: .string)
         })
@@ -206,19 +206,3 @@ extension Browser {
     }
 }
 
-/// A menu item that runs a closure. NSMenuItem wants a target and a
-/// selector; being both itself is simpler here than a second object to
-/// keep alive alongside it.
-private final class ImageMenuItem: NSMenuItem {
-    private let act: () -> Void
-
-    init(_ title: String, act: @escaping () -> Void) {
-        self.act = act
-        super.init(title: title.localized, action: #selector(run), keyEquivalent: "")
-        target = self
-    }
-
-    required init(coder: NSCoder) { fatalError() }
-
-    @objc private func run() { act() }
-}
