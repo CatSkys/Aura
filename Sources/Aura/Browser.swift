@@ -5841,7 +5841,12 @@ extension Browser: WKNavigationDelegate, WKUIDelegate {
         if let opener = tab.opener, let home = tabs.first(where: { $0.id == opener }) {
             select(home)
         }
-        tab.pin = nil
+        // A pin is a place kept, not a page opened: nothing the page does may
+        // take it out of the row. Unpinning it here did — a pin sitting on a
+        // page that closes itself, as a sign-in page does once it is done, was
+        // unpinned and closed, and its line went out of pins.json with it,
+        // where nothing puts it back (see reconcilePins). close() puts a pin
+        // down instead, as ⌘W leaves one.
         close(tab)
     }
 
