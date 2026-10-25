@@ -1955,7 +1955,12 @@ final class Browser: NSObject, ObservableObject {
             .sink { [weak self] on in
                 guard let self else { return }
                 Shield.shared.enabled = on
-                Shield.shared.apply(to: tabs.compactMap { $0.built?.configuration.userContentController })
+                // Each page is put back to its own site's level rather than to
+                // all of it: a site that was stepped down stays stepped down.
+                Shield.shared.apply(to: tabs.compactMap { tab in
+                    tab.built.map { ($0.configuration.userContentController,
+                                     self.curtain.host(of: tab.address)) }
+                })
                 announce(on ? "Ads and trackers blocked" : "Blocking off — reload to see the difference")
             }
             .store(in: &bag)
