@@ -13,6 +13,7 @@ in [ROADMAP.md](ROADMAP.md).
 
 ### Added
 
+- A sideways swipe with nowhere left to go now leans the page itself: back from a tab's first page, the page follows the fingers out from the edge — a twentieth of what they travel, and nothing until they are ten points past it — and goes home on its own curve when they let go, under a point within a third of a second. That is Chromium's elastic overscroll, taken from its own source rather than guessed (Blink's exponential controller, the one a Mac gets: stiffness 20, amplitude 0.31, period 1.6, and its ten-point threshold), and it happens where the page has nowhere to go by itself, so a carousel or a wide table that takes the swipe still gets it. The disc still comes, and stays where it was while the page leans away from it. Pages you can go back from are untouched: those still go back at once.
 ### Changed
 
 ### Fixed

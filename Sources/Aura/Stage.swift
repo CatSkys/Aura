@@ -31,10 +31,15 @@ struct Page: View {
             // the tab stayed empty. Nothing, then the page, is a change.
             if holdsPage {
                 WebStage(page: !tab.isWeb || tab.asleep || tab.floating ? nil : tab.web.view, corner: corner)
+                    // The page itself leaning out from its edge under a swipe
+                    // (see Elastic): the disc stays where it is, over the gap
+                    // the page leaves behind.
+                    .offset(x: tab.stretch)
             }
 
             if let page = tab.page, let browser {
                 InternalPageView(browser: browser, tab: tab, page: page, corner: corner)
+                    .offset(x: tab.stretch)
             }
 
             if let cover = tab.cover {
@@ -46,6 +51,7 @@ struct Page: View {
                 Image(nsImage: cover)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
+                    .offset(x: tab.stretch)
                     // No smaller than nothing: a picture taken in a window of
                     // another shape would otherwise ask for its own size, and
                     // push the column aside until the page woke (#664).
