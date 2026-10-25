@@ -273,7 +273,9 @@ struct SettingsPanel: View {
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(Palette.ink)
                 }
-                Text(searching ? "Settings matching “\(query.trimmingCharacters(in: .whitespaces))”" : page.title)
+                Text(searching
+                     ? Localized("Settings matching “\(query.trimmingCharacters(in: .whitespaces))”")
+                     : page.title.localized)
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(Palette.ink)
                     .lineLimit(1)
@@ -381,7 +383,7 @@ struct SettingsPanel: View {
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: group.icon).font(.system(size: 10.5, weight: .medium))
-                        Text("\(group.page.title)  ›  \(group.title)".uppercased())
+                        Text(Localized("\(group.page.title.localized)  ›  \(group.title.localized)").uppercased())
                             .font(.system(size: 10.5, weight: .semibold))
                             .tracking(0.4)
                         Image(systemName: "arrow.right").font(.system(size: 9, weight: .semibold)).opacity(0.6)
@@ -391,7 +393,7 @@ struct SettingsPanel: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help("Open \(group.page.title) at \(group.title)")
+                .help(Localized("Open \(group.page.title.localized) at \(group.title.localized)"))
                 Card { rows(byGroup[group.id] ?? [], searched: true) }
             }
         }
@@ -703,7 +705,7 @@ struct SettingsPanel: View {
                 // Aura's own three steps rather than a switch: a site the
                 // hiding broke still wants its requests refused, and that is a
                 // third answer a switch can't give (see Shield.Level).
-                SettingRow(icon: "checkmark.shield", title: "On \(host)",
+                SettingRow(icon: "checkmark.shield", title: Localized("On \(host)"),
                            detail: "Everything blocks and hides. Requests only blocks, for a site the hiding broke. Off, the page is as the site wrote it. The page reloads",
                            indent: true) {
                     Segmented(options: Shield.Level.allCases.map { ($0, $0.title) },
@@ -728,7 +730,7 @@ struct SettingsPanel: View {
             if !searched, !Vault.never.isEmpty {
                 Rule(inset: SettingsPanel.textInset)
                 SettingRow(icon: "hand.raised.slash", title: "Sites never asked",
-                           detail: "\(Vault.never.count) sites told to stop offering") {
+                           detail: Localized("\(Vault.never.count) sites told to stop offering")) {
                     Pill("Forget") {
                         Vault.never = []
                         browser.announce("Every site can ask again")
@@ -857,7 +859,7 @@ struct SettingsPanel: View {
         guard EngineSuggest.endpoint(for: prefs.engine) != nil else {
             return "A custom engine has no suggestions to give, so nothing is sent"
         }
-        return "What you type is sent to \(name) as you type"
+        return Localized("What you type is sent to \(name) as you type")
     }
 
     private var searchDetail: String {
@@ -871,7 +873,7 @@ struct SettingsPanel: View {
     /// Says so when a password manager extension has taken the saving over.
     private var savingDetail: String {
         if #available(macOS 15.4, *), let name = Extensions.shared.passwordSavingTakenBy {
-            return "\(name) does the saving; it asked Aura not to offer"
+            return Localized("\(name) does the saving; it asked Aura not to offer")
         }
         return "Asked once per site, never again for a site you refuse"
     }
@@ -982,12 +984,12 @@ struct GroupBlock<Content: View>: View {
                 HStack(spacing: 6) {
                     Image(systemName: icon)
                         .font(.system(size: 10.5, weight: .semibold))
-                    Text(title.uppercased())
+                    Text(title.localized.uppercased())
                         .font(.system(size: 10.5, weight: .semibold))
                         .tracking(0.5)
                 }
                 .foregroundStyle(Palette.ink.opacity(0.62))
-                Text(blurb)
+                Text(blurb.localized)
                     .font(.system(size: 11.5))
                     .foregroundStyle(Palette.muted)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1023,7 +1025,7 @@ struct SettingRow<Control: View>: View {
                     .background(Palette.wash, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 5) {
-                        Text(title)
+                        Text(title.localized)
                             .font(.system(size: 13))
                             .foregroundStyle(Palette.ink)
                             .fixedSize(horizontal: false, vertical: true)
@@ -1035,19 +1037,19 @@ struct SettingRow<Control: View>: View {
                                     .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
-                            .help(more ?? "")
-                            .accessibilityLabel("More about \(title)")
+                            .help((more ?? "").localized)
+                            .accessibilityLabel(Localized("More about \(title.localized)"))
                         }
                     }
                     if !detail.isEmpty {
-                        Text(detail)
+                        Text(detail.localized)
                             .font(.system(size: 11.5))
                             .foregroundStyle(Palette.muted)
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     if open, let more {
-                        Text(more)
+                        Text(more.localized)
                             .font(.system(size: 11.5))
                             .foregroundStyle(Palette.muted)
                             .fixedSize(horizontal: false, vertical: true)
@@ -1074,7 +1076,7 @@ struct SettingRow<Control: View>: View {
 struct Always: View {
     var text = "Always on"
     var body: some View {
-        Text(text)
+        Text(text.localized)
             .font(.system(size: 11))
             .foregroundStyle(Palette.muted)
             .padding(.horizontal, 8)
@@ -1107,14 +1109,14 @@ struct Pictures<Option: Hashable>: View {
                                 RoundedRectangle(cornerRadius: 9.5, style: .continuous)
                                     .strokeBorder(on ? Palette.ink : .clear, lineWidth: 2)
                             )
-                        Text(title)
+                        Text(title.localized)
                             .font(.system(size: 11.5, weight: on ? .medium : .regular))
                             .foregroundStyle(on ? Palette.ink : Palette.muted)
                     }
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(title)
+                .accessibilityLabel(title.localized)
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
         }

@@ -39,7 +39,8 @@ SENTENCE_CALLS = (
     "NSAlert",
 )
 # …and the same for a sentence written after a label, as in prompt: "Search".
-SENTENCE_LABELS = ("prompt:", "help:", "title:", "message:", "detail:", "informativeText:")
+SENTENCE_LABELS = ("prompt:", "help:", "title:", "message:", "detail:", "informativeText:",
+                    "blurb:", "more:")
 
 # AppKit assigns its own titles: item.title = "…", .label = "…".
 ASSIGNMENT = re.compile(r"\.(title|label|message|informativeText|placeholderString)\s*=\s*$")
@@ -165,6 +166,14 @@ def sentences(path):
             continue
         stripped = before.rstrip()
         wanted = False
+        # A sentence after an argument label, wherever it stands: the settings
+        # index writes .init(…, title: "…", detail: "…") with commas between
+        # fields and its last field without one, so a label is a label either
+        # way. Titles and details that reached a view as a String were the one
+        # kind of sentence this scan used to miss.
+        label = re.search(r"([A-Za-z_][A-Za-z0-9_]*:)\s*$", stripped)
+        if label and label.group(1) in SENTENCE_LABELS:
+            wanted = True
         if stripped.endswith("("):
             name = re.search(r"([A-Za-z_][A-Za-z0-9_]*)\s*\($", stripped)
             if name and name.group(1) in SENTENCE_CALLS:

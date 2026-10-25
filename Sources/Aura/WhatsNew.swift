@@ -39,7 +39,7 @@ enum WhatsNew {
                since: "1.0.6", get: { $0.engineSuggests }, set: { $0.engineSuggests = $1 }),
         Toggle(title: "Pins keep their site", detail: "Links elsewhere open in a peek, and ⌘W takes a pin back to its page, as in Arc.",
                since: "1.0.6", get: { $0.pinsKeepSite }, set: { $0.pinsKeepSite = $1 }),
-        Toggle(title: "Darken light pages", detail: "While Search is dark, pages with no dark look of their own are darkened.",
+        Toggle(title: "Darken light pages", detail: "While Aura is dark, pages with no dark look of their own are darkened.",
                since: "1.0.6", get: { $0.darkensPages }, set: { $0.darkensPages = $1 }),
         Toggle(title: "Roomier tabs", detail: "Taller rows and larger titles in the sidebar.",
                since: "1.0.6", get: { $0.roomyTabs }, set: { $0.roomyTabs = $1 }),
