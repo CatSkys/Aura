@@ -84,19 +84,11 @@ struct HistoryPanel: View {
                                             }
                                         )
                                     }
-                                    // A day's card, drawn a line at a time.
-                                    .background(Palette.ground)
+                                    // A day's card, drawn a line at a time: one
+                                    // slab of the card's grey, rounded at its own
+                                    // top and bottom, no edge drawn round it.
+                                    .background(Palette.card)
                                     .clipShape(Slice(first: first, last: last))
-                                    // The card's outline, reaching a point past the lines it
-                                    // shares with its neighbours and cut to its own: only
-                                    // its sides, and its rounded top or bottom, remain.
-                                    .overlay(
-                                        Slice(first: first, last: last)
-                                            .strokeBorder(Palette.hairline, lineWidth: 1)
-                                            .padding(.top, first ? 0 : -1)
-                                            .padding(.bottom, last ? 0 : -1)
-                                            .clipped()
-                                    )
                                 }
                             }
                         }
@@ -237,7 +229,7 @@ struct HistoryPanel: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 9)
-            .background(hovering ? Palette.hover : .clear)
+            .background(hovering ? Palette.rowHover : .clear)
             .contentShape(Rectangle())
             .onTapGesture(perform: go)
             .onHover { hovering = $0 }
@@ -472,7 +464,7 @@ struct DownloadsPanel: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 9)
-            .background(hovering ? Palette.hover : .clear)
+            .background(hovering ? Palette.rowHover : .clear)
             .contentShape(Rectangle())
             .onTapGesture { if keep.stillThere { open() } }
             .onHover { hovering = $0 }
