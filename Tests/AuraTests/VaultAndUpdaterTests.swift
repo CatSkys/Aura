@@ -89,8 +89,31 @@ final class VaultAndUpdaterTests: XCTestCase {
             version: "9.9", build: 9999,
             archive: URL(string: "https://officecommun.com/search/Aura.zip")!,
             dmg: URL(string: "https://officecommun.com/search/Aura.dmg")!,
-            sha256: nil, notes: nil, minimumSystemVersion: minimum
+            sha256: nil, notes: nil, notesZh: nil, minimumSystemVersion: minimum
         )
+    }
+
+    /// The feed carries the notes in both languages; which one is read is the
+    /// Mac's own choice, as everywhere else in the app.
+    func testTheNotesFollowTheMacsLanguage() {
+        func release(english: String?, chinese: String?) -> Updater.Release {
+            Updater.Release(
+                version: "9.9", build: 9999,
+                archive: URL(string: "https://example.com/Aura.zip")!,
+                dmg: URL(string: "https://example.com/Aura.dmg")!,
+                sha256: nil, notes: english, notesZh: chinese, minimumSystemVersion: nil
+            )
+        }
+        let both = release(english: "What is new", chinese: "新版什么")
+        XCTAssertEqual(both.notes(for: "en-US"), "What is new")
+        XCTAssertEqual(both.notes(for: "zh-Hans"), "新版什么")
+        XCTAssertEqual(both.notes(for: "zh-Hant-TW"), "新版什么")
+        // One language only: the other one is better than nothing.
+        let englishOnly = release(english: "What is new", chinese: nil)
+        XCTAssertEqual(englishOnly.notes(for: "zh-Hans"), "What is new")
+        let chineseOnly = release(english: nil, chinese: "新版什么")
+        XCTAssertEqual(chineseOnly.notes(for: "en"), "新版什么")
+        XCTAssertNil(release(english: nil, chinese: nil).notes(for: "en"))
     }
 
     func testReleaseWithoutAMinimumRunsHere() {
