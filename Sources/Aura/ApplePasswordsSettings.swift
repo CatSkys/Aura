@@ -103,10 +103,10 @@ struct ApplePairingCard: View {
                     .frame(width: 22, height: 22)
                     .background(Palette.wash, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(title)
+                    Text(title.localized)
                         .font(.system(size: 12.5))
                         .foregroundStyle(Palette.ink)
-                    Text(detail)
+                    Text(detail.localized)
                         .font(.system(size: 10.5))
                         .foregroundStyle(Palette.muted)
                         .lineLimit(2)
