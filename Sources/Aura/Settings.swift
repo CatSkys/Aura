@@ -4,8 +4,9 @@ import SwiftUI
 /// finds any setting by its words (⌘F); one section at a time on the right,
 /// in titled groups, each a card of rows. A row says what it is with a small
 /// icon and a line of plain words, the rest behind its (i); a row that only
-/// counts while another is on sits indented under it, and is only there
-/// while it counts. Every row comes from SettingsIndex, so what the find
+/// counts while another is on sits under it, and is only there while it
+/// counts: its hairline starts further in, so the nesting reads without the
+/// icon column breaking. Every row comes from SettingsIndex, so what the find
 /// field finds is exactly what the sections hold.
 struct SettingsPanel: View {
     @ObservedObject var browser: Browser
@@ -379,7 +380,6 @@ struct SettingsPanel: View {
             more: counts ? item.more : nil,
             tint: SettingsIndex.tint(of: item.group),
             note: notes,
-            indent: item.hangs && !searched,
             wide: item.kind == .wide,
             lit: lit == item.id
         ) {
@@ -739,8 +739,7 @@ struct SettingsPanel: View {
                            detail: "",
                            more: "Everything blocks and hides. Requests blocks only, where hiding broke a site. Off, the page is as the site wrote it. Each switch reloads the page.",
                            tint: SettingsIndex.tint(of: "blocking"),
-                           note: notes,
-                           indent: true) {
+                           note: notes) {
                     Segmented(options: Shield.Level.allCases.map { ($0, $0.title) },
                               selection: Binding(
                                 get: { shield.level(on: host) },
@@ -1041,7 +1040,6 @@ struct SettingRow<Control: View>: View {
     var tint: Color? = nil
     /// Where this row's note goes when its (i) is pointed at.
     var note: NoteSpot? = nil
-    var indent = false
     var wide = false
     var lit = false
     @ViewBuilder let control: () -> Control
@@ -1102,7 +1100,7 @@ struct SettingRow<Control: View>: View {
                     .padding(.leading, 38)
             }
         }
-        .padding(.leading, indent ? 38 : 14)
+        .padding(.leading, 14)
         .padding(.trailing, 14)
         .padding(.vertical, 10)
         .background(lit ? Palette.rowHover : .clear)
