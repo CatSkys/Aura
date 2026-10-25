@@ -79,7 +79,7 @@ git worktree remove ../Aura-<slug>               # 收尾清场，再 git branch
 
 ## 完成的定义：测试与交付
 
-- **合并进 `main` 才算交付**：树里 `./build.sh` 出的 app 只是自证，用户开的那个来自主仓。收尾顺序固定：树里提交 → 回主仓 `git merge --no-ff feat/<slug>` → 主仓 `./build.sh` → `git worktree remove` + `git branch -d`。停在树里的提交就是没交付。
+- **交付＝提交 → 合并 → 构建 → 清场，四步都做完**：树里把改动提交（一句讲因果的提交信息）→ 回主仓 `git merge --no-ff feat/<slug>`（一个任务一个合并提交）→ 主仓 `./build.sh` → `git worktree remove` + `git branch -d`。收尾自检：`git worktree list` 只剩主仓与 `aura-pages`，`git branch --no-merged main` 没有任务分支，`git stash list` 空，主仓 `git status` 里只剩别人还在进行的活。停在任何一步，这一轮都算没交付。
 - `swift build` 零新增警告；纯逻辑改动（地址、历史、扩展 shim 一类）跑 `swift test` 或对应的 `Tests/*Regression/run.sh`。测试红且与本次改动相关，就带着输出停下报告，不在同一处反复重跑。
 - **自证用测试世界，验收归用户**：对不对、好不好看由人在真机上看。agent 交付到「`./build.sh` 过了、`build/Aura.app` 是新的」为止——不自行截图当验收、不擅自替换 `/Applications/Aura.app`、不擅自 `release dmg`/`ship`/`publish.sh`/`tap.sh`/动 `VERSION`。
 - **世界由启动方式决定**（`Store.swift`）：`AURA_PROBE` 有值、或可执行文件在 `/.build/` 下的，一律是测试世界；`build/Aura.app` 不带 `AURA_PROBE` 就是**真身**，读写用户在用的那份数据。
@@ -101,7 +101,7 @@ git worktree remove ../Aura-<slug>               # 收尾清场，再 git branch
 8. **"没生效"先读代码与产物**：`git status` → 读改动 → 看 `build/Aura.app` 里实际是什么；不拿"没重启 / 旧实例"打发用户。
 9. **不确定就问**：字段名、契约、行为含义有疑问先查事实源（源码注释、CHANGELOG、WebKit 头文件），查不到就问，不写猜测性代码。
 10. **删就删干净**：删功能时把代码、译文键、设置项、菜单项、CHANGELOG 行、ROADMAP 条目一起处理。
-11. **交付＝合并进 `main`**：停在任务树里的提交没人看得见；合并回主仓、主仓构建通过、树已清掉，才算这一轮做完。
+11. **交付＝提交、合并、构建、清场**：停在树里的提交没人看得见；树里提交 → 主仓 `merge --no-ff` → 主仓构建 → 树与分支删掉，四步齐了才算这一轮做完。
 
 ## 代码约定
 
