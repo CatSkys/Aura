@@ -382,7 +382,7 @@ struct WhatsNewCard: View {
                 if index > 0 { Rule() }
                 HStack(alignment: .center, spacing: 16) {
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(toggle.title)
+                        Text(toggle.title.localized)
                             .font(.system(size: 13))
                             .foregroundStyle(Palette.ink)
                         Text(toggle.detail)

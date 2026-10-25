@@ -142,6 +142,20 @@ def sentences(path):
     for m in re.finditer(r'Command\(\s*"[^"]*"\s*,\s*("(?:[^"\\]|\\.)*")', text):
         line = text.count("\n", 0, m.start(1)) + 1
         found.append((line, shape(m.group(1)[1:-1])))
+    # An enum's own words: `case .never: return "Never"` under a property named
+    # title, detail or blurb. Capitalised, so an icon's name (`sun.max`) and a
+    # defaults key stay out of the table.
+    for m in re.finditer(r'case [^:\n]*:\s*return\s+("(?:[^"\\]|\\.)*")', text):
+        body = m.group(1)[1:-1]
+        if not body[:1].isupper():
+            continue
+        # An identifier rather than a word: WebAutomaticTextReplacementEnabled.
+        if " " not in body and re.search(r"[a-z][A-Z]", body):
+            continue
+        back = text[max(0, m.start() - 1200):m.start()]
+        if not re.search(r"var (title|detail|blurb|words)\b", back):
+            continue
+        found.append((text.count("\n", 0, m.start(1)) + 1, shape(body)))
     # A sentence written on a line of its own — the notes of a version, the
     # things a welcome page lists — is one a panel shows as it is.
     for m in re.finditer(r'^[ \t]*("(?:[^"\\]|\\.)*")[,) \t]*$', text, re.M):
