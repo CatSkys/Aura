@@ -1,10 +1,10 @@
 {
-  "version": "0.0.0",
-  "build": 0,
+  "version": "0.1.0",
+  "build": 202610252159,
   "url": "https://catskys.github.io/Aura/Aura.zip",
   "dmg": "https://catskys.github.io/Aura/Aura.dmg",
-  "sha256": "",
-  "dmgSha256": "",
-  "notes": "No build has been published yet.",
+  "sha256": "226a096cf69a1c08a03b5cb0122dbb267d25118513b3ff2c700df9c08aea0bff",
+  "dmgSha256": "eb0d30050b5a64f2a64b36976dfd8544c800247bc07d5094a707ff503f710194",
+  "notes": "Aura, on Search 1.0.6, is the first release of the fork. The same browser, under a name, an identity and an interface of its own: every menu, every page of Settings, the panels, the welcome page and these notes read in 简体中文 when the Mac is set to Chinese, and in English everywhere else. It installs beside Search rather than over it, with its own settings, session, signed-in sites and update feed, and nothing of Search's is read or moved. Everything Search 1.0.6 brought is here: profiles, websites in the side panel, Apple's Passwords app under a sign-in box, reading mode that follows light and dark and reads a site's own Markdown, Back and Forward held or right-clicked for every page that way, a card before a site shares your screen, sized pop-ups in small windows, two picked tabs in Split View, the address on the tab you're on, and Settings in ten short sections with Find a setting (⌘F). The blocker is EasyList's, EasyPrivacy's and uBlock Origin's own lists, and the checks sites make for a blocker are answered. Passkeys are not in this build: the entitlement they need is granted to organization accounts only.",
   "minimumSystemVersion": "14.0"
 }
