@@ -97,11 +97,11 @@ protocol PageSurface: AnyObject {
 
     // MARK: - what Aura's page does on its own
 
-    /// The sideways swipe that can close a little window, the first frame held
-    /// back until there is something to draw, the keys the tab switcher hands
-    /// on, the page's own right-click menu closing. These are Aura's page's
-    /// habits rather than WebKit's, so they live on this side of the seam even
-    /// though the web view is what carries them out.
+    /// The sideways swipe that can close a little window or a tab, the first
+    /// frame held back until there is something to draw, the keys the tab
+    /// switcher hands on, the page's own right-click menu closing. These are
+    /// Aura's page's habits rather than WebKit's, so they live on this side of
+    /// the seam even though the web view is what carries them out.
     var onPull: ((Pull?) -> Void)? { get set }
     var leave: (() -> Void)? { get set }
     var onTouch: (() -> Void)? { get set }

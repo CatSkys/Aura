@@ -362,6 +362,10 @@ enum SettingsIndex {
               title: "Hold a swipe to pick from history", detail: "Keep your fingers down after a swipe back to pick a page",
               more: "Swipe back or forward and keep your fingers down: the pages that way appear, and moving up or down picks one.",
               keys: ["swipe.history"], words: ["gesture", "trackpad", "back"]),
+        .init(id: "swipe.close", group: "mouse", icon: "arrow.left.square",
+              title: "Close a tab with a swipe back", detail: "Back from a tab's first page closes it, as ⌘W does",
+              more: "The tab beside it comes forward, and the disc shows a cross while that is what letting go would do. A pin keeps its page, and a small window closes as it always has.",
+              keys: ["swipe.close"], words: ["gesture", "trackpad", "back", "close tab", "dismiss"]),
 
         // About
         .init(id: "updates.version", group: "updates", icon: "arrow.down.app",
@@ -608,6 +612,7 @@ extension SettingsIndex {
             "links.peek": prefs.peekChoice.rawValue,
             "pages.120": prefs.fastPages.rawValue,
             "swipe.history": prefs.holdsHistory,
+            "swipe.close": prefs.swipeClosesTab,
             "tabs.address": prefs.showsAddress,
             "links.show": prefs.showsLinks,
             "float.flicks": prefs.floatFlicks,

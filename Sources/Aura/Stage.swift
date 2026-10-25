@@ -160,7 +160,8 @@ private struct Disc: View {
                 .stroke(Palette.ink, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .padding(0.75)
-            // Back from a small window's first page closes it, and says so.
+            // Back from a first page that closes — a small window, or a tab
+            // — closes, and says so.
             Image(systemName: pull.leaves ? "xmark" : pull.back ? "arrow.left" : "arrow.right")
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(Palette.ink.opacity(0.4 + 0.6 * grown))

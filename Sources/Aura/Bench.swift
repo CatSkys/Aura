@@ -3196,6 +3196,8 @@ final class Bench {
             if let on = request["sidebar"] as? Bool { browser.prefs.sidebar = on }
             // Swipe between pages, standing in for the Mac's own setting.
             if let on = request["swipepages"] as? Bool, Store.testing { Swipe.testing = on }
+            // Settings › Tabs › Close a tab with a swipe back.
+            if let on = request["swipeclose"] as? Bool, Store.testing { browser.prefs.swipeClosesTab = on }
             // Ask.sure answered without a sheet: yes or no to every question
             // from now on, until "ask".
             if let yes = request["confirm"] as? Bool, Store.testing { Ask.testing = yes }

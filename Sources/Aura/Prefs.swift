@@ -439,6 +439,15 @@ final class Preferences: ObservableObject {
             PageView.holdsHistory = holdsHistory
         }
     }
+    /// A swipe back at a tab's first page closes the tab, as ⌘W closes it
+    /// (see PageView.leaves). Off unless asked for: it is the one thing here
+    /// that a swipe can lose you, and the gesture is also just "back".
+    @Published var swipeClosesTab: Bool {
+        didSet {
+            store.set(swipeClosesTab, forKey: "swipe.close")
+            Swipe.closesTab = swipeClosesTab
+        }
+    }
     /// Two fingers flick the floating video to a corner (see Float.swift).
     /// On unless turned off.
     @Published var floatFlicks: Bool {
@@ -729,6 +738,9 @@ final class Preferences: ObservableObject {
         let history = store.object(forKey: "swipe.history") as? Bool ?? true
         holdsHistory = history
         PageView.holdsHistory = history
+        let closing = store.bool(forKey: "swipe.close")
+        swipeClosesTab = closing
+        Swipe.closesTab = closing
         // On for everyone who never touched these three switches (Drice,
         // 27 Sep 2026); a choice made before stands.
         let flicks = store.object(forKey: "float.flicks") as? Bool ?? true

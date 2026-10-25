@@ -9,6 +9,12 @@ import WebKit
 // armed. Let go then, and the page simply goes back. Let go before, and it
 // slips out again. Nothing slides, nothing is kept in memory to slide.
 //
+// Where there is nothing left to go back to, the same pull can mean leaving:
+// a small window closes with its page (see PageView.leave), and, when Settings
+// › Tabs says so, a tab closes as ⌘W closes it, the neighbour on the right
+// coming forward (see Tab.closesOnSwipeBack). The disc wears a cross instead
+// of an arrow while that is what letting go would do.
+//
 // The one hard question is whether a sideways swipe belongs to the page — a
 // carousel, a wide table, a map, a canvas — or is free to mean something. The
 // page is asked, on every sideways wheel event, whether anything under the
@@ -32,6 +38,12 @@ enum Swipe {
     }
     /// Set only by a test run (see Bench), never by the browser people use.
     @MainActor static var testing: Bool?
+
+    /// Settings › Tabs › Close a tab with a swipe back: back from a tab's
+    /// first page closes it, as ⌘W does, instead of the gesture dying there.
+    /// Off unless asked for, since the two gestures look the same until the
+    /// disc comes up wearing a cross, and closing is what a stray one costs.
+    @MainActor static var closesTab = false
 
     /// No rubber-banding. Pulling past the top of a page showed a band of
     /// blank ground above it, and nobody who came from Chrome read that as
@@ -138,7 +150,8 @@ struct Pull: Equatable {
     var stops: [Stop]? = nil
     var picked = 0
     /// Going back from the first page, where back means leaving: the small
-    /// window closes rather than the page changing (see PageView.leave).
+    /// window closes, or the tab does, rather than the page changing (see
+    /// PageView.leaves).
     var leaves = false
 }
 

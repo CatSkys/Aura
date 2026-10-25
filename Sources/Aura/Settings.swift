@@ -667,6 +667,7 @@ struct SettingsPanel: View {
             .fixedSize()
         case "autoscroll": Switch(on: $prefs.autoScroll)
         case "swipe.history": Switch(on: $prefs.holdsHistory)
+        case "swipe.close": Switch(on: $prefs.swipeClosesTab)
         case "note.switcher": Always()
         case "updates.version": versionControl
         case "updates.auto": Switch(on: $prefs.installsUpdates)
