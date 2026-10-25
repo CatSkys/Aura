@@ -968,8 +968,12 @@ struct KeepLine: View {
 
     var body: some View {
         HStack(spacing: 6) {
+            // The column's own faint ink, not a fixed grey: on the glass the
+            // ground is the space's colour and the neutral hairline came out
+            // as a white line laid over it (user: 不应该是白色，而是应该根据字体颜色来).
+            // Half of it is the hairline's own step on the white ground.
             Rectangle()
-                .fill(Palette.hairline)
+                .fill(side.faint.opacity(0.5))
                 .frame(height: 1)
             if clears && hovering {
                 Button(action: act) {

@@ -458,8 +458,8 @@ struct TabBar: View {
 
 /// The line between what is kept and what comes and goes, standing up in the
 /// strip as the column's own lies across it (see KeepLine in Side.swift). The
-/// same hairline grey, as tall as a tab's mark, with the run's gap on either
-/// side of it.
+/// hairline grey — the strip's rows wear the app's greys, not a space's, so it
+/// does too — as tall as a tab's mark, with the run's gap on either side.
 struct PinLine: View {
     static let width: CGFloat = 1
     /// What it takes out of the run: itself, and the gap the stack puts
