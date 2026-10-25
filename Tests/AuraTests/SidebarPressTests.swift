@@ -197,12 +197,13 @@ final class SidebarPressTests: XCTestCase {
         _ = NSApplication.shared
         var selected = 0
         let window = makeWindow(root: ControlsFixture(select: { selected += 1 }, mute: {}, close: {}))
+        window.makeKeyAndOrderFront(nil)
         try await settle()
         let point = NSPoint(x: 60, y: 20)
         for (down, up) in [(NSEvent.EventType.rightMouseDown, NSEvent.EventType.rightMouseUp),
                            (.otherMouseDown, .otherMouseUp)] {
-            try await send(down, at: point, in: window)
-            try await send(up, at: point, in: window)
+            try await sendQueued(down, at: point, in: window)
+            try await sendQueued(up, at: point, in: window)
         }
         XCTAssertEqual(selected, 0, "Only the left button selects on press; right-click stays the menu's")
     }
@@ -276,6 +277,15 @@ final class SidebarPressTests: XCTestCase {
         try await Task.sleep(for: .milliseconds(30))
     }
 
+    /// The same press, through the queue instead of around it. Which button
+    /// arrived is known only to the layers that read NSApp.currentEvent
+    /// (MiddleClick, and AppKit's own menu), and window.sendEvent never sets
+    /// it — so a case about buttons has to be dispatched for real.
+    private func sendQueued(_ type: NSEvent.EventType, at point: NSPoint, in window: NSWindow) async throws {
+        NSApp.postEvent(try event(type, at: point, in: window), atStart: false)
+        try await Task.sleep(for: .milliseconds(60))
+    }
+
     private func event(_ type: NSEvent.EventType, at point: NSPoint, in window: NSWindow, clicks: Int = 1) throws -> NSEvent {
         try XCTUnwrap(NSEvent.mouseEvent(
             with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
@@ -296,6 +306,13 @@ private struct ControlsFixture: View {
             Text("Tab").frame(width: 185, height: 40)
                 .contentShape(Rectangle())
                 .modifier(TabPress(enabled: true, active: false, selected: $selected, act: select))
+                // What a real row has over it: MiddleClick takes the middle
+                // button (SideRow's closes the tab) and the menu takes the
+                // right one. Neither reaches the press above, which is why a
+                // real row is not selected by either button — the press
+                // itself carries no event to judge the button by.
+                .overlay { MiddleClick(act: close) }
+                .contextMenu { Text("Tab menu") }
             Button(action: mute) { Text("Mute").frame(width: 35, height: 40) }
                 .buttonStyle(.plain)
             Color.clear.frame(width: 30, height: 40)
