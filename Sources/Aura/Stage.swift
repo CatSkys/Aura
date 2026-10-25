@@ -1,8 +1,8 @@
 import SwiftUI
 import WebKit
 
-/// Everything below the strip: the page, the line that says it is coming, and
-/// the sentence that says it never did.
+/// Everything below the strip: the page, the light along its top edge while it
+/// is coming, and the sentence that says it never did.
 ///
 /// The tab is watched from here rather than from the window. A tab is a class,
 /// so going from blank to loaded changes nothing about the value the window
@@ -66,6 +66,12 @@ struct Page: View {
             }
 
             Swiping(pull: tab.pull)
+
+            // The page on its way: a light along its top edge, crossing one
+            // way and back (see Beam.swift). The ring in the tab says which
+            // tab is loading where the tabs are; this says it on the page,
+            // where you are looking.
+            Beam(loading: tab.loading && !tab.floating)
         }
         .animation(Motion.quick, value: tab.failure)
         .animation(Motion.quick, value: tab.floating)
