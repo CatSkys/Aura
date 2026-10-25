@@ -42,6 +42,7 @@ enum AddressCommand: CaseIterable, Equatable {
     func available(in browser: Browser) -> Bool {
         switch self {
         case .newSpace: return browser.prefs.usesSpaces
+        case .bookmarks: return browser.prefs.bookmarks
         default: return true
         }
     }

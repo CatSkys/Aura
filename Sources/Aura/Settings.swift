@@ -194,6 +194,13 @@ struct SettingsPanel: View {
                 }
             }
             Rule()
+            // As in Arc: a space's tabs keep the pages you'd otherwise keep
+            // in a list, so the button, the list and the bar can go. Nothing
+            // is deleted — the bookmarks stay in the file, off screen.
+            Line("Bookmarks", "Off, the button, the menu, the list and the bar go: a space's tabs are how you keep pages, as in Arc. What is kept already stays in the file, and comes back with this on") {
+                Switch(on: $prefs.bookmarks)
+            }
+            Rule()
             // What ⌘T opens to, and the way back after an extension took
             // it. Only there while an extension offers a page; it brings
             // its own hairline.
@@ -458,9 +465,11 @@ struct SettingsPanel: View {
             Line("Tabs show", "Beside the title, and on a pinned square") {
                 Segmented(options: Glyph.allCases.map { ($0, $0.title) }, selection: $prefs.glyph)
             }
-            Rule()
-            Line("Show the bookmarks bar", "Your bookmarks in a row above the page, folders opening as menus. It folds away with the tabs") {
-                Switch(on: $prefs.bookmarksBar)
+            if prefs.bookmarks {
+                Rule()
+                Line("Show the bookmarks bar", "Your bookmarks in a row above the page, folders opening as menus. It folds away with the tabs") {
+                    Switch(on: $prefs.bookmarksBar)
+                }
             }
             Rule()
             Line("Show how far you've read", "The tab you're on fills with grey as you scroll down the page") {

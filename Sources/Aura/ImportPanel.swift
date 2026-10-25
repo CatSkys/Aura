@@ -118,18 +118,22 @@ struct ImportPanel: View {
                 }
                 HStack(spacing: 8) {
                     if brought != nil {
-                        Pill("Show bookmarks") {
-                            browser.bringingIn = nil
-                            browser.bookmarking = true
-                        }
-                        // The bar is off until it is asked for, and nobody asks
-                        // for a row that has nothing in it. Bookmarks having just
-                        // arrived is the one moment it is worth offering, and the
-                        // sheet goes so that the bar is seen where it appears.
-                        if marksLanded, !browser.prefs.bookmarksBar {
-                            Pill("Show the bookmarks bar") {
-                                withAnimation(Motion.glide) { browser.prefs.bookmarksBar = true }
+                        // Bookmarks off (Settings › General): there is no list
+                        // to show, and no bar to offer, so neither is offered.
+                        if browser.prefs.bookmarks {
+                            Pill("Show bookmarks") {
                                 browser.bringingIn = nil
+                                browser.bookmarking = true
+                            }
+                            // The bar is off until it is asked for, and nobody asks
+                            // for a row that has nothing in it. Bookmarks having just
+                            // arrived is the one moment it is worth offering, and the
+                            // sheet goes so that the bar is seen where it appears.
+                            if marksLanded, !browser.prefs.bookmarksBar {
+                                Pill("Show the bookmarks bar") {
+                                    withAnimation(Motion.glide) { browser.prefs.bookmarksBar = true }
+                                    browser.bringingIn = nil
+                                }
                             }
                         }
                         Pill("Show passwords") {

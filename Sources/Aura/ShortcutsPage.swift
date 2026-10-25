@@ -15,6 +15,9 @@ struct ShortcutsPage: View {
     /// By name, or by key as the menus write it: "tab" and "⌘T" both find New Tab.
     private func shown(_ command: Command) -> Bool {
         if command.section == .spaces, !prefs.usesSpaces { return false }
+        // Bookmarks' own, only while bookmarks exist at all (Settings ›
+        // General): their menu is gone, so their keys would be too.
+        if command.section == .bookmarks, !prefs.bookmarks { return false }
         // Split View's commands only once it is on.
         if Command.split.contains(command.id), !browser.prefs.splitView { return false }
         if Command.ai.contains(command.id), !browser.prefs.ai { return false }

@@ -135,6 +135,7 @@
                                        where a flick, a pull at a side, a dock or a click on the sliver
                                        leaves it, and how far it swings on the way
     ./bench ui KEY VALUE               settings/passwords/welcome/history/downloads/bookmarks/hidden on|off,
+                                       bookmarksOn on|off (bookmarks at all: the button, the menu, the bar),
                                        import on|off|extensions|BROWSER,
                                        look light|dark|system, sidebar on|off, side left|right, spaces on|off, sharedpins on|off, swipepages on|off, confirm on|off, hides on|off,
                                        folded on|off, peek on|off, peeklink keep|close, pages120 never|onPower|always,

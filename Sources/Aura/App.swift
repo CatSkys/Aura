@@ -258,19 +258,24 @@ struct SearchApp: App {
                 Button("Stop Sound in Tab") { browser.pauseMedia() }
                     .shortcut("tabs.mute")
             }
-            CommandMenu("Bookmarks") {
-                Button(browser.pageKept ? "Edit Bookmark\u{2026}" : "Add This Page") { browser.bookmarkCurrent() }
-                    .shortcut("bookmarks.add")
-                    .disabled(browser.active?.isBlank ?? true)
-                Button("Show Bookmarks…") { browser.bookmarking = true }
-                    .shortcut("bookmarks.show")
-                Toggle("Show Bookmarks Bar", isOn: Binding(
-                    get: { browser.prefs.bookmarksBar },
-                    set: { on in withAnimation(Motion.glide) { browser.prefs.bookmarksBar = on } }
-                ))
-                .shortcut("bookmarks.bar")
-                // The bookmarks themselves follow, put in by AppKit (see
-                // BookmarkMenu in Bookmarks.swift).
+            // Gone whole when bookmarks are off (Settings › General): the
+            // space's tabs keep pages instead, and keys for a menu that isn't
+            // there would be keys that do nothing.
+            if browser.prefs.bookmarks {
+                CommandMenu("Bookmarks") {
+                    Button(browser.pageKept ? "Edit Bookmark\u{2026}" : "Add This Page") { browser.bookmarkCurrent() }
+                        .shortcut("bookmarks.add")
+                        .disabled(browser.active?.isBlank ?? true)
+                    Button("Show Bookmarks…") { browser.bookmarking = true }
+                        .shortcut("bookmarks.show")
+                    Toggle("Show Bookmarks Bar", isOn: Binding(
+                        get: { browser.prefs.bookmarksBar },
+                        set: { on in withAnimation(Motion.glide) { browser.prefs.bookmarksBar = on } }
+                    ))
+                    .shortcut("bookmarks.bar")
+                    // The bookmarks themselves follow, put in by AppKit (see
+                    // BookmarkMenu in Bookmarks.swift).
+                }
             }
             CommandMenu("History") {
                 Section("Recently Visited") {
@@ -597,11 +602,12 @@ struct ContentView: View {
             .transition(.opacity)
     }
 
-    /// The bookmarks bar is up: asked for, there are bookmarks, and the tabs
-    /// aren't folded away or under a video filling the screen.
+    /// The bookmarks bar is up: asked for, bookmarks are a thing, there are
+    /// bookmarks, and the tabs aren't folded away or under a video filling
+    /// the screen.
     private var barShown: Bool {
-        browser.prefs.bookmarksBar && !browser.bookmarks.isEmpty && !browser.folded
-            && fullscreenTab == nil
+        browser.prefs.bookmarks && browser.prefs.bookmarksBar
+            && !browser.bookmarks.isEmpty && !browser.folded && fullscreenTab == nil
     }
 
     /// The room the page is laid out to leave them, which is not animated.
@@ -848,6 +854,15 @@ struct ContentView: View {
                 }
             }
             .onChange(of: browser.activeID) { _, _ in handBack() }
+            // Bookmarks turned off (Settings › General) with the list or the
+            // dropdown open: both go with the button they hang from, rather
+            // than staying up with nothing under them.
+            .onChange(of: browser.prefs.bookmarks) { _, on in
+                guard !on else { return }
+                browser.bookmarking = false
+                browser.bookmarksOpen = false
+                browser.bookmarkCard = nil
+            }
             .animation(Motion.settle, value: browser.recalling)
             .animation(Motion.settle, value: browser.hoarding)
             .animation(Motion.settle, value: browser.tuning)
@@ -1618,6 +1633,8 @@ struct ContentView: View {
             // The column or the strip, folded away (see Fold.swift).
             browser.toggleFold()
         case "b" where shifted:
+            // Off with the menu it belongs to (Settings › General).
+            guard browser.prefs.bookmarks else { return false }
             browser.bookmarkCurrent()
         case "," where !shifted:
             browser.tuning.toggle()

@@ -354,6 +354,13 @@ final class Preferences: ObservableObject {
     @Published var alwaysShowsDownloads: Bool {
         didSet { store.set(alwaysShowsDownloads, forKey: "downloads.button") }
     }
+    /// Bookmarks at all: the button off the column or the strip, the menu,
+    /// the list and the bar (see Bookmarks.swift). Off, a space's tabs are
+    /// how you keep pages, as in Arc, and what was kept stays in the file.
+    /// On unless turned off.
+    @Published var bookmarks: Bool {
+        didSet { store.set(bookmarks, forKey: "bookmarks") }
+    }
     /// The bookmarks bar above the page (see BookmarksBar.swift). Off
     /// unless asked for.
     @Published var bookmarksBar: Bool {
@@ -623,6 +630,7 @@ final class Preferences: ObservableObject {
         pinsPeek = store.bool(forKey: "pins.peek")
         littleLinks = store.bool(forKey: "links.little")
         bookmarksBar = store.bool(forKey: "bookmarks.bar")
+        bookmarks = store.object(forKey: "bookmarks") as? Bool ?? true
         alwaysShowsDownloads = store.bool(forKey: "downloads.button")
         let links = store.object(forKey: "links.show") as? Bool ?? true
         showsLinks = links

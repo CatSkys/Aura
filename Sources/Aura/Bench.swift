@@ -710,6 +710,9 @@ final class Bench {
                 "bookmarksOpen": browser.bookmarksOpen,
                 "bookmarkCard": browser.bookmarkCard != nil,
                 "bookmarkCount": browser.bookmarks.count,
+                // Settings › General › Bookmarks: off, none of the above is
+                // reachable, and the bar is down.
+                "bookmarksOn": browser.prefs.bookmarks,
                 "import": browser.bringingIn != nil,
                 "field": browser.editing,
                 "suggesting": browser.suggesting != nil,
@@ -2871,6 +2874,9 @@ final class Bench {
             if let on = request["history"] as? Bool { browser.recalling = on }
             if let on = request["downloads"] as? Bool { browser.hoarding = on }
             if let on = request["bookmarks"] as? Bool { browser.bookmarking = on }
+            // Bookmarks at all — Settings › General › Bookmarks, and with it
+            // the button, the menu and the bar.
+            if let on = request["bookmarksOn"] as? Bool { browser.prefs.bookmarks = on }
             // The Bring things over sheet: on, off, on at a browser by name,
             // or on for the extensions alone, as Settings › Extensions opens it.
             if let text = request["import"] as? String {
