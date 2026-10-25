@@ -5,9 +5,12 @@ import SwiftUI
 // groove with a small dark pill that runs from one end of it to the other and
 // back, in the window's own ink.
 //
-// It keeps to the middle of the page, and to a hand's width: a browser that is
-// working says so at the top of what it is working on, and says no more than
-// that.
+// It belongs to the window, not to the page: it is drawn in the room the window
+// keeps over the page — the gap a card leaves, or the strip's own foot — and
+// centred on the page, so a page in Split View has this one bar over the pair
+// rather than one of its own, and a small window has it in the same place as a
+// large one. It keeps to a hand's width: a browser that is working says so at
+// the top of what it is working on, and says no more than that.
 //
 // It is layers rather than SwiftUI shapes for the reason the field's breath is
 // layers (see Omnibox.swift's Breath): animated by SwiftUI this is drawn again
@@ -47,6 +50,17 @@ struct Beam: NSViewRepresentable {
         guard let width = proposal.width, let height = proposal.height,
               width.isFinite, height.isFinite else { return nil }
         return CGSize(width: width, height: height)
+    }
+}
+
+/// The bar as the window draws it: one for the window, over whichever page has
+/// the front.
+struct LoadingBar: View {
+    @ObservedObject var tab: Tab
+
+    var body: some View {
+        Beam(loading: tab.loading)
+            .frame(height: Beam.height)
     }
 }
 

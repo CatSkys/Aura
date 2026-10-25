@@ -83,11 +83,6 @@ struct Page: View {
 
             Swiping(pull: tab.pull)
 
-            // The page on its way: the bar along its top edge, crossing one
-            // way and back (see Beam.swift). The ring in the tab says which
-            // tab is loading where the tabs are; this says it on the page,
-            // where you are looking.
-            Beam(loading: tab.loading && !tab.floating)
         }
         .animation(Motion.quick, value: tab.page?.kind)
         .animation(Motion.quick, value: tab.failure)
