@@ -488,14 +488,8 @@ struct ContentView: View {
             // side by side are a card each (see PaneStage).
             stage
                 .modifier(CardEdge(on: cards && !browser.prefs.splitView))
-                .padding(.leading, sideOnRight ? farGap + panelRoom : 0)
-                .padding(.trailing, sideOnRight ? 0 : farGap + panelRoom)
-                .padding(.bottom, farGap)
-                .padding(.leading, sideOnRight ? 0 : roomed.width)
-                .padding(.trailing, sideOnRight ? roomed.width : 0)
-                .padding(.top, roomed.height)
-                .offset(x: sideOnRight ? 0 : chrome.width - roomed.width,
-                        y: chrome.height - roomed.height)
+                .padding(pageEdges)
+                .offset(pageOffset)
 
             // An extension's side panel, on the side away from the column
             // (see SidePanel.swift); two pages in Split View share what's left.
@@ -599,6 +593,29 @@ struct ContentView: View {
     /// window nor a page filling the screen (see Browser.asCards).
     private var cards: Bool {
         browser.asCards && fullscreenTab == nil
+    }
+
+    /// What the window keeps from the page: the column, the strip, the
+    /// bookmarks bar, an extension's side panel, and — the page as a card —
+    /// the gap on the far side and along the bottom. Kept here so that
+    /// everything laid out to the page's own edges, the stage and the
+    /// dimming a peek lays over it, is placed from one sum and none of them
+    /// can drift from the page (they had: the dimming covered the card's
+    /// gap on the far side and along the bottom, and the notch of each of
+    /// its corners, which is the window's ground and not the page).
+    private var pageEdges: EdgeInsets {
+        EdgeInsets(top: roomed.height,
+                   leading: sideOnRight ? farGap + panelRoom : roomed.width,
+                   bottom: farGap,
+                   trailing: sideOnRight ? roomed.width : farGap + panelRoom)
+    }
+
+    /// And where that room leaves the page while the chrome comes and goes:
+    /// the page slides out from under a column arriving, its room given it
+    /// after the slide (see `room`).
+    private var pageOffset: CGSize {
+        CGSize(width: sideOnRight ? 0 : chrome.width - roomed.width,
+               height: chrome.height - roomed.height)
     }
 
     /// The window's ground is glass under the column (see Glass.swift): the
@@ -820,12 +837,13 @@ struct ContentView: View {
             }
             .overlay(alignment: .bottom) { bars }
             .overlay {
-                // Over the page only: the column, the strip and the bookmarks
-                // bar stay as they are, uncovered and in reach.
-                PeekLayer(browser: browser)
-                    .padding(.leading, sideOnRight ? 0 : chrome.width)
-                    .padding(.trailing, sideOnRight ? chrome.width : 0)
-                    .padding(.top, chrome.height)
+                // Over the page only: the column, the strip, the bookmarks bar
+                // and the gap around the page's card stay as they are,
+                // uncovered and in reach. Placed from the page's own edges, so
+                // the dimming ends where the page does.
+                PeekLayer(browser: browser, corner: cards ? Metrics.cardRadius : 0)
+                    .padding(pageEdges)
+                    .offset(pageOffset)
                     // From the window's own top edge, as the page is:
                     // the title bar's band is page too.
                     .ignoresSafeArea()
