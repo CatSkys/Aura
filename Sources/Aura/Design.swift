@@ -57,13 +57,19 @@ enum Palette {
     /// The arrow on it, and the cross where letting go would close.
     static let swipeGlyph = Color.white
 
-    /// The four colours a setting's icon tile wears, one to a group: rows are
-    /// told apart by colour before their symbol is read, as Arc's own
-    /// settings are. The system's own four, which keep their strength in
-    /// both appearances, with a white symbol on top.
+    /// The colours a setting's icon tile wears: rows are told apart by colour
+    /// before their symbol is read, as Arc's own settings are. One to a group,
+    /// and no group on one page wearing another's (see SettingsIndex.tint), so
+    /// the palette has to be at least as wide as the longest page. The
+    /// system's own, which keep their strength in both appearances, with a
+    /// white symbol on top.
     static let tileBlue = Color(nsColor: .systemBlue)
+    static let tileTeal = Color(nsColor: .systemTeal)
     static let tileGreen = Color(nsColor: .systemGreen)
+    static let tileIndigo = Color(nsColor: .systemIndigo)
     static let tilePurple = Color(nsColor: .systemPurple)
+    static let tilePink = Color(nsColor: .systemPink)
+    static let tileOrange = Color(nsColor: .systemOrange)
     static let tileRed = Color(nsColor: .systemRed)
 
     /// The only two that aren't grey: a connection nobody can read on the

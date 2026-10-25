@@ -100,17 +100,32 @@ enum SettingsIndex {
 
     static func group(_ id: String) -> SettingsGroup? { groups.first { $0.id == id } }
 
-    /// The colour a group's rows wear, in the four steps Settings uses:
-    /// blue for how the browser works, green for how windows and pages are
-    /// laid out and guarded, purple for looks, media and the extras, red for
-    /// the group that erases. One colour a card, so a page reads as blocks.
+    /// The colour a group's rows wear. One to a card, and none of a page's
+    /// cards wearing another's, so the eye counts the groups down a page
+    /// before it reads a word of them: General's two, Appearance's four,
+    /// Browsing's five are all different colours. Written out rather than
+    /// worked out, so a group keeps the colour it has however the pages
+    /// are rearranged later.
     static func tint(of group: String) -> Color {
         switch group {
-        case "clear": return Palette.tileRed
-        case "theme", "motion", "reading", "video", "arc", "developer": return Palette.tilePurple
-        case "window", "tablook", "newtabs", "memory", "tabbar", "spaces", "pins", "blocking", "permissions":
+        case "browser", "tabbar", "search", "pins", "passwords", "mouse", "updates":
+            return Palette.tileBlue
+        case "downloads", "newtabs", "spaces", "blocking":
             return Palette.tileGreen
-        default: return Palette.tileBlue
+        case "theme", "reading", "opening", "developer":
+            return Palette.tilePurple
+        case "window", "arc":
+            return Palette.tileOrange
+        case "tablook", "links", "permissions":
+            return Palette.tileTeal
+        case "motion", "video":
+            return Palette.tilePink
+        case "memory", "pages", "apple":
+            return Palette.tileIndigo
+        case "clear":
+            return Palette.tileRed
+        default:
+            return Palette.tileBlue
         }
     }
     static func groups(of page: SettingsPanel.Page) -> [SettingsGroup] { groups.filter { $0.page == page } }
