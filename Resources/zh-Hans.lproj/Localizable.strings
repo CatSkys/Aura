@@ -1325,3 +1325,28 @@
 "While Aura is dark, pages with no dark look of their own are darkened." = "Search 处于深色时，自己没有深色样式的页面也会被压暗。";
 "⌘T raises the address field over the page you are on, as in Arc." = "⌘T 在当前页面上方唤出地址栏，如同 Arc。";
 "Settings matching “{1}”" = "匹配「{1}」的设置";
+
+/* —— 枚举标题、图片选项与品牌名 —— */
+"As a card" = "作为卡片";
+"Edge to edge" = "铺到边缘";
+"Set up" = "设置";
+"Needs an Apple entitlement this build doesn't have" = "需要这个构建没有的 Apple 权限";
+"Aura's window" = "Aura 的窗口";
+"Picture in picture" = "画中画";
+"Switching tabs" = "切换标签页时";
+"Tabs or apps" = "切标签页或 App 时";
+"Checked {1}, every hour on its own" = "{1}检查过，每小时自动检查";
+"Reopen Cleared Tab" = "重新打开被清除的标签页";
+"Reopen {1} Cleared Tabs" = "重新打开 {1} 个被清除的标签页";
+"Bring Things Over" = "导入内容";
+"Connecting to Apple Passwords…" = "正在连接 Apple 密码…";
+"Six digits, from the Passwords window. Once per launch of Aura." = "六位数字，来自「密码」窗口。Aura 每次启动只问一次。";
+"Your Mac shows a six-digit code in a moment" = "你的 Mac 马上会显示六位验证码";
+"Google" = "Google";
+"Bing" = "Bing";
+"DuckDuckGo" = "DuckDuckGo";
+"Ecosia" = "Ecosia";
+"Kagi" = "Kagi";
+"Qwant" = "Qwant";
+"Startpage" = "Startpage";
+"Brave Search" = "Brave Search";

@@ -67,7 +67,7 @@ struct SearchApp: App {
                     .shortcut("file.newTab")
                 Button("New Private Tab") { browser.newShyTab() }
                     .shortcut("file.newPrivateTab")
-                Button(browser.reopenTitle) { browser.reopen() }
+                Button(browser.reopenMenuTitle) { browser.reopen() }
                     .shortcut("file.reopen")
                     .disabled(browser.ghosts.isEmpty && Browsers.lastClosedAt == nil)
                 Divider()
@@ -1808,7 +1808,7 @@ private struct ImportProgress: View {
     private var footer: some View {
         HStack {
             if let total = job.total, total > 0 {
-                Text("\(job.completed.formatted()) of \(total.formatted())")
+                Text(Localized("\(job.completed.formatted()) of \(total.formatted())"))
                     .font(.system(size: 11))
                     .foregroundStyle(Palette.muted)
             }
