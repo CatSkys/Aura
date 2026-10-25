@@ -11,9 +11,6 @@ import WebKit
 /// what turns that into a redraw.
 struct Page: View {
     @ObservedObject var tab: Tab
-    /// The colour the light on the page's edge wears: the space's own, where
-    /// the window is wearing one (see Beam.swift).
-    @Environment(\.spaceLight) private var light
     /// False where the page itself is held elsewhere (see PaneStage.swift)
     /// and only what goes over it is wanted here.
     var holdsPage = true
@@ -86,12 +83,11 @@ struct Page: View {
 
             Swiping(pull: tab.pull)
 
-            // The page on its way: a light along its top edge, crossing one
+            // The page on its way: the bar along its top edge, crossing one
             // way and back (see Beam.swift). The ring in the tab says which
             // tab is loading where the tabs are; this says it on the page,
-            // where you are looking — in the space's own light, where the
-            // window is wearing it.
-            Beam(loading: tab.loading && !tab.floating, tint: light)
+            // where you are looking.
+            Beam(loading: tab.loading && !tab.floating)
         }
         .animation(Motion.quick, value: tab.page?.kind)
         .animation(Motion.quick, value: tab.failure)

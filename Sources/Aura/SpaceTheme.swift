@@ -124,21 +124,6 @@ enum SpacePalette {
             : NSColor(hue: theme.hue / 360, saturation: 0.03 + 0.30 * s, brightness: 0.55, alpha: 1)
     }
 
-    /// The space's colour as it can be seen on the page: what the light along a
-    /// page's top edge wears while the page is coming (see Beam.swift).
-    ///
-    /// Neither of the column's own colours will do there. The title is a
-    /// near-black only a hair off the hue — over white it reads as ink, not as
-    /// a colour — and the glass is a wash pale enough to vanish on the page's
-    /// white. So the hue is deepened to where it shows. A grey stays grey, as
-    /// in `dark`: with no saturation asked for, none is invented.
-    static func glow(_ theme: SpaceTheme, dark: Bool) -> NSColor {
-        let s = theme.sat / 100
-        let presence = min(1, s / 0.05)
-        return NSColor(hue: theme.hue / 360, saturation: presence * (0.08 + 0.60 * s),
-                       brightness: dark ? 0.86 : 0.55, alpha: 1)
-    }
-
     /// Arc's 27: three pages of nine in its Space Style Editor, read off the
     /// asset catalog (`arc-rea/REPORT.md` §5). 柔和 / 沉稳 / 灰阶.
     static let pastel: [UInt32] = [

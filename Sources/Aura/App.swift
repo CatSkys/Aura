@@ -487,7 +487,6 @@ struct ContentView: View {
             // top and on the column's side in the room (see chrome). Two pages
             // side by side are a card each (see PaneStage).
             stage
-                .environment(\.spaceLight, spaceLight)
                 .modifier(CardEdge(on: cards && !browser.prefs.splitView))
                 .padding(.leading, sideOnRight ? farGap + panelRoom : 0)
                 .padding(.trailing, sideOnRight ? 0 : farGap + panelRoom)
@@ -619,13 +618,6 @@ struct ContentView: View {
     private func washGlass() {
         guard let window else { return }
         WindowGlass.setSpaceTheme(browser.prefs.usesSpaces ? browser.space.spaceTheme : nil, in: window)
-    }
-
-    /// The colour the page's own light wears: the space's, where the window is
-    /// wearing one, so a space's pages load in that space's colour (see
-    /// SpacePalette.glow, Beam.swift).
-    private var spaceLight: Color {
-        glass ? Color(nsColor: SpacePalette.glow(browser.space.spaceTheme, dark: scheme == .dark)) : Palette.ink
     }
 
     /// The column's inks over that glass, for what is beside it: the bookmarks
