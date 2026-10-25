@@ -17,7 +17,7 @@ in [ROADMAP.md](ROADMAP.md).
 
 ### Fixed
 
-## 0.10 — 25 October 2026
+## 0.1.0 — 25 October 2026
 
 The first release of the fork: Search 1.0.6 and everything since, under Aura's own name, identity, update feed and Simplified Chinese interface. What it says, and what it leaves out, is in [NOTES.md](NOTES.md).
 
