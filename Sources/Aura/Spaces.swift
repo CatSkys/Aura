@@ -480,12 +480,15 @@ extension Browser {
 
 /// The space on screen, as its icon: at the column's foot, or before the
 /// tabs in the row. One icon however many spaces there are; a click opens
-/// the menu. When the space changes the icon turns over the way the spaces
-/// went — out on one side, the next one in from the other.
+/// the card of spaces (see SpaceSwitcher). When the space changes the icon
+/// turns over the way the spaces went — out on one side, the next one in
+/// from the other.
 struct SpaceDot: View {
     @ObservedObject var browser: Browser
     @Environment(\.sideInk) private var side
     @State private var hovering = false
+    /// The card of spaces, up or not.
+    @State private var showing = false
     /// What is drawn, a step behind the browser: the space changes in a
     /// frame with nothing animated (see SpaceSwipe.slide), and the icon
     /// turns over just after, on a change of its own.
@@ -500,7 +503,7 @@ struct SpaceDot: View {
     private var key: String { browser.makingSpace ? "new" : "\(browser.spaceID.uuidString)-\(browser.space.symbol)" }
 
     var body: some View {
-        Button { SpaceMenu.show(for: browser) } label: {
+        Button { showing = true } label: {
             ZStack {
                 Image(systemName: shown?.symbol ?? symbol)
                     .font(.system(size: 12, weight: .medium))
@@ -523,13 +526,10 @@ struct SpaceDot: View {
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
         .help("\(browser.space.name) — ⌃1–⌃9, or two fingers \(browser.prefs.sidebar ? "sideways" : "up or down") over the tabs, to switch")
-        // The space's own colour, in Arc's palette, over the dot it belongs
-        // to (see SpaceThemeEditor): the column beside it is the preview.
-        .popover(isPresented: Binding(
-            get: { browser.spaceThemeEditing },
-            set: { browser.spaceThemeEditing = $0 }
-        ), arrowEdge: .bottom) {
-            SpaceThemeEditor(browser: browser)
+        // The card: the spaces, what can be done to this one, its icons and
+        // its colour (see SpaceSwitcher).
+        .popover(isPresented: $showing, arrowEdge: .bottom) {
+            SpaceSwitcher(browser: browser) { showing = false }
         }
         .onChange(of: key) { _, now in
             let symbol = symbol
@@ -576,103 +576,7 @@ struct SpaceDot: View {
     }
 }
 
-/// The dot's menu: the spaces, then what can be done to the one on screen.
-@MainActor
-enum SpaceMenu {
-    /// Menu items call back into Swift through this.
-    private final class Action: NSObject {
-        let run: () -> Void
-        init(_ run: @escaping () -> Void) { self.run = run }
-        @objc func fire() { run() }
-    }
-
-    private static var actions: [Action] = []
-
-    private static func item(_ title: String, key: String = "", checked: Bool = false, _ run: @escaping () -> Void) -> NSMenuItem {
-        let action = Action(run)
-        actions.append(action)
-        let item = NSMenuItem(title: title, action: #selector(Action.fire), keyEquivalent: key)
-        item.target = action
-        item.keyEquivalentModifierMask = key.isEmpty ? [] : .control
-        item.state = checked ? .on : .off
-        return item
-    }
-
-    static func show(for browser: Browser) {
-        actions = []
-        let menu = NSMenu()
-        for (index, space) in browser.spaces.enumerated() {
-            let entry = item(space.name, key: index < 9 ? "\(index + 1)" : "", checked: space.id == browser.spaceID) {
-                browser.switchSpace(to: space.id)
-            }
-            entry.image = NSImage(systemSymbolName: space.symbol, accessibilityDescription: nil)
-            menu.addItem(entry)
-        }
-        menu.addItem(.separator())
-        menu.addItem(item("New Space…".localized) { browser.askForSpace() })
-        // The profiles, once there is more than one (see Profiles.swift).
-        if Profiles.shared.several {
-            menu.addItem(.separator())
-            let profiles = NSMenu()
-            for entry in ProfileMenu.items(for: browser) { profiles.addItem(entry) }
-            let holder = NSMenuItem(title: "Profile: \(Profiles.shared.profile(browser.profileID).name)", action: nil, keyEquivalent: "")
-            holder.submenu = profiles
-            menu.addItem(holder)
-        }
-        menu.addItem(.separator())
-        let here = browser.space
-        menu.addItem(item(Localized("Rename “\(here.name)”…")) {
-            Ask.name("Rename Space".localized, placeholder: here.name, initial: here.name, confirm: "Rename".localized) { browser.renameSpace(here.id, to: $0) }
-        })
-        let icons = NSMenu()
-        for (symbol, name) in zip(Spaces.icons, Spaces.iconNames) {
-            let choice = item(name.localized, checked: here.symbol == symbol) { browser.setSpaceIcon(here.id, to: symbol) }
-            choice.image = NSImage(systemSymbolName: symbol, accessibilityDescription: name.localized)
-            icons.addItem(choice)
-        }
-        let icon = NSMenuItem(title: "Icon".localized, action: nil, keyEquivalent: "")
-        icon.submenu = icons
-        menu.addItem(icon)
-        // The space's colour: what tells one space from another at a glance,
-        // and what the window's glass is tinted with while you are in it (see
-        // SpaceTheme.swift and `ContentView.washGlass`), as Arc's space colours
-        // tint its window. The sheet is Arc's own palette — a hue and how much
-        // of it, its 27 colours, and the grain — opened on the dot below.
-        menu.addItem(item("Colour…".localized) { browser.spaceThemeEditing = true })
-        menu.addItem(item("Default Colour".localized) { browser.setSpaceTheme(here.id, to: nil) })
-        // The order is the swipe's, and ⌃1–⌃9's.
-        if let at = browser.spaces.firstIndex(where: { $0.id == here.id }) {
-            if at > 0 { menu.addItem(item("Move Left".localized) { browser.moveSpace(here.id, to: at - 1) }) }
-            if at < browser.spaces.count - 1 { menu.addItem(item("Move Right".localized) { browser.moveSpace(here.id, to: at + 1) }) }
-        }
-        let folder = here.downloads.map { URL(fileURLWithPath: $0).lastPathComponent }
-        menu.addItem(item(folder.map { Localized("Downloads to “\($0)”…") } ?? "Downloads Folder…".localized) {
-            Ask.folder { browser.setSpaceDownloads(here.id, to: $0) }
-        })
-        if folder != nil {
-            menu.addItem(item("Downloads to the Folder in Settings".localized) { browser.setSpaceDownloads(here.id, to: nil) })
-        }
-        // The two lists, from the menu already under the hand: the same panels
-        // the History menu opens, so the space's own menu is a way in to them
-        // rather than only to the space.
-        menu.addItem(.separator())
-        menu.addItem(item("Show History…".localized) { browser.recalling = true })
-        menu.addItem(item("Downloads…".localized) { browser.hoarding = true })
-        if !here.isFirst, here.id != browser.homeSpaceID {
-            menu.addItem(.separator())
-            menu.addItem(item(Localized("Delete “\(here.name)”…")) {
-                Ask.sure(Localized("Delete “\(here.name)”?"),
-                         detail: "Its tabs close, and its cookies and sign-ins are erased from this Mac. History and bookmarks stay.".localized,
-                         confirm: "Delete".localized) {
-                    browser.deleteSpace(here.id)
-                }
-            })
-        }
-        menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
-    }
-}
-
-/// The few questions a space's menu asks, as sheets on the window. The
+/// The few questions the space's card asks, as sheets on the window. The
 /// bookmarks list borrows `name` for Rename….
 @MainActor
 enum Ask {

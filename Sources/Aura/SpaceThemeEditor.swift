@@ -3,8 +3,8 @@ import SwiftUI
 /// Arc's Space Style Editor, kept small: a hue and how much of it, Arc's 27
 /// colours to start from, and how much grain lies over the glass.
 ///
-/// The sheet is opened from the space's own menu and lives in a popover on
-/// its dot (`SpaceDot`), so the column beside it is the preview: every drag
+/// It is a page of the card the space's dot opens (see SpaceSwitcher), which
+/// is a popover, so the column beside it is the preview: every drag
 /// writes the space's theme and the window's glass follows (`ContentView`
 /// → `WindowGlass`). Arc's own picker is a ring of hues with a slider for how
 /// strongly the space takes it; this is the same two numbers as a pad, which
@@ -48,7 +48,6 @@ struct SpaceThemeEditor: View {
             }
         }
         .padding(14)
-        .frame(width: 300)
     }
 
     // MARK: - the pad

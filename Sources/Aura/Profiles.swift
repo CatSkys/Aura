@@ -244,7 +244,7 @@ enum ProfileMenu {
         return item
     }
 
-    /// Its items, for the badge's menu and the dot's.
+    /// Its items, for the badge's menu.
     static func items(for browser: Browser) -> [NSMenuItem] {
         var items: [NSMenuItem] = []
         for profile in Profiles.shared.list {
