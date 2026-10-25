@@ -429,7 +429,8 @@ final class Bench {
             guard Store.testing else { answer(["error": "nowplaying only works on a --test run"]); return }
             guard let tab = find(request, in: browser) else { answer(missing(request)); return }
             let ask = NSSelectorFromString("_requestActiveNowPlayingSessionInfo:")
-            guard tab.web.responds(to: ask), let imp = tab.web.method(for: ask) else {
+            let nowPlaying = tab.web.webKit
+            guard nowPlaying.responds(to: ask), let imp = nowPlaying.method(for: ask) else {
                 answer(["error": "this WebKit has no Now Playing info"]); return
             }
             typealias Reply = @convention(block) (ObjCBool, ObjCBool, NSString?, Double, Double, Int) -> Void
@@ -440,7 +441,7 @@ final class Bench {
                             "hushing": tab.hushing])
                 }
             }
-            unsafeBitCast(imp, to: Ask.self)(tab.web, ask, reply)
+            unsafeBitCast(imp, to: Ask.self)(nowPlaying, ask, reply)
 
         case "eval":
             guard let tab = find(request, in: browser) else { answer(missing(request)); return }
@@ -448,7 +449,7 @@ final class Bench {
             house(tab)
             // Aura's own world is where its page scripts live (see Web.world).
             if request["world"] as? String == "search" {
-                tab.web.evaluateJavaScript(js, in: nil, in: Web.world) { result in
+                tab.web.webKit.evaluateJavaScript(js, in: nil, in: Web.world) { result in
                     switch result {
                     case .success(let value): answer(["value": Bench.plain(value)])
                     case .failure(let error): answer(["error": error.localizedDescription])
@@ -472,8 +473,9 @@ final class Bench {
             guard Store.testing else { answer(["error": "tap only works on a --test run — it would click in your page"]); return }
             guard let tab = find(request, in: browser), let selector = request["selector"] as? String else { answer(missing(request)); return }
             house(tab)
-            let view = tab.web
-            view.evaluateJavaScript(Bench.locate(selector)) { value, error in
+            let page = tab.web
+            let view = page.webKit
+            page.evaluateJavaScript(Bench.locate(selector)) { value, error in
                 MainActor.assumeIsolated {
                     guard let point = value as? [Double], point.count == 2, let window = view.window else {
                         answer(["error": error?.localizedDescription ?? "nothing matches \(selector)"])
@@ -632,7 +634,7 @@ final class Bench {
             guard let tab = find(request, in: browser), let x = request["x"] as? Double, let y = request["y"] as? Double
             else { answer(missing(request)); return }
             house(tab)
-            let web = tab.web
+            let web = tab.web.webKit
             let before = browser.tabs.count
             let inView = NSPoint(x: x, y: web.isFlipped ? y : web.bounds.height - y)
             let point = web.convert(inView, to: nil)
@@ -661,7 +663,7 @@ final class Bench {
                   let pick = request["pick"] as? String
             else { answer(missing(request)); return }
             house(tab)
-            let web = tab.web
+            let web = tab.web.webKit
             let inView = NSPoint(x: x, y: web.isFlipped ? y : web.bounds.height - y)
             let point = web.convert(inView, to: nil)
             PageView.picking = pick
@@ -746,7 +748,7 @@ final class Bench {
                 ]
             }
             if let window = browser.window ?? Links.window { out["lights"] = Bench.lights(of: window) }
-            if let tab = browser.active, let web = tab.built, let window = browser.window ?? Links.window, web.window === window {
+            if let tab = browser.active, let web = tab.built?.webKit, let window = browser.window ?? Links.window, web.window === window {
                 let frame = web.convert(web.bounds, to: nil)
                 out["activePageFrame"] = [
                     Int(frame.minX), Int(window.frame.height - frame.maxY),
@@ -771,7 +773,7 @@ final class Bench {
             out["peekFrom"] = browser.peekFrom?.uuidString ?? ""
             out["fetching"] = ["showing": browser.fetches.showing, "fraction": browser.fetches.fraction ?? -1, "done": browser.fetches.done]
             // Where the peek's page sits in the window, from its top-left corner, in points.
-            if let web = browser.peekTab?.built, let window = web.window {
+            if let web = browser.peekTab?.built?.webKit, let window = web.window {
                 let r = web.convert(web.bounds, to: nil)
                 out["peekFrame"] = [Int(r.minX), Int(window.frame.height - r.maxY), Int(r.width), Int(r.height)]
             }
@@ -849,7 +851,7 @@ final class Bench {
             guard Store.testing else { answer(["error": "key only works on a --test run — it would type into your page"]); return }
             guard let tab = find(request, in: browser), let text = request["text"] as? String else { answer(missing(request)); return }
             house(tab)
-            let view = tab.web
+            let view = tab.web.webKit
             view.window?.makeFirstResponder(view)
             let before = PageView.quieted
             // What WebKit sends back through the app because the page didn't
@@ -1068,7 +1070,7 @@ final class Bench {
             case "show":
                 let names = request["names"] as? [String] ?? ["Loom"]
                 let what = request["what"] as? String ?? "is recording your screen"
-                let page = find(request, in: browser)?.built
+                let page = find(request, in: browser)?.built?.webKit
                 pill.update(names.map { RecordingLine(id: $0.lowercased(), name: $0, what: what) }, pages: page.map { [$0] } ?? [])
                 answer(state())
             case "stop":
@@ -1078,7 +1080,7 @@ final class Bench {
                 answer(state(["stopped": stopped]))
             case "clear": pill.update([]); answer(state())
             case "host", "release":
-                guard let tab = find(request, in: browser), let web = tab.built else { answer(missing(request)); return }
+                guard let tab = find(request, in: browser), let web = tab.built?.webKit else { answer(missing(request)); return }
                 // Where the page was before it was lent, to check it comes back there.
                 if request["action"] as? String == "host" {
                     Bench.lentFrom[ObjectIdentifier(web)] = web.superview.map { WeakView($0) } ?? WeakView(nil)
@@ -1505,7 +1507,7 @@ final class Bench {
             // the real Aura's, for a probe of the real app — so only in a
             // copy under a bundle id of its own (Tests/text_replacement.py).
             guard Store.testing else { answer(["error": "textcheck only works on a --test run"]); return }
-            let web = find(request, in: browser)?.built ?? browser.active?.built
+            let web = find(request, in: browser)?.built?.webKit ?? browser.active?.built?.webKit
             if let name = request["toggle"] as? String {
                 guard Store.ownContainer else {
                     answer(["error": "textcheck toggle only works in a copy under its own bundle id — it would switch the real Aura's setting"])
@@ -1585,7 +1587,7 @@ final class Bench {
             // Reports what Aura did and what the page saw. Only on a
             // AURA_PROBE run.
             guard Store.testing else { answer(["error": "keyeq only works on a --test run"]); return }
-            guard let tab = browser.active, let web = tab.built, let window = web.window,
+            guard let tab = browser.active, let web = tab.built?.webKit, let window = web.window,
                   let chars = request["chars"] as? String, let code = request["code"] as? Int
             else { answer(["error": "keyeq needs a loaded tab, the characters and the key code"]); return }
             var flags: NSEvent.ModifierFlags = [.command]
@@ -1873,7 +1875,7 @@ final class Bench {
             // handed to the page's view — for the swipe back and forward.
             // Reports where the tab is after. Only on a AURA_PROBE run.
             guard Store.testing else { answer(["error": "pull only works on a --test run"]); return }
-            guard let tab = browser.active, let web = tab.built, let dx = request["dx"] as? Double
+            guard let tab = browser.active, let web = tab.built?.webKit, let dx = request["dx"] as? Double
             else { answer(["error": "pull needs a loaded tab and a distance"]); return }
             let steps = max(2, request["steps"] as? Int ?? 10)
             let ms = max(1, request["ms"] as? Double ?? 200)
@@ -1910,7 +1912,7 @@ final class Bench {
             // around a point (in the view, from its top left), or read back
             // with no scale given. Only on a AURA_PROBE run.
             guard Store.testing else { answer(["error": "magnify only works on a --test run"]); return }
-            guard let tab = find(request, in: browser), let web = tab.built else { answer(missing(request)); return }
+            guard let tab = find(request, in: browser), let web = tab.built?.webKit else { answer(missing(request)); return }
             if let scale = request["scale"] as? Double {
                 let x = request["x"] as? Double ?? Double(web.bounds.midX)
                 let y = request["y"] as? Double ?? Double(web.bounds.midY)
@@ -1926,7 +1928,7 @@ final class Bench {
             // points in STEPS events over MS milliseconds, with a trackpad's
             // phases and, if asked, a glide after. Only on a AURA_PROBE run.
             guard Store.testing else { answer(["error": "wheel only works on a --test run"]); return }
-            guard let tab = find(request, in: browser), let web = tab.built else { answer(missing(request)); return }
+            guard let tab = find(request, in: browser), let web = tab.built?.webKit else { answer(missing(request)); return }
             let dx = request["dx"] as? Double ?? 0, dy = request["dy"] as? Double ?? 0
             let steps = max(2, request["steps"] as? Int ?? 10)
             let ms = max(1, request["ms"] as? Double ?? 200)
@@ -2077,7 +2079,7 @@ final class Bench {
             // loaded afresh in a view of its own in the bench's room, sized
             // as the page is, and pictured there.
             if !NSApp.isHidden, request["page"] as? Bool != false, let tab = browser.active, let address = tab.address,
-               let live = tab.built, live.window === window {
+               let live = tab.built?.webKit, live.window === window {
                 let rect = live.convert(live.bounds, to: nil)
                 guard let chrome = frame.bitmapImageRepForCachingDisplay(in: frame.bounds) else { answer(["error": "nothing drawn"]); return }
                 frame.cacheDisplay(in: frame.bounds, to: chrome)
@@ -2369,7 +2371,7 @@ final class Bench {
             }
             // A window off every screen counts as covered, and WebKit draws
             // nothing it thinks nobody sees.
-            let web = tab.web
+            let web = tab.web.webKit
             let occlusion = NSSelectorFromString("_setWindowOcclusionDetectionEnabled:")
             if web.responds(to: occlusion) {
                 typealias Setter = @convention(c) (AnyObject, Selector, Bool) -> Void
@@ -3320,7 +3322,7 @@ final class Bench {
             reply()
         case "keys":
             // The keys handed to a page's view, as the key-view loop would.
-            guard let page = tab(), let web = page.built, let window = web.window else {
+            guard let page = tab(), let web = page.built?.webKit, let window = web.window else {
                 answer(["error": "split keys needs the id of a page on screen"]); return
             }
             window.makeFirstResponder(web)
@@ -3439,7 +3441,7 @@ final class Bench {
                 if let tab = browser.tabs.first(where: { $0.id == entry.key }) { out[Bench.short(tab)] = entry.value }
             },
             "paneFrames": browser.tabs.compactMap { tab -> [String: Any]? in
-                guard let web = tab.built, let window = browser.window, web.window === window else { return nil }
+                guard let web = tab.built?.webKit, let window = browser.window, web.window === window else { return nil }
                 let frame = web.convert(web.bounds, to: nil)
                 return ["id": Bench.short(tab), "x": Double(frame.minX),
                         "y": Double(window.frame.height - frame.maxY),
@@ -3611,7 +3613,7 @@ final class Bench {
             "duskNative": tab.duskNative.map { $0 ? "dark" : "light" } ?? "",
             "extensions": { if #available(macOS 15.4, *) { return tab.carriesExtensions } else { return false } }(),
             // The page's WebKit process, for measuring what it holds.
-            "process": tab.built.flatMap { $0.value(forKey: "_webProcessIdentifier") as? Int } ?? 0,
+            "process": tab.built?.webKit.value(forKey: "_webProcessIdentifier") as? Int ?? 0,
         ]
     }
 
@@ -3730,9 +3732,9 @@ final class Bench {
     private func house(_ tab: Tab) {
         guard tab.bench, tab.web.window == nil else { return }
         let window = room ?? makeRoom()
-        tab.web.frame = window.contentView?.bounds ?? NSRect(x: 0, y: 0, width: 1280, height: 800)
-        tab.web.autoresizingMask = [.width, .height]
-        window.contentView?.addSubview(tab.web)
+        tab.web.webKit.frame = window.contentView?.bounds ?? NSRect(x: 0, y: 0, width: 1280, height: 800)
+        tab.web.webKit.autoresizingMask = [.width, .height]
+        window.contentView?.addSubview(tab.web.webKit)
     }
 
     /// The last page `ai read` read, for `ai check`.
@@ -3758,7 +3760,7 @@ final class Bench {
     }
 
     private func shoot(_ tab: Tab, to file: URL, width: Double?, _ answer: @escaping ([String: Any]) -> Void) {
-        shoot(tab.web, to: file, width: width, answer)
+        shoot(tab.web.webKit, to: file, width: width, answer)
     }
 
     private func shoot(_ web: WKWebView, to file: URL, width: Double?, _ answer: @escaping ([String: Any]) -> Void) {
@@ -3871,7 +3873,7 @@ private final class LayoutRecord {
         guard let browser, let window = browser.window else { return }
         var now: [String: [Int]] = [:]
         for tab in browser.tabs {
-            guard let web = tab.built, web.window === window, !web.isHiddenOrHasHiddenAncestor else { continue }
+            guard let web = tab.built?.webKit, web.window === window, !web.isHiddenOrHasHiddenAncestor else { continue }
             let r = web.convert(web.bounds, to: nil)
             now[Bench.short(tab)] = [Int(r.minX.rounded()), Int((window.frame.height - r.maxY).rounded()),
                                      Int(r.width.rounded()), Int(r.height.rounded())]

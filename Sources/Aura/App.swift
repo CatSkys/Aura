@@ -896,8 +896,8 @@ struct ContentView: View {
             guard !browser.fieldShowing, browser.editingTab == nil else { return }
             guard let web = browser.active?.web, let window = web.window else { return }
             if let responder = window.firstResponder as? NSView,
-               responder === web || responder.isDescendant(of: web) { return }
-            window.makeFirstResponder(web)
+               responder === web.view || responder.isDescendant(of: web.view) { return }
+            window.makeFirstResponder(web.view)
         }
     }
 
@@ -1300,7 +1300,7 @@ struct ContentView: View {
     /// context while the caret is in something editable, in any frame.
     private func caretIn(_ event: NSEvent) -> Bool {
         event.window?.firstResponder is NSTextView || browser.active?.typing == true
-            || browser.active?.built?.inputContext != nil
+            || browser.active?.built?.view.inputContext != nil
     }
 
     /// Whether the caret is in the window's address field: its field editor
@@ -1455,7 +1455,7 @@ struct ContentView: View {
         if event.keyCode == 36 || event.keyCode == 76,
            flags.intersection([.command, .shift, .option, .control]) == .command
             || (browser.prefs.splitView && flags.intersection([.command, .shift, .option, .control]) == [.command, .option]),
-           let peek = browser.peekTab, !peek.typing, peek.built?.inputContext == nil {
+           let peek = browser.peekTab, !peek.typing, peek.built?.view.inputContext == nil {
             browser.keepPeek(beside: flags.contains(.option))
             return true
         }
@@ -1603,7 +1603,7 @@ struct ContentView: View {
             // A web view has an input context only while the caret is in
             // something editable, in any frame — including frames the page's
             // own script can't look into, like the one a Google Doc types in.
-            if browser.active?.typing == true || browser.active?.built?.inputContext != nil
+            if browser.active?.typing == true || browser.active?.built?.view.inputContext != nil
                 || browser.editing || event.window?.firstResponder is NSTextView {
                 _ = event.window?.firstResponder?.tryToPerform(#selector(NSTextView.pasteAsPlainText(_:)), with: nil)
             } else {

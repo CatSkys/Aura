@@ -257,7 +257,7 @@ final class Tab: ObservableObject, Identifiable {
     /// The page. Built the first time anyone asks for it, not when the tab
     /// is — a session of twenty tabs coming back is twenty objects, not
     /// twenty web views and their processes fighting the first frame.
-    var web: PageView {
+    var web: any PageSurface {
         if let built { return built }
         let view = build()
         built = view
@@ -265,7 +265,7 @@ final class Tab: ObservableObject, Identifiable {
     }
     /// The web view if there is one yet, for the callers that must not be
     /// the reason there is.
-    private(set) var built: PageView?
+    private(set) var built: (any PageSurface)?
     private var configuration: WKWebViewConfiguration
     let extensionReturn = ExtensionReturnNavigation()
 
@@ -319,7 +319,7 @@ final class Tab: ObservableObject, Identifiable {
         if !blockedPopups.isEmpty { blockedPopups = [] }
         // A new document: whatever the old one waited for under its field
         // went with it.
-        if let built { Passkeys.shared.forget(built) }
+        if let built { Passkeys.shared.forget(built.webKit) }
         // about:blank too: a document another page wrote into (an opener
         // sending its window there, then writing) is that page's, not the
         // one before it, and is offered nothing that belonged to it.
@@ -502,7 +502,7 @@ final class Tab: ObservableObject, Identifiable {
     /// it when its page is built again.
     func toggleMute() {
         muted.toggle()
-        if let built { Muter.set(muted, on: built) }
+        if let built { Muter.set(muted, on: built.webKit) }
     }
 
     /// What the page hands back when you point at something and click it.
@@ -1570,9 +1570,9 @@ final class Tab: ObservableObject, Identifiable {
     private func hush() {
         quiet = nil
         guard !noisy, let built else { return }
-        built.evaluateJavaScript(MediaKeys.hush, in: nil, in: Web.world) { _ in }
+        built.webKit.evaluateJavaScript(MediaKeys.hush, in: nil, in: Web.world) { _ in }
         for frame in media.frames {
-            built.evaluateJavaScript(MediaKeys.hush, in: frame, in: Web.world) { _ in }
+            built.webKit.evaluateJavaScript(MediaKeys.hush, in: frame, in: Web.world) { _ in }
         }
     }
 
@@ -1590,7 +1590,7 @@ final class Tab: ObservableObject, Identifiable {
         media.forget()
         guard let web = built else { return }
         built = nil
-        Passkeys.shared.forget(web)
+        Passkeys.shared.forget(web.webKit)
         let controller = web.configuration.userContentController
         Web.release(controller)
         controller.removeAllUserScripts()
@@ -1613,7 +1613,7 @@ final class Tab: ObservableObject, Identifiable {
         web.setMicrophoneCaptureState(.none, completionHandler: nil)
         web.navigationDelegate = nil
         web.uiDelegate = nil
-        web.removeFromSuperview()
+        web.view.removeFromSuperview()
     }
 }
 

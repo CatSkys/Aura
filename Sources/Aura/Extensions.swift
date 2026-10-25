@@ -1752,7 +1752,7 @@ final class ExtensionTab: NSObject, WKWebExtensionTab {
         }
     }
 
-    func webView(for context: WKWebExtensionContext) -> WKWebView? { sealed(context) ? nil : tab?.built }
+    func webView(for context: WKWebExtensionContext) -> WKWebView? { sealed(context) ? nil : tab?.built?.webKit }
     func title(for context: WKWebExtensionContext) -> String? { hidden(context) ? nil : tab?.title }
     func url(for context: WKWebExtensionContext) -> URL? { sealed(context) ? nil : tab?.address }
     func isLoadingComplete(for context: WKWebExtensionContext) -> Bool { !(tab?.loading ?? false) }
@@ -1760,7 +1760,7 @@ final class ExtensionTab: NSObject, WKWebExtensionTab {
     func isPinned(for context: WKWebExtensionContext) -> Bool { tab?.pin != nil }
     func isPlayingAudio(for context: WKWebExtensionContext) -> Bool { tab?.noisy ?? false }
     func zoomFactor(for context: WKWebExtensionContext) -> Double { Double(tab?.built?.pageZoom ?? 1) }
-    func size(for context: WKWebExtensionContext) -> CGSize { tab?.built?.bounds.size ?? .zero }
+    func size(for context: WKWebExtensionContext) -> CGSize { tab?.built?.view.bounds.size ?? .zero }
     func shouldGrantPermissionsOnUserGesture(for context: WKWebExtensionContext) -> Bool { !hidden(context) }
 
     func setPinned(_ pinned: Bool, for context: WKWebExtensionContext) async throws {
@@ -1810,7 +1810,7 @@ final class ExtensionTab: NSObject, WKWebExtensionTab {
 
     func takeSnapshot(using configuration: WKSnapshotConfiguration, for context: WKWebExtensionContext) async throws -> NSImage? {
         guard let web = tab?.built, !sealed(context) else { return nil }
-        return try await web.takeSnapshot(configuration: configuration)
+        return try await web.webKit.takeSnapshot(configuration: configuration)
     }
 }
 

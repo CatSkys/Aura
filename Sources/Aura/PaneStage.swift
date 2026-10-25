@@ -209,7 +209,7 @@ final class PaneStage: NSView {
     /// The page a tab puts on the stage: none while it is blank, asleep or
     /// floating, as Page decides it (see Stage.swift).
     private func page(_ tab: Tab) -> NSView? {
-        tab.isBlank || tab.asleep || tab.floating ? nil : tab.web
+        tab.isBlank || tab.asleep || tab.floating ? nil : tab.web.view
     }
 
     private func refill() {
@@ -711,12 +711,12 @@ extension PaneStage {
         }
         guard waiting > 0 else { return finish() }
         for tab in pages {
-            guard let web = tab.built, web.window === window, !web.isHidden else {
+            guard let web = tab.built, web.window === window, !web.view.isHidden else {
                 waiting -= 1
                 if waiting == 0 { finish() }
                 continue
             }
-            let size = web.bounds.size
+            let size = web.view.bounds.size
             sizes[tab.id] = size
             web.takeSnapshot(with: nil) { image, _ in
                 MainActor.assumeIsolated {

@@ -453,7 +453,7 @@ final class Browser: NSObject, ObservableObject {
         // the Mac's keyboard navigation handed it to the first button next.
         if let web = active?.built, let window = web.window,
            window.firstResponder === window || window.firstResponder is NSText {
-            window.makeFirstResponder(web)
+            window.makeFirstResponder(web.view)
         }
     }
 
@@ -468,13 +468,13 @@ final class Browser: NSObject, ObservableObject {
             missed = false
             findResult = nil
             guard findSpec != nil || findWeb != nil else { return }
-            let web = findWeb ?? tab.built
+            let web = findWeb ?? tab.built?.webKit
             forgetFind()
             if let web { clearFind(on: web) }
             return
         }
 
-        let web = tab.web
+        let web = tab.web.webKit
         let spec = FindSpec(tab: tab.id, query: needle, matchCase: matchCase, wholeWords: wholeWords)
         if findSpec != spec || findWeb !== web {
             findGeneration &+= 1
@@ -573,7 +573,7 @@ final class Browser: NSObject, ObservableObject {
     /// ⌘⇧M. Whatever is making noise in this tab stops making noise.
     func pauseMedia() {
         guard let tab = active else { return }
-        tab.web.pauseAllMediaPlayback()
+        tab.web.webKit.pauseAllMediaPlayback()
         announce("Paused")
     }
 
@@ -787,7 +787,7 @@ final class Browser: NSObject, ObservableObject {
             kept.insert(kept.remove(at: at), at: 0)
         }
         let known = Array(kept.prefix(5))
-        let passkeys = Passkeys.shared.offered(in: tab.built)
+        let passkeys = Passkeys.shared.offered(in: tab.built?.webKit)
         guard !known.isEmpty || !passkeys.isEmpty else {
             suggesting = nil
             return
@@ -842,7 +842,7 @@ final class Browser: NSObject, ObservableObject {
               (tab.pageAddress?.scheme?.lowercased() == "http") == list.clear
         else { return }
         pickedInto = tab.id
-        Passkeys.shared.sign(in: web, with: passkey.id)
+        Passkeys.shared.sign(in: web.webKit, with: passkey.id)
     }
 
     func dropChoice() { suggesting = nil }
@@ -2025,7 +2025,7 @@ final class Browser: NSObject, ObservableObject {
                 if !on { linkStatus.dismiss() }
                 for tab in tabs + parkedTabs {
                     tab.arm(hiding: curtain.css(on: curtain.host(of: tab.address)))
-                    tab.built?.evaluateJavaScript(on ? HoveredLink.script : HoveredLink.off, in: nil, in: .defaultClient)
+                    tab.built?.webKit.evaluateJavaScript(on ? HoveredLink.script : HoveredLink.off, in: nil, in: .defaultClient)
                 }
             }
             .store(in: &bag)
@@ -2081,11 +2081,11 @@ final class Browser: NSObject, ObservableObject {
             .sink { [weak self] on in
                 guard let self, let web = active?.web else { return }
                 let selector = NSSelectorFromString("toggleAutomaticSpellingCorrection:")
-                guard web.responds(to: selector) else { return }
+                guard web.view.responds(to: selector) else { return }
                 // Toggling is all there is, so it is only sent when the two
                 // actually disagree.
                 if UserDefaults.standard.bool(forKey: "WebAutomaticSpellingCorrectionEnabled") != on {
-                    web.perform(selector, with: nil)
+                    web.view.perform(selector, with: nil)
                 }
                 Preferences.tellWebKit(autocorrect: on)
                 announce(on ? "Autocorrect on" : "Autocorrect off")
@@ -2097,14 +2097,14 @@ final class Browser: NSObject, ObservableObject {
     /// single answer for every page, so the tab in front's view speaks for
     /// all of them.
     func substitutes(_ kind: Substitution) -> Bool {
-        kind.isOn(in: active?.built)
+        kind.isOn(in: active?.built?.webKit)
     }
 
     /// Edit › Substitutions: one switched for every page. Sent to the page's
     /// view rather than to whatever has the keyboard, so the address field
     /// having the caret doesn't make it switch only that field.
     func toggleSubstitution(_ kind: Substitution, in web: WKWebView? = nil) {
-        kind.toggle(in: web ?? active?.built ?? (tabs + parkedTabs).lazy.compactMap(\.built).first)
+        kind.toggle(in: web ?? active?.built?.webKit ?? (tabs + parkedTabs).lazy.compactMap(\.built).first?.webKit)
         objectWillChange.send()
     }
 
@@ -4076,7 +4076,7 @@ final class Browser: NSObject, ObservableObject {
             finished?(false)
             return
         }
-        tab.web.createPDF(configuration: WKPDFConfiguration()) { [weak self] result in
+        tab.web.webKit.createPDF(configuration: WKPDFConfiguration()) { [weak self] result in
             do {
                 let data = try result.get()
                 try data.write(to: file, options: .atomic)
@@ -4092,7 +4092,7 @@ final class Browser: NSObject, ObservableObject {
     /// ⌘P. The system's print sheet, where a paginated PDF can also be saved.
     func printPage() {
         guard let tab = active, !tab.isBlank, let window = NSApp.keyWindow else { return }
-        Browser.printing(tab.web).runModal(for: window, delegate: nil, didRun: nil, contextInfo: nil)
+        Browser.printing(tab.web.webKit).runModal(for: window, delegate: nil, didRun: nil, contextInfo: nil)
     }
 
     /// The print job for a page, or for one frame of it when WebKit names
@@ -4320,7 +4320,7 @@ final class Browser: NSObject, ObservableObject {
         // second (YouTube, 1412×728 points: 480 ms; 110 ms at one pixel a
         // point). The video's frame is cut from it at about the little
         // window's size anyway, and the tab's picture is up for a moment.
-        let shape = tab.web.bounds.size
+        let shape = tab.web.view.bounds.size
         let fine = tab.web.window?.backingScaleFactor ?? NSScreen.main?.backingScaleFactor ?? 2
         let most = (1_200_000 * shape.width / max(shape.height, 1)).squareRoot()
         let picture = WKSnapshotConfiguration()
@@ -4330,12 +4330,12 @@ final class Browser: NSObject, ObservableObject {
         var found: Any??
         // Going to another tab, the stage holds on to this page, unseen,
         // until it is in the little window or has nothing to float.
-        let stage = tab.web.superview as? StageView
-        stage?.keep(tab.web)
+        let stage = tab.web.view.superview as? StageView
+        stage?.keep(tab.web.view)
         func both() {
             guard let shot, let found else { return }
             lifted(tab, shot: shot, found: found, quietly: quietly, otherwise: otherwise)
-            stage?.letGo(tab.web)
+            stage?.letGo(tab.web.view)
         }
         tab.web.takeSnapshot(with: picture) { image, _ in
             MainActor.assumeIsolated {
@@ -4377,7 +4377,7 @@ final class Browser: NSObject, ObservableObject {
                 page: (found["page"] as? [NSNumber] ?? []).map(\.doubleValue)
             )
         }
-        floater.lift(tab.web, still: still)
+        floater.lift(tab.web.webKit, still: still)
     }
 
     /// The page as it was when its video went out, for covering the tab with
@@ -4416,7 +4416,7 @@ final class Browser: NSObject, ObservableObject {
         tab.floating = false
         tab.web.evaluateInSearch(Isolate.off)
         guard landed != nil else { return }
-        landing.watch(tab.web, within: 1.5) { [weak self, weak tab] in
+        landing.watch(tab.web.webKit, within: 1.5) { [weak self, weak tab] in
             guard let self, let landed = self.landed else { return }
             self.landed = nil
             tab?.uncover(landed.picture)
@@ -4434,7 +4434,7 @@ final class Browser: NSObject, ObservableObject {
         }
         tab.onLink = { [weak self] tab, address in
             guard let self, prefs.showsLinks, visibleTabIDs.contains(tab.id) else { return }
-            linkStatus.show(address, over: tab.built)
+            linkStatus.show(address, over: tab.built?.view)
         }
         tab.onPick = { [weak self] tab, selector, label, note in
             guard let self, let host = curtain.host(of: tab.address) else { return }
@@ -4464,7 +4464,7 @@ final class Browser: NSObject, ObservableObject {
         // The middle button on a link opens it beside the tab you are on, as
         // it does in every other browser (see MiddleRelay).
         // From a private tab, the new one is private too, as for ⌘-click.
-        tab.onMiddleClick = { [weak self] tab, url in self?.openClicked(url, foreground: false, from: tab, view: tab.built) }
+        tab.onMiddleClick = { [weak self] tab, url in self?.openClicked(url, foreground: false, from: tab, view: tab.built?.webKit) }
         tab.onCross = { [weak self] tab, url in self?.replace(tab, going: url) }
         tab.onFileLink = { [weak self] tab, url, blank in
             if blank { self?.open(url, foreground: true, from: tab) } else { tab.go(to: url) }
@@ -5055,7 +5055,7 @@ final class Browser: NSObject, ObservableObject {
     func duskLook(_ tab: Tab) {
         guard let web = tab.built, let url = web.url, let host = Dusk.host(of: url),
               Dusk.shared.unsure(host), !tab.dusked else { return }
-        Dusk.look(at: web) { [weak self, weak tab] dark in
+        Dusk.look(at: web.webKit) { [weak self, weak tab] dark in
             MainActor.assumeIsolated {
                 guard let self, let tab, let dark, tab.built === web, web.url == url, Dusk.shared.unsure(host) else { return }
                 tab.duskNative = dark
@@ -5388,7 +5388,7 @@ extension Browser: WKNavigationDelegate, WKUIDelegate {
            let url = action.request.url, Browser.peekable(url) {
             let page = peekWindow(configuration, from: opener, going: url)
             opener.popupGesture.opened(page.id)
-            return page.web
+            return page.web.webKit
         }
         let tab = Tab(shy: opener.shy, configuration: configuration)
         tab.popup = popup
@@ -5408,7 +5408,7 @@ extension Browser: WKNavigationDelegate, WKUIDelegate {
         // Returning the view is what makes it the target. WebKit loads the
         // request into it itself when the action carries one.
         if let url = action.request.url { tab.setAddressOptimistically(url) }
-        return tab.web
+        return tab.web.webKit
     }
 
     /// A link clicked open in a tab by Aura itself (⌘-click, the middle

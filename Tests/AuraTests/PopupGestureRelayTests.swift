@@ -19,8 +19,8 @@ final class PopupGestureRelayTests: XCTestCase {
         let second = browser.benchOpen(url)
         // A shared controller can call the very same handler for either view.
         // A handler bound to `second` must not steal or discard `first`'s input.
-        XCTAssertTrue(PopupGestureRelay.tab(for: first.web) === first)
-        XCTAssertTrue(PopupGestureRelay.tab(for: second.web) === second)
+        XCTAssertTrue(PopupGestureRelay.tab(for: first.web.webKit) === first)
+        XCTAssertTrue(PopupGestureRelay.tab(for: second.web.webKit) === second)
         XCTAssertNil(PopupGestureRelay.tab(for: WKWebView(frame: .zero)))
         XCTAssertTrue(NSApp.windows.allSatisfy { !$0.isVisible })
         XCTAssertFalse(NSApp.isActive)
@@ -34,12 +34,12 @@ final class PopupGestureRelayTests: XCTestCase {
         let source = browser.benchOpen(url)
         browser.peek(url, from: source)
         let peek = try XCTUnwrap(browser.peekTab)
-        XCTAssertTrue(PopupGestureRelay.tab(for: peek.web) === peek)
+        XCTAssertTrue(PopupGestureRelay.tab(for: peek.web.webKit) === peek)
         browser.closePeek()
         LittleWindow.show(url, for: browser, front: false)
         let little = try XCTUnwrap(LittleWindow.all.last)
         defer { little.close() }
-        XCTAssertTrue(PopupGestureRelay.tab(for: little.tab.web) === little.tab)
+        XCTAssertTrue(PopupGestureRelay.tab(for: little.tab.web.webKit) === little.tab)
         XCTAssertTrue(NSApp.windows.allSatisfy { !$0.isVisible })
     }
 
@@ -68,20 +68,20 @@ final class PopupGestureRelayTests: XCTestCase {
         first.popupGesture.record(origin: nil, kind: "menu", now: 10)
         first.close()
         XCTAssertFalse(first.popupGesture.take(origin: nil, mainFrame: true, now: 11))
-        XCTAssertTrue(PopupGestureRelay.tab(for: second.web) === second)
+        XCTAssertTrue(PopupGestureRelay.tab(for: second.web.webKit) === second)
         XCTAssertEqual(controller.userScripts.filter { $0.source == PopupGestureRelay.script }.count, 1)
         try await checkMessageDelivery(to: second)
         // Installing the next tab must still replace the retained name cleanly.
         let third = makeTab()
         second.close()
-        XCTAssertTrue(PopupGestureRelay.tab(for: third.web) === third)
+        XCTAssertTrue(PopupGestureRelay.tab(for: third.web.webKit) === third)
         XCTAssertEqual(controller.userScripts.filter { $0.source == PopupGestureRelay.script }.count, 1)
         try await checkMessageDelivery(to: third)
         third.close()
     }
 
     private func checkMessageDelivery(to tab: Tab) async throws {
-        _ = try await tab.web.evaluateJavaScript(
+        _ = try await tab.web.webKit.evaluateJavaScript(
             "window.webkit.messageHandlers.officePopupGesture.postMessage('input'); true",
             in: nil, in: Web.world)
         // Message delivery is asynchronous; spending the grant is evidence

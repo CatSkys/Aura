@@ -65,7 +65,7 @@ final class FindStageTests: XCTestCase {
             </body>
             """, baseURL: URL(string: "https://find-stage.invalid/"))
         try await waitUntil("the fixture page loads") {
-            (try? await web.evaluateJavaScript("window.findFixtureReady")) as? Bool == true
+            (try? await web.webKit.evaluateJavaScript("window.findFixtureReady")) as? Bool == true
         }
         browser.openFind()
         stage.showFind(browser)
@@ -81,7 +81,7 @@ final class FindStageTests: XCTestCase {
             XCTAssertEqual(browser.findStatus, query.isEmpty ? nil : query == "missing" ? "No matches" : "1 of 3")
             try await assertControlsHit(in: bar, stage: stage)
         }
-        let highlighted = try await web.evaluateJavaScript("CSS.highlights.get('search-find-match')?.size ?? 0")
+        let highlighted = try await web.webKit.evaluateJavaScript("CSS.highlights.get('search-find-match')?.size ?? 0")
         XCTAssertEqual(highlighted as? Int, 3)
 
         let point = bar.convert(closePoint(in: bar), to: nil)
@@ -98,12 +98,12 @@ final class FindStageTests: XCTestCase {
         }
         try await waitUntil("X closes Find and clears page highlights") {
             guard !browser.finding else { return false }
-            return (try await web.evaluateJavaScript("CSS.highlights.get('search-find-match')?.size ?? 0")) as? Int == 0
+            return (try await web.webKit.evaluateJavaScript("CSS.highlights.get('search-find-match')?.size ?? 0")) as? Int == 0
         }
         XCTAssertEqual(browser.needle, "")
         XCTAssertNil(browser.findResult)
         XCTAssertNil(browser.findStatus)
-        let clicks = try await web.evaluateJavaScript("window.pageClicks")
+        let clicks = try await web.webKit.evaluateJavaScript("window.pageClicks")
         XCTAssertEqual(clicks as? Int, 0)
     }
 

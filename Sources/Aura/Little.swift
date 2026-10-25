@@ -354,7 +354,7 @@ struct LittleView: View {
             .padding(.horizontal, 10)
             .frame(height: 34)
             ZStack {
-                WebStage(page: tab.built ?? tab.web)
+                WebStage(page: tab.built?.view ?? tab.web.view)
                 // A page that never came says so, with Try again, as in a tab.
                 if let failure = tab.failure {
                     Trouble(message: failure.localized) { tab.reload() }
