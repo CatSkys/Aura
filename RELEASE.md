@@ -20,7 +20,7 @@
 | 4 | GitHub 仓库能发 Release | 待确认 | tag `v<版本>`，附 `Aura.dmg` 与由 `build/intel/Aura.dmg` 改名的 `Aura-Intel.dmg` |
 | 5 | `python3` 与一次联网 | 待确认 | 首次 `release dmg` 会建 `.build/dmgbuild` 虚拟环境装 dmgbuild 1.6.7 |
 | 6 | Apple 开发者协议 | ⚠️ 有待接受的 PLAA（**2026-10-29** 前） | 开发者门户顶部提示里接受，本人点 |
-| 7 | 版本号 | `VERSION` = `0.1.0` | 前两位由你定；每次发版先改它 |
+| 7 | 版本号 | `VERSION` 里是当前版本（发版时递增） | 规则见下：最后一位 +1，前两位由你定 |
 
 ### 公证凭据（唯一必须由你提供的凭据）
 
@@ -64,13 +64,18 @@ xcrun notarytool history --keychain-profile aura     # 应列出（可为空）�
 
 ### 1. 定版与文案
 
-```sh
-# VERSION：前两位自己定，第三位是这次的改动级别
-echo 0.1.0 > VERSION
+**版本号规则**：每次发版只把**最后一位 +1** —— `0.1.0 → 0.1.1 → 0.1.2 …`；前两位（`0.1`）在换到下一个大阶段前不动，由你定。递增用这一行，别手写：
 
-# NOTES.md：在最上面加一段（一段话，别分多段）——
-#   它的第一段会进 appcast，直接显示在「设置 › 关于 › 更新」下面
+```sh
+V=$(cat VERSION); echo "${V%.*}.$(( ${V##*.} + 1 ))" > VERSION; cat VERSION
 ```
+
+**文案**：`NOTES.md` 与 `NOTES.zh-Hans.md` **各在文件最上面加一段**（一段话，别分多段）——
+
+- 两段分别是同一版说明的英文与中文；第一段会进 appcast，显示在「设置 › 关于 › 更新」下面；
+- 中文那份不是英文的逐句直译，按中文的节奏写；
+- 口吻是**更新说明**：先一句说清这一版是什么，后面陈述式地讲它带来什么；
+- 应用内「更新说明」页另有一处（`Sources/Aura/WhatsNew.swift` 的 `notes` 条目，`version:` 换成新版本号），英文句子同轮补 `Resources/zh-Hans.lproj/Localizable.strings`。
 
 ### 2. 构建并公证（Apple Silicon 与 Intel 各一次）
 
@@ -143,7 +148,7 @@ git -C ../aura-pages push
 
 更新靠的是第 4 步的 `aura-pages`；GitHub Release 是给人一个自己下载、也给发行留档的地方，仍然要做。
 
-1. 在 `CatSkys/Aura` 发 Release：tag **`v<版本>`**（与 `VERSION` 一致，例如 `v0.1.0`），标题写版本名。
+1. 在 `CatSkys/Aura` 发 Release：tag **`v<版本>`**（与 `VERSION` 一致，例如当前是 `v` + `cat VERSION`），标题写版本名。
 2. 附上两个文件（名字要改准，Homebrew 以后按这个名字取）：
    - `Aura.dmg` —— `build/Aura.dmg`
    - `Aura-Intel.dmg` —— `build/intel/Aura.dmg` 改名
