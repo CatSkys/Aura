@@ -17,11 +17,9 @@
 | 1 | Developer ID Application 证书 | ✅ 有（2031/07/14 到期） | 钥匙串里已有；`security find-identity -v -p codesigning` 能看到 |
 | 2 | 公证凭据，keychain profile 名 `aura` | ❌ **没有** | `xcrun notarytool store-credentials "aura"`（见下） |
 | 3 | `../aura-pages` 检出（gh-pages） | ✅ 有，含占位 appcast 与 `intel/` | `git worktree add ../aura-pages gh-pages` |
-| 4 | GitHub 仓库能发 Release | 待确认 | tag `v<版本>`，附 `Aura.dmg` 与 `Aura-Intel.dmg` |
-| 5 | Homebrew tap 仓库 `CatSkys/homebrew-tap` | ❌ **不存在**（raw 404） | 新建仓库 + `Casks/aura.rb`（模板见下） |
-| 6 | `python3` 与一次联网 | 待确认 | 首次 `release dmg` 会建 `.build/dmgbuild` 虚拟环境装 dmgbuild 1.6.7 |
-| 7 | Apple 开发者协议 | ⚠️ 有待接受的 PLAA（**2026-10-29** 前） | 开发者门户顶部提示里接受，本人点 |
-| 8 | 版本号 | `VERSION` = `0.1.0` | 前两位由你定；每次发版先改它 |
+| 4 | `python3` 与一次联网 | 待确认 | 首次 `release dmg` 会建 `.build/dmgbuild` 虚拟环境装 dmgbuild 1.6.7 |
+| 5 | Apple 开发者协议 | ⚠️ 有待接受的 PLAA（**2026-10-29** 前） | 开发者门户顶部提示里接受，本人点 |
+| 6 | 版本号 | `VERSION` = `0.10` | 前两位由你定；每次发版先改它 |
 
 ### 公证凭据（唯一必须由你提供的凭据）
 
@@ -57,29 +55,9 @@ xcrun notarytool history --keychain-profile aura     # 应列出（可为空）�
 
 换名字用 `AURA_NOTARY_PROFILE=<名字>`；默认就是 `aura`。
 
-### Homebrew tap（现在不存在，第一次发版前建一次）
+### Homebrew（暂缓）
 
-1. 在 GitHub 建空仓库 `CatSkys/homebrew-tap`（public，勾 README 即可）。
-2. 加 `Casks/aura.rb`，内容：
-
-```ruby
-cask "aura" do
-  arch arm: "", intel: "-Intel"
-
-  version "0.1.0"
-  sha256 arm:   "0000000000000000000000000000000000000000000000000000000000000000",
-         intel: "0000000000000000000000000000000000000000000000000000000000000000"
-
-  url "https://github.com/CatSkys/Aura/releases/download/v#{version}/Aura#{arch}.dmg"
-  name "Aura"
-  desc "WebKit browser for the Mac, with a Simplified Chinese interface"
-  homepage "https://github.com/CatSkys/Aura"
-
-  app "Aura.app"
-end
-```
-
-3. 之后每次发版 `./tap.sh` 会自己改写 `version` 与两个 sha256，别的行不动。**cask 名必须是 `aura`**：`tap.sh` 认 `cask "aura" do` 与 `cask "search" do` 两种开头，别改成别的。
+这一版不分发 Homebrew：tap 仓 `CatSkys/homebrew-tap` 还没建，`./tap.sh` 因此先不用。脚本本身已经能认 `cask "aura"`，等要上架时：在 GitHub 发一个 Release（tag `v<版本>`，附 `Aura.dmg` 与由 `build/intel/Aura.dmg` 改名的 `Aura-Intel.dmg`），再跑 `./tap.sh`。
 
 ## 每次发版
 
@@ -160,27 +138,21 @@ git -C ../aura-pages push
 
 `publish.sh` 自己会拦三种错：appcast 里的版本与 `VERSION` 不符、ZIP 里的二进制不是这个架构、签名 appcast 验不过（要求：`com.catskys.aura.appcast` + `49LSZKN27V`）。DMG 没公证它只提示不拦——**所以第 3 步别省**。
 
-### 5. GitHub Release 与 Homebrew
+### 5. GitHub Release（可选，这一版不做）
 
-1. 在 `CatSkys/Aura` 发 Release：tag `v<版本>`，附上 **`Aura.dmg`** 与 **`Aura-Intel.dmg`**（后者就是把 `build/intel/Aura.dmg` 改名）。
-2. 更新 Homebrew：
-
-```sh
-./tap.sh        # 需要第 5 步的 release 已经存在，否则报 "no Aura.dmg on the vX.Y.Z release yet"
-```
+更新靠的是第 4 步的 `aura-pages`，GitHub Release 只是给人一个自己下载的地方，顺带 Homebrew 要用。要发的话：tag `v<版本>`，附 `Aura.dmg`；以后接 Homebrew 时再加 `Aura-Intel.dmg`。
 
 ### 6. 交付后自检
 
 - 换台没装过的 Mac（或删掉本地 app 后）下载 DMG，双击 → 正常打开、**没有**「无法验证开发者」；
 - 「设置 › 关于 › 更新」里读到新版本号与 `NOTES.md` 的第一段；
-- `brew install --cask CatSkys/homebrew-tap/aura` 装上，`brew upgrade` 能升；
-- Intel Mac（或 Rosetta 环境）装 `Aura-Intel.dmg` 能用。
+- Intel Mac（或 Rosetta 环境）从站点的 `intel/` 装 `Aura.dmg` 能用。
 
 ## 回滚
 
 - **更新源发错了**：`git -C ../aura-pages revert <commit>` 再 push；appcast 是纯文本，回滚即生效（已装在别人机器上的新版不会降级，但没人再被推上去）。
 - **App 本身有问题**：GitHub Release 标为 Pre-release 或删掉 tag，再改 `appcast.json` 指回上一版；不要用同一个版本号重发（`Updater` 比的是 version + build 号）。
-- **Homebrew**：tap 仓 `git revert` 那一个 `Aura <版本>` 提交，推送即可。
+- **Homebrew（暂缓）**：tap 仓 `git revert` 那一个 `Aura <版本>` 提交，推送即可。
 
 ## 为什么没有通行密钥
 

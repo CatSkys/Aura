@@ -13,6 +13,16 @@ in [ROADMAP.md](ROADMAP.md).
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## 0.10 — 25 October 2026
+
+The first release of the fork: Search 1.0.6 and everything since, under Aura's own name, identity, update feed and Simplified Chinese interface. What it says, and what it leaves out, is in [NOTES.md](NOTES.md).
+
+### Added
+
 - A page still coming shows Arc's own loading bar: a thin grey groove with a small dark pill running from one end of it to the other and back, in the window's own ink — black on a light window, white on a dark one. It sits in the window's chrome over the page rather than on the page itself — in the gap a card leaves, or along the top edge of the page's area — so it stays put whatever the page is doing, and a Split View pair has the one bar over both pages instead of one each. It eases where it turns and is played by Core Animation in the render server, so it costs the app nothing while it runs; with the Mac set to reduce motion the pill holds still rather than running. The ring in the tab stays: that one says which tab is loading where the tabs are, this one says it over the page you are looking at.
 - A space's icons start with Aura's own mark, named Aura: the pebble the app wears, drawn from the same path as the one in About and tinted like the symbols it stands beside, in the icons a space's dot offers, in New Space's list, and in the menus that name the spaces. A new space is still given one of Apple's symbols rather than the mark, so spaces already made are unchanged
 - A peek is put away by the same swipe: with a link's page open in the panel over the one you are reading, back from that page's first page closes the panel and the page underneath is what comes back — Arc's floating pages go the same way, and nothing is lost, so this one has no switch. Pages you clicked through inside the peek go back as usual first, and the page is still the tab it was peeked from, ready to open again from the link it came from.
