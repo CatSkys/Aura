@@ -3,8 +3,10 @@ import WebKit
 
 // A peek at a link, Arc's way: a modified click opens its page in a panel
 // over the one you are reading, which stays where it was underneath. Escape,
-// a click beside the panel or its cross puts it away; its other button keeps
-// it, as a tab beside this one, loaded as it is.
+// a click beside the panel, its cross, or a swipe back from its first page
+// puts it away — the swipe is how Arc's floating pages go, and the page that
+// was underneath is what comes back. Its other button keeps it, as a tab
+// beside this one, loaded as it is.
 //
 // Settings › General turns peeking off; Settings › Shortcuts chooses the
 // click, Shift-click unless changed.
@@ -23,9 +25,21 @@ extension Browser {
                        configuration: tab.shy ? Web.configuration(shy: true) : Web.configuration(space: spaceID))
         prepare(page)
         page.go(to: url)
+        putAwayBySwipe(page)
         withAnimation(Motion.settle) {
             peekTab = page
             peekFrom = tab.id
+        }
+    }
+
+    /// Back from the peek's first page puts the panel away, as its cross
+    /// does, and the page underneath is what comes back (see PageView.leave).
+    /// Nothing is lost, so this needs no switch, as a small window's closing
+    /// does not: the page is still the tab it was peeked from.
+    private func putAwayBySwipe(_ page: Tab) {
+        page.leave = { [weak self, weak page] in
+            guard let self, let page, peekTab === page else { return }
+            closePeek()
         }
     }
 
@@ -57,6 +71,7 @@ extension Browser {
         prepare(page)
         page.opener = tab.id
         page.setAddressOptimistically(url)
+        putAwayBySwipe(page)
         if let host = url.host()?.lowercased() { tab.peeked = (Vault.registrable(host), Date()) }
         withAnimation(Motion.settle) {
             peekTab = page
@@ -91,6 +106,9 @@ extension Browser {
     /// the page and what it linked to, side by side.
     func keepPeek(beside: Bool = false) {
         guard let page = peekTab else { return }
+        // In the row now, back from its first page is a tab's business again
+        // (see Tab.closesOnSwipeBack).
+        page.leave = nil
         let from = active
         let place = placeForNew()
         // Kept from a grouped tab, it joins that group, as a link opened

@@ -10,10 +10,11 @@ import WebKit
 // slips out again. Nothing slides, nothing is kept in memory to slide.
 //
 // Where there is nothing left to go back to, the same pull can mean leaving:
-// a small window closes with its page (see PageView.leave), and, when Settings
-// › Tabs says so, a tab closes as ⌘W closes it, the neighbour on the right
-// coming forward (see Tab.closesOnSwipeBack). The disc wears a cross instead
-// of an arrow while that is what letting go would do.
+// a small window closes with its page, and so does a peek (see
+// PageView.leave), and, when Settings › Tabs says so, a tab closes as ⌘W
+// closes it, the neighbour on the right coming forward (see
+// Tab.closesOnSwipeBack). The disc wears a cross instead of an arrow while
+// that is what letting go would do.
 //
 // The one hard question is whether a sideways swipe belongs to the page — a
 // carousel, a wide table, a map, a canvas — or is free to mean something. The

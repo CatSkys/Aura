@@ -12,6 +12,11 @@ Turned on, back from the first page closes the tab and the neighbour on the
 right comes forward, which is what ⌘W does; a pin keeps its page, since its
 first page is the page it was pinned at.
 
+A peek — a link's page in a panel over the one you are reading — goes the
+same way and needs no switch: back from its first page puts the panel away and
+the page underneath is what comes back, as Arc's floating pages do. Nothing is
+lost there, so the row above it is none of its business.
+
 The swipe is the bench's `wheel`: two fingers, with a trackpad's phases, which
 is the only kind PageView reads. `ui swipepages` stands in for the Mac's own
 Swipe between pages setting, and `ui swipeclose` for the switch.
@@ -113,6 +118,15 @@ def main():
         sv.cmd({"do": "select", "id": f}); time.sleep(0.4)
         wheel(f, 300)
         t.ok("off again: nothing closes", where(f) == "f", names())
+
+        # ---- a peek, which needs no switch ----
+        sv.cmd({"do": "peek", "url": f"{BASE}/peeked"}); time.sleep(0.8)
+        peek = sv.cmd({"do": "probe"})["peekID"]
+        t.ok("a peek is up", bool(peek), peek)
+        wheel(peek, 300)
+        t.ok("a swipe back puts the peek away, switch or no switch",
+             sv.cmd({"do": "probe"})["peek"] == "", sv.cmd({"do": "probe"})["peek"])
+        t.ok("…and the tab it was peeked from is still there", where(f) == "f", names())
     finally:
         t.done(); sv.finish()
     sys.exit(1 if t.failed else 0)
