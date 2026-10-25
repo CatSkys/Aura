@@ -136,7 +136,7 @@ struct Swiping: View {
 /// Arc's, and measured off it: one dark disc with a white arrow on it, no
 /// ring, no border and no hairline — the whole disc is the arrow's ground,
 /// and it is big enough to be the thing you are looking at rather than a hint
-/// at the edge of the page. 128 across, its glyph a third of that, bold
+/// at the edge of the page. 100 across, its glyph a third of that, bold
 /// enough to be read from across the room, black at 0.82 so the page behind
 /// shows as a whisper of its own colour through it (measured: (1,4,19) over
 /// a dark blue page), and sitting on the leading edge, which cuts a sliver
@@ -153,11 +153,14 @@ struct Swiping: View {
 private struct Disc: View {
     let pull: Pull
 
-    /// Measured off Arc's: 256 pixels of a Retina picture, so 128 points
-    /// across, in a window 1180 wide.
-    private static let width: CGFloat = 128
-    /// A third of it, as the arrow there is: 85 pixels of the 256.
-    private static let glyph: CGFloat = 42
+    /// Arc's is 256 pixels of a Retina picture — 128 points across, in a
+    /// window 1180 wide — and at that size it reached past the page's edge
+    /// into the column beside it and covered what was there. A little less
+    /// than four fifths of that, which keeps the arrow readable at a glance
+    /// without the disc becoming the page.
+    private static let width: CGFloat = 100
+    /// A third of it, as the arrow there is: 85 pixels of Arc's 256.
+    private static let glyph: CGFloat = 33
     /// Where it sits off the page's edge: the edge cut a sliver of Arc's, some
     /// eight points of it.
     private static let inset: CGFloat = 8
@@ -182,7 +185,7 @@ private struct Disc: View {
                 .foregroundStyle(Palette.swipeGlyph)
         }
         .frame(width: Self.width, height: Self.width)
-        .shadow(color: .black.opacity(0.28), radius: 26, y: 10)
+        .shadow(color: .black.opacity(0.28), radius: 20, y: 8)
         .scaleEffect(scale)
         .opacity(pull.going ? 0 : 1)
         // Against the edge from the start, pressed further into it as the
