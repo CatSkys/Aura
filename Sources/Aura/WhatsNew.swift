@@ -133,7 +133,7 @@ enum WhatsNew {
     /// Newest first.
     static let notes: [Notes] = [
         Notes(
-            version: "0.10", date: "25 October 2026",
+            version: "0.1.0", date: "25 October 2026",
             headline: "Aura, on Search 1.0.6: the same browser, under a name, an identity and a Chinese interface of its own.",
             new: [
                 "The whole interface in 简体中文 — the menus, every page of Settings, the panels, the welcome page and these notes — chosen by the Mac's own language order, with the English kept as the key, so a sentence with no translation yet shows in English rather than as a blank.",
