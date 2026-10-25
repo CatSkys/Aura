@@ -38,7 +38,7 @@ function recoveryFixture(content, generation = 0) {
     setTimeout: (callback, delay) => { state.timers.push({ callback, delay }); return state.timers.length; },
     clearTimeout: () => {}, addEventListener: (name, callback) => { (state.handlers[name] ||= []).push(callback); },
     Date: class extends Date { static now() { return state.now; } },
-    console, __SEARCH_EVENTS__: [], __SEARCH_SCRIPTS__: [], __SEARCH_VERBOSE__: false,
+    console, __AURA_EVENTS__: [], __AURA_SCRIPTS__: [], __AURA_VERBOSE__: false,
     webkit: { messageHandlers: { searchWorkerRecovery: { postMessage: message => message.cancel ? (state.cancellations++, Promise.resolve()) : subscribe(message.generation) } } }
   };
   root.window = root; root.top = root;

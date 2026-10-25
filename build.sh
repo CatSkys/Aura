@@ -4,6 +4,11 @@
 # fetches.
 #
 #   ./build.sh                 debug-free release build, ad-hoc signed: runs here
+#   AURA_DEV=1 ./build.sh     the same as a dev build: yellow icon, named for
+#                              the branch (Aura-split-view from
+#                              claude/split-view-4a6927)
+#   AURA_DEV=1 AURA_FEATURE=name ./build.sh
+#                              the same, named Aura-name
 #   ./build.sh release dmg     + build/Aura.dmg, build/Aura.zip and
 #                                build/appcast.json, signed with Developer ID
 #                                if there is one in the keychain
@@ -54,6 +59,38 @@ case "$ARCH" in
 esac
 APP="$OUT/Aura.app"
 NAME="Aura"
+# Asked for with AURA_DEV=1, a dev build, on a yellow plate and named for
+# the feature it's built from: "Aura-split-view" in the menu bar, the Dock
+# and ⌘Tab, so it's never taken for the installed app beside it, or for the
+# dev build from another worktree. Only the name people see changes. The
+# bundle id stays, so it shares the real app's settings, and so does the
+# folder, build/Aura.app, which fresh.sh and the tests open. Not by
+# default: a plain ./build.sh is also the Aura people here use every day
+# and the release candidates. What goes in a DMG or a ZIP is never one.
+case "${AURA_DEV:-}" in
+  0|1) DEV="$AURA_DEV" ;;
+  "") DEV=0 ;;
+  *) echo "AURA_DEV is 0 or 1, not “$AURA_DEV”" >&2; exit 1 ;;
+esac
+[ "$STEP" != "app" ] && [ "$DEV" = 1 ] && { echo "a dev build doesn't go in a DMG" >&2; exit 1; }
+SHOWN="$NAME"
+if [ "$DEV" = 1 ]; then
+  # The feature: AURA_FEATURE, or the branch's last part, without the
+  # six-character hash a worktree's name ends in (claude/split-view-4a6927
+  # is split-view). A hash has a digit in it; a word like "decade" doesn't.
+  FEATURE="${AURA_FEATURE:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)}"
+  FEATURE="${FEATURE##*/}"
+  if [[ "$FEATURE" =~ ^(.+)-([0-9a-f]{6})$ ]]; then
+    STEM="${BASH_REMATCH[1]}" HASH="${BASH_REMATCH[2]}"
+    [[ "$HASH" =~ [0-9] ]] && FEATURE="$STEM"
+  fi
+  # Only what's safe in a name and in InfoPlist.strings.
+  FEATURE="$(printf '%s' "$FEATURE" | tr -cd 'A-Za-z0-9._-')"
+  case "$FEATURE" in
+    ""|HEAD) SHOWN="$NAME Dev" ;;   # no branch to name it for
+    *) SHOWN="$NAME-$FEATURE" ;;
+  esac
+fi
 VERSION="$(tr -d '[:space:]' < VERSION)"
 # A build number that only ever goes up, so the updater can tell newer from
 # older without parsing version strings.
@@ -126,15 +163,15 @@ fi
 ICONSET="build/AppIcon.iconset"
 ICONDOC="build/AppIcon.icon"
 rm -rf "$ICONSET" "$ICONDOC"
-if [ -f "Icon/AppIcon.png" ]; then
+if [ "$DEV" = 1 ] || [ ! -f "Icon/AppIcon.png" ]; then
+  AURA_DEV="$DEV" swift Icon/icon.swift "$ICONSET" "$ICONDOC" > /dev/null
+else
   mkdir -p "$ICONSET"
   for SIZE in 16 32 128 256 512; do
     sips -z "$SIZE" "$SIZE" "Icon/AppIcon.png" --out "$ICONSET/icon_${SIZE}x${SIZE}.png" > /dev/null
     DOUBLE=$((SIZE * 2))
     sips -z "$DOUBLE" "$DOUBLE" "Icon/AppIcon.png" --out "$ICONSET/icon_${SIZE}x${SIZE}@2x.png" > /dev/null
   done
-else
-  swift Icon/icon.swift "$ICONSET" "$ICONDOC" > /dev/null
 fi
 iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
 rm -rf "$ICONSET"
@@ -263,13 +300,28 @@ $LOCALIZATIONS
   <string>Websites you visit can ask to use your camera. Aura asks you the first time each site does and keeps your answer; Settings › Privacy forgets them.</string>
   <key>NSMicrophoneUsageDescription</key>
   <string>Websites you visit can ask to use your microphone. Aura asks you the first time each site does and keeps your answer; Settings › Privacy forgets them.</string>
+  <!-- Location: the first key is the one macOS has always read; the second
+       is the one CoreLocation's requestWhenInUseAuthorization documents.
+       Same sentence in both. -->
   <key>NSLocationUsageDescription</key>
+  <string>Websites you visit can ask for your location. Aura asks you each time a site does, unless you choose Always allow for it; Settings › Privacy forgets those choices.</string>
+  <key>NSLocationWhenInUseUsageDescription</key>
   <string>Websites you visit can ask for your location. Aura asks you each time a site does, unless you choose Always allow for it; Settings › Privacy forgets those choices.</string>
   <key>NSDownloadsFolderUsageDescription</key>
   <string>Files you download are saved to your Downloads folder.</string>
 </dict>
 </plist>
 PLIST
+# A dev build's name, as a localised one: under the icon in the Dock, in
+# ⌘Tab and in Finder, macOS shows the bundle's folder name otherwise. The
+# plain names above stay "Search", matching the folder, since a folder named
+# otherwise reads to macOS as renamed by hand, and then the folder wins.
+if [ "$DEV" = 1 ]; then
+  mkdir -p "$APP/Contents/Resources/en.lproj"
+  printf '"CFBundleDisplayName" = "%s";\n"CFBundleName" = "%s";\n' "$SHOWN" "$SHOWN" \
+    > "$APP/Contents/Resources/en.lproj/InfoPlist.strings"
+  /usr/libexec/PlistBuddy -c "Add :LSHasLocalizedDisplayName bool true" "$APP/Contents/Info.plist"
+fi
 
 # Signing. A Developer ID certificate, when there is one, with the hardened
 # runtime Gatekeeper insists on for anything notarised; otherwise ad-hoc,
@@ -282,6 +334,13 @@ IDENTITY="${AURA_SIGN_IDENTITY:-$(security find-identity -v -p codesigning 2>/de
 # this script, both go in; without it, the app is signed as before, because
 # a restricted entitlement with no profile behind it is an app that won't open.
 ENTITLEMENTS="Aura.entitlements"
+# A release that ships without it loses passkeys and the keychain items the
+# entitled builds saved (1.0.6, build 202610241534, went out that way from a
+# worktree the git-ignored profile hadn't been copied into): ship refuses.
+if [ "$STEP" = "ship" ] && [ ! -f "Aura.provisionprofile" ] && [ -z "${AURA_ALLOW_NO_PASSKEYS:-}" ]; then
+  echo "ship: Aura.provisionprofile is missing here (it's git-ignored: copy it from the main checkout)" >&2
+  exit 1
+fi
 if [ -f "Aura.provisionprofile" ]; then
   cp "Aura.provisionprofile" "$APP/Contents/embedded.provisionprofile"
   ENTITLEMENTS="Aura.passkeys.entitlements"
@@ -300,7 +359,7 @@ else
   [ "$STEP" != "app" ] && echo "no Developer ID certificate found — the DMG will only open on this Mac" >&2
 fi
 
-echo "built: $APP ($VERSION, $ARCH, build $BUILD)"
+echo "built: $APP as $SHOWN ($VERSION, $ARCH, build $BUILD)"
 [ "$STEP" = "app" ] && exit 0
 
 # The disk image: the app beside a shortcut to Applications, on a white

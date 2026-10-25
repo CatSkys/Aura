@@ -70,6 +70,14 @@ extension SideBand {
         }
     }
 
+    /// How much of the lights' corner the column can afford at this width:
+    /// the doors keep their room as it narrows and the lights give way, down
+    /// to nothing in full screen. One rule, read by the column and by the
+    /// tests, so the two can't drift apart.
+    static func lights(column: CGFloat, wanted: CGFloat) -> CGFloat {
+        max(0, min(wanted, column - 2 * pad - Metrics.helmDoors))
+    }
+
     /// Everything the column has room for, the roomier gaps first, and the
     /// rest in the "…". At its narrowest the column keeps the arrows and the
     /// "…"; at 208 points across, a window not in full screen, it keeps all

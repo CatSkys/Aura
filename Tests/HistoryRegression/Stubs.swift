@@ -13,6 +13,13 @@ extension ObservableObject {
     var objectWillChange: ChangePublisher { ChangePublisher() }
 }
 
+// History tells the icons when an address goes; this runner keeps none.
+@MainActor
+final class Favicons {
+    static let shared = Favicons()
+    func forget(_ url: URL) {}
+}
+
 enum AddressCommand {
     case settings
 
@@ -21,7 +28,7 @@ enum AddressCommand {
 
 enum Store {
     private static let testRoot: URL = {
-        guard let path = ProcessInfo.processInfo.environment["SEARCH_HISTORY_TEST_ROOT"] else {
+        guard let path = ProcessInfo.processInfo.environment["AURA_HISTORY_TEST_ROOT"] else {
             fatalError("Run through Tests/HistoryRegression/run.sh to isolate history storage")
         }
         return URL(fileURLWithPath: path, isDirectory: true)
@@ -56,3 +63,6 @@ enum Disk {
         try? data.write(to: file, options: .atomic)
     }
 }
+
+/// Address.swift names Search's own pages' scheme (see InternalPages.swift).
+enum InternalPage { static let scheme = "search" }
