@@ -63,6 +63,12 @@ LISTS = (
      "https://ublockorigin.github.io/uAssets/filters/privacy.min.txt", "GPL-3.0"),
     ("uBlock Lite extras",
      "https://ublockorigin.github.io/uAssets/filters/ubol-filters.txt", "GPL-3.0"),
+    # A site's own promotions are hidden by its own list: the Chinese sites
+    # Aura is used on have theirs in the Chinese lists, not in EasyList.
+    ("AdGuard Chinese",
+     "https://filters.adtidy.org/extension/ublock/filters/224.txt", "GPL-3.0"),
+    ("EasyList China",
+     "https://easylist-downloads.adblockplus.org/easylistchina.txt", "CC BY-SA 3.0"),
 )
 
 # What a rule blocks when it does not say. `document` is left out on purpose:
@@ -529,6 +535,41 @@ def hide_off(condition: dict) -> dict:
     return rule({"url-filter": ".*", **condition}, "ignore-previous-rules")
 
 
+# What uBlock's own lists hang off the end of a selector to say what to do with
+# it. A content blocker can only hide, and hiding what the list asked to remove
+# leaves the page looking the same — so the action goes and the selector stays,
+# rather than the whole rule going.
+ACTIONS = ("remove", "remove-attr", "remove-class", "style")
+
+
+def undress(selector: str):
+    """A selector wearing one of those actions, as the selector alone, or None
+    when nothing is left of it."""
+    while selector.endswith(")"):
+        depth, start = 0, -1
+        for index in range(len(selector) - 1, -1, -1):
+            character = selector[index]
+            if character == ")":
+                depth += 1
+            elif character == "(":
+                depth -= 1
+                if depth == 0:
+                    start = index
+                    break
+        if start <= 0:
+            break
+        name_start = start
+        while name_start > 0 and (selector[name_start - 1].isalnum()
+                                  or selector[name_start - 1] in "-:"):
+            name_start -= 1
+        if selector[name_start:start].lstrip(":") not in ACTIONS:
+            break
+        selector = selector[:name_start].rstrip()
+        if not selector:
+            return None
+    return selector
+
+
 def selectable(selector: str) -> bool:
     return bool(selector) and not any(mark in selector for mark in PROCEDURAL) \
         and selector.count("(") == selector.count(")") \
@@ -600,7 +641,12 @@ def main(argv) -> int:
             if "#@" in line:
                 domains, _, selector = line.partition("#@#")
                 selector = selector.strip()
-                if not selectable(selector) or selector.startswith("+js("):
+                if selector.startswith("+js("):
+                    continue
+                selector = undress(selector)
+                if selector is None:
+                    continue
+                if not selectable(selector):
                     continue
                 if "/" in domains:
                     # A site named by a regular expression is not a site: what
@@ -621,7 +667,12 @@ def main(argv) -> int:
                 continue
             domains, _, selector = line.partition("##")
             selector = selector.strip()
-            if not selectable(selector) or selector.startswith("+js("):
+            if selector.startswith("+js("):
+                continue
+            selector = undress(selector)
+            if selector is None:
+                continue
+            if not selectable(selector):
                 continue
             if "/" in domains:
                 cosmetic_file.refuse("a site named by a pattern")

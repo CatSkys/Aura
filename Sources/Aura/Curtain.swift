@@ -380,6 +380,13 @@ enum Veiling {
         unpeek: function (css) {
           sheet('office-veil').textContent = css;
           sheet('office-peek').textContent = '';
+        },
+        // What a right-click needs to say about an element the pointer is on:
+        // the same three things a click in pointing mode sends, from the same
+        // two functions, so a thing hidden either way is hidden the same way.
+        describe: function (el) {
+          try { return { selector: selectorFor(el), label: name(el), note: shape(el) }; }
+          catch (e) { return null; }
         }
       };
     })();

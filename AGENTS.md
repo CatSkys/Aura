@@ -48,7 +48,7 @@ AURA_ARCH=x86_64 ./build.sh release dmg   # Intel 档，出 build/intel/
 swift test --filter ExtensionWorkerPortTests   # 改成 --filter <套件名>
 
 # 全量 —— 只在跨模块、动契约时才跑
-swift test                                # 218 例 / 64 秒；既有 2 例红见「已知遗留」
+swift test                                # 223 例 / 74 秒，全绿（1 例跳过）
 
 # 界面行为 —— 只跑受影响的那个探针
 python3 Tests/<名字>.py                   # 先 ./build.sh
@@ -82,7 +82,7 @@ gitleaks git --pre-commit --staged        # 提交前扫密钥（.gitleaks.toml�
 
 - **默认 `./check.sh`，别默认全量**：文案、译文、注释、文档、脚本、样式微调，编译通过加零新增警告就够（秒级）。全量是最贵的动作，不是稳妥的选择。
 - **什么才算行为改动**：`Sources/Aura` 里除注释与文案字面量之外的改动、`Resources/Shield` 的生成物、`Engine/`、`Package.swift`。这时先窄后全：改了 `X.swift` 而 `Tests/AuraTests/XTests.swift` 在 → `swift test --filter XTests`；没有同名套件 → 只跑 `./check.sh`，并在报告里写明这块没有测试覆盖；跨模块或动契约才 `swift test`。
-- **测试纪律**：一条命令一次跑完；同一轮最多重跑两次，仍红就带着输出停下报告；全量看"没有新增失败"，不是"全绿"；探针先确认世界在答（`./bench --test tabs`）再等它。
+- **测试纪律**：一条命令一次跑完；同一轮最多重跑两次，仍红就带着输出停下报告；探针先确认世界在答（`./bench --test tabs`）再等它。
 - **自证在测试世界，验收归用户**：世界由启动方式决定（`AURA_PROBE` 有值或可执行文件在 `/.build/` 下＝测试世界；`build/Aura.app` 不带变量＝真身）。改界面、装扩展、窗口尺寸、真键盘事件一律 `--test`/`--world`；不自行截图当验收、不擅自换 `/Applications/Aura.app`。
 - **交付**：`./deliver.sh <slug>`。只改文档/脚本（不碰 `Sources/`、`Resources/`、`Engine/`、`Package.swift`、`VERSION`）就不重建产物；主仓有别处的活时也不重建。产物只代表主仓 HEAD。
 - 改变行为的改动同轮补 `CHANGELOG.md` 的 `Unreleased`；`NOTES.md` 只在发版时写（第一段进 appcast）。
@@ -148,7 +148,7 @@ gitleaks git --pre-commit --staged        # 提交前扫密钥（.gitleaks.toml�
 - **引擎命名两套**：源码是 `Engine/aura-ai-engine.cpp`，`engine.sh` 产物是 `aura-ai-engine-<arch>`，运行时找的下载程序叫 `search-ai-engine`；以 `engine.sh` 与 `AIEngine.swift` 为准。
 - `AI.shipped = false` 是 AI 附加功能的总闸（1.0.5 起收起）：动 AI 代码前先读这一行。
 - **译文表有既有缺口**（2026-10-25：662/707，缺 45、未用 282）：`./Tools/i18n.py check` 因此恒红，当诊断用，不当门槛；`./check.sh` 只报数字。
-- **`swift test` 有 2 个既有失败**（2026-10-25 实测，218 例 / 64 秒）：`ExtensionWorkerPortTests.testRealShimEntryCoversContentScriptsAndExtensionPages`（shim 里 `__AURA_VERBOSE__` 未定义）、`SidebarPressTests.testOtherButtonsDoNotSelectOnPress`（右键也选中了）。全量验证看有没有新增，别去追这两个而不先问用户。
+- **测试世界里认按钮的用例必须走事件队列**：`window.sendEvent` 不设 `NSApp.currentEvent`，于是 `MiddleClick` 与菜单都"看不见"是哪个键，右键也会落到 SwiftUI 的按压手势上——`SidebarPressTests` 为此留了 `sendQueued`（`NSApp.postEvent` + 关键窗口）。用直接派发去断言按钮相关的行为，得到的是假信号。
 - 工作区常有其他会话未提交的活：提交前 `git status` 复核，只 `git add` 本轮文件。
 
 ## 维护本文件
