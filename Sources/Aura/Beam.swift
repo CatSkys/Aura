@@ -24,12 +24,12 @@ struct Beam: NSViewRepresentable {
     /// Whether the page is still coming.
     var loading: Bool
 
-    /// The groove: a share of the page's width, over its middle, and no wider
-    /// than Arc's own bar — a mark of the browser working, not a rule across
-    /// the page.
+    /// The groove: Arc's own bar, which is 126 points across and 3½ high,
+    /// measured off a window of its own — over the page's middle, and narrowed
+    /// to a third of the page where the page is narrower than that.
     static let region: CGFloat = 1.0 / 3
-    static let widest: CGFloat = 200
-    static let height: CGFloat = 5
+    static let widest: CGFloat = 126
+    static let height: CGFloat = 3.5
     /// The pill that runs in it, as a share of it.
     static let pill: CGFloat = 0.28
     /// One run, in seconds: quick enough to read as the browser working rather
