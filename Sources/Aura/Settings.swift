@@ -542,13 +542,14 @@ struct SettingsPanel: View {
         case "tabs.close.after":
             Picker("", selection: $prefs.tabLife) {
                 ForEach(TabLife.allCases) { life in
-                    Text(life.title).tag(life)
+                    Text(life.title.localized).tag(life)
                 }
             }
             .labelsHidden()
             .pickerStyle(.menu)
             .fixedSize()
         case "tabs.shortcuts": Switch(on: $prefs.showsTabShortcuts)
+        case "swipe.close": Switch(on: $prefs.swipeClosesTab)
         case "tabs.address":
             Switch(on: Binding(
                 get: { prefs.showsAddress },
@@ -565,7 +566,7 @@ struct SettingsPanel: View {
         case "search.engine":
             Picker("", selection: $prefs.engine) {
                 ForEach(Engine.allCases) { engine in
-                    Text(engine.title).tag(engine)
+                    Text(engine.title.localized).tag(engine)
                 }
             }
             .labelsHidden()
@@ -661,7 +662,7 @@ struct SettingsPanel: View {
         case "links.peek":
             Picker("Peek at a link", selection: $prefs.peekChoice) {
                 ForEach(PeekChoice.allCases) { choice in
-                    Text(choice.title).tag(choice)
+                    Text(choice.title.localized).tag(choice)
                 }
             }
             .labelsHidden()
@@ -669,7 +670,6 @@ struct SettingsPanel: View {
             .fixedSize()
         case "autoscroll": Switch(on: $prefs.autoScroll)
         case "swipe.history": Switch(on: $prefs.holdsHistory)
-        case "swipe.close": Switch(on: $prefs.swipeClosesTab)
         case "note.switcher": Always()
         case "updates.version": versionControl
         case "updates.auto": Switch(on: $prefs.installsUpdates)
@@ -898,7 +898,7 @@ struct SettingsPanel: View {
                 Text("Aura")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Palette.ink)
-                Text("a fork of Search by Office Commun · version \(Updater.version)")
+                Text(Localized("a fork of Search by Office Commun · version \(Updater.version)"))
                     .font(.system(size: 12))
                     .foregroundStyle(Palette.muted)
             }
@@ -919,8 +919,8 @@ struct SettingsPanel: View {
     private var versionDetail: String {
         switch updater.stage {
         case .none:
-            return updater.lastChecked.map { "Checked \($0.formatted(.relative(presentation: .named))), every hour on its own" }
-                ?? "Checked every hour on its own"
+            return updater.lastChecked.map { Localized("Checked \($0.formatted(.relative(presentation: .named))), every hour on its own") }
+                ?? Localized("Checked every hour on its own")
         case .fetching(let next):
             return next.notes ?? "Quietly, in the background. Nothing you have set is touched"
         case .ready(let next):

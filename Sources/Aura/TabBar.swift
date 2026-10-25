@@ -1297,7 +1297,11 @@ struct TabMenu: View {
                     Button {
                         browser.move(tab, toSpace: space.id)
                     } label: {
-                        Label(space.name, systemImage: space.symbol)
+                        Label {
+                            Text(space.name)
+                        } icon: {
+                            SpaceIcon(symbol: space.symbol, size: 13)
+                        }
                     }
                 }
                 if browser.spaces.count > 1 { Divider() }
@@ -1401,7 +1405,7 @@ struct TabMenu: View {
             .disabled(browser.tabs.count < 2)
         // ⌘⇧T, and the History menu's Recently Closed, where few think to
         // look for it: here too, where tabs are closed.
-        Button(browser.reopenTitle) { browser.reopen() }
+        Button(browser.reopenMenuTitle) { browser.reopen() }
             .disabled(browser.ghosts.isEmpty)
     }
 }

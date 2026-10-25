@@ -1965,9 +1965,6 @@ final class Browser: NSObject, ObservableObject {
     /// whether the card for a new space stands in for them (see SpaceSwipe).
     @Published var spaceSwipe: CGFloat = 0
     @Published var makingSpace = false
-    /// The space's own colour sheet, open in a popover on its dot (see
-    /// SpaceThemeEditor).
-    @Published var spaceThemeEditing = false
     /// A tab being sent into the Space being made from its context menu.
     var afterSpaceCreated: ((Space) -> Void)?
     /// A link's page, peeked at over this one (see Peek.swift).
@@ -3735,18 +3732,43 @@ final class Browser: NSObject, ObservableObject {
         if let batch = ghost.batch { reopen(batch: batch) } else { reopen(ghost) }
     }
 
-    /// What ⇧⌘T brings back, for its menu items: a closed group, a Clear's
-    /// tabs by how many, or the one tab (or the window) it always did.
-    var reopenTitle: String {
+    /// What ⇧⌘T brings back: a closed group, a Clear's tabs by how many, or
+    /// the one tab (or the window) it always did.
+    private enum Reopen {
+        case tab, group, cleared(Int)
+    }
+
+    private var reopenWhat: Reopen {
         guard let last = ghosts.last, let batch = last.batch,
-              (Browsers.lastClosedAt ?? .distantPast) <= last.at else { return "Reopen Closed Tab" }
+              (Browsers.lastClosedAt ?? .distantPast) <= last.at else { return .tab }
         // Clear never takes a tab in a group, so a batch with one is Close
         // Group's, its group still closed or brought back from History.
         if let id = last.groupID, closedGroups[id] != nil || tabGroups.contains(where: { $0.id == id }) {
-            return "Reopen Closed Group"
+            return .group
         }
-        let count = ghosts.filter { $0.batch == batch }.count
-        return count == 1 ? "Reopen Cleared Tab" : "Reopen \(count) Cleared Tabs"
+        return .cleared(ghosts.filter { $0.batch == batch }.count)
+    }
+
+    /// The words for the probe, which checks what ⇧⌘T would bring back: said
+    /// in English whatever the Mac speaks, so a test reads one thing.
+    var reopenTitle: String {
+        switch reopenWhat {
+        case .tab: return "Reopen Closed Tab"
+        case .group: return "Reopen Closed Group"
+        case .cleared(1): return "Reopen Cleared Tab"
+        case .cleared(let count): return "Reopen \(count) Cleared Tabs"
+        }
+    }
+
+    /// The same words for the menu, where a count is a value inside a
+    /// sentence — the one thing a plain string can't be looked up as.
+    var reopenMenuTitle: String {
+        switch reopenWhat {
+        case .tab: return Localized("Reopen Closed Tab")
+        case .group: return Localized("Reopen Closed Group")
+        case .cleared(1): return Localized("Reopen Cleared Tab")
+        case .cleared(let count): return Localized("Reopen \(count) Cleared Tabs")
+        }
     }
 
     /// Everything one Clear or Close Group closed, back as it was: each tab
