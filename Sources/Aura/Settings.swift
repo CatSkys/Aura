@@ -28,6 +28,11 @@ struct SettingsPanel: View {
     @FocusState private var finding: Bool
     /// A row gone to from a result, lit for a moment.
     @State private var lit: String?
+    /// The note a row's (i) is showing, drawn over the page rather than in
+    /// the row: a card's rounded corners would cut it off.
+    @StateObject private var notes = NoteSpot()
+    /// How tall that note turned out, so it can be kept inside the page.
+    @State private var noteHeight: CGFloat = 0
     /// What Set Up Like Arc changed, for Undo.
     @State private var arcBefore: Preferences.ArcSetup? = SettingsPanel.arcBefore
     @MainActor static var arcBefore: Preferences.ArcSetup?
@@ -84,6 +89,8 @@ struct SettingsPanel: View {
     }
 
     private static let rail: CGFloat = 196
+    /// The page's own coordinate space, where a row's (i) says where it is.
+    static let noteSpace = "settings"
     private static let width: CGFloat = 720
     private static let height: CGFloat = 540
     /// Where a row's words start, past its icon: a hairline starts there too.
@@ -303,6 +310,25 @@ struct SettingsPanel: View {
         .padding(.top, 18)
         .padding(.bottom, 0)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        // The (i)'s note, in the page's own space: a row says where its icon
+        // is, and the page draws the card there, over the rows below it.
+        .coordinateSpace(name: SettingsPanel.noteSpace)
+        .overlay(alignment: .topLeading) { noteLayer }
+    }
+
+    private var noteLayer: some View {
+        GeometryReader { geo in
+            if let note = notes.showing {
+                NoteCard(text: note.text)
+                    .frame(width: 236, alignment: .leading)
+                    .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { noteHeight = $0 }
+                    .offset(
+                        x: max(8, min(note.icon.maxX + 8, geo.size.width - 244)),
+                        y: max(8, min(note.icon.maxY + 6, geo.size.height - noteHeight - 8))
+                    )
+            }
+        }
+        .allowsHitTesting(false)
     }
 
     @ViewBuilder
@@ -351,6 +377,7 @@ struct SettingsPanel: View {
             title: title(of: item),
             detail: counts ? detail(of: item) : SettingsIndex.needs(item),
             more: counts ? item.more : nil,
+            note: notes,
             indent: item.hangs && !searched,
             wide: item.kind == .wide,
             lit: lit == item.id
@@ -707,6 +734,7 @@ struct SettingsPanel: View {
                 SettingRow(icon: "checkmark.shield", title: Localized("On \(host)"),
                            detail: "",
                            more: "Everything blocks and hides. Requests blocks only, where hiding broke a site. Off, the page is as the site wrote it. Each switch reloads the page.",
+                           note: notes,
                            indent: true) {
                     Segmented(options: Shield.Level.allCases.map { ($0, $0.title) },
                               selection: Binding(
@@ -898,7 +926,7 @@ struct SettingsPanel: View {
                 Text("Aura")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Palette.ink)
-                Text(Localized("a fork of Search by Office Commun · version \(Updater.version)"))
+                Text(Localized("Version \(Updater.version)"))
                     .font(.system(size: 12))
                     .foregroundStyle(Palette.muted)
             }
@@ -993,20 +1021,25 @@ struct GroupBlock<Content: View>: View {
     }
 }
 
-/// One setting: its icon in a soft tile, what it is, one line on what it
-/// does (the rest behind the (i)), and its control. A wide control goes
-/// under the words.
+/// One setting: its icon in a soft tile, what it is, at most one line on what
+/// it does, and its control. What the line leaves out is behind the (i): point
+/// at it and the page shows the rest, in a card of its own. A wide control
+/// goes under the words.
 struct SettingRow<Control: View>: View {
     let icon: String
     let title: String
     let detail: String
     var more: String? = nil
+    /// Where this row's note goes when its (i) is pointed at.
+    var note: NoteSpot? = nil
     var indent = false
     var wide = false
     var lit = false
     @ViewBuilder let control: () -> Control
 
-    @State private var open = false
+    @State private var pointing = false
+    /// Where the (i) sits in the page, kept as the page scrolls under it.
+    @State private var iconFrame: CGRect = .zero
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -1022,16 +1055,26 @@ struct SettingRow<Control: View>: View {
                             .font(.system(size: 13))
                             .foregroundStyle(Palette.ink)
                             .fixedSize(horizontal: false, vertical: true)
-                        if more != nil {
-                            Button { withAnimation(Motion.quick) { open.toggle() } } label: {
-                                Image(systemName: open ? "info.circle.fill" : "info.circle")
-                                    .font(.system(size: 10.5))
-                                    .foregroundStyle(Palette.muted.opacity(0.8))
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .help((more ?? "").localized)
-                            .accessibilityLabel(Localized("More about \(title.localized)"))
+                        if let more {
+                            Image(systemName: "info.circle")
+                                .font(.system(size: 10.5))
+                                .foregroundStyle(pointing ? Palette.ink : Palette.muted.opacity(0.8))
+                                .frame(width: 15, height: 15)
+                                .contentShape(Rectangle())
+                                .onGeometryChange(for: CGRect.self,
+                                                  of: { $0.frame(in: .named(SettingsPanel.noteSpace)) }) { iconFrame = $0 }
+                                .onHover { inside in
+                                    pointing = inside
+                                    withAnimation(Motion.quick) {
+                                        if inside {
+                                            note?.show(title: title.localized, text: more, at: iconFrame)
+                                        } else {
+                                            note?.hide(title.localized)
+                                        }
+                                    }
+                                }
+                                .accessibilityLabel(Localized("More about \(title.localized)"))
+                                .accessibilityHint(more.localized)
                         }
                     }
                     if !detail.isEmpty {
@@ -1040,14 +1083,6 @@ struct SettingRow<Control: View>: View {
                             .foregroundStyle(Palette.muted)
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
-                    }
-                    if open, let more {
-                        Text(more.localized)
-                            .font(.system(size: 11.5))
-                            .foregroundStyle(Palette.muted)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(.top, 3)
-                            .transition(.opacity)
                     }
                 }
                 Spacer(minLength: 8)
@@ -1062,6 +1097,54 @@ struct SettingRow<Control: View>: View {
         .padding(.trailing, 14)
         .padding(.vertical, 10)
         .background(lit ? Palette.hover : .clear)
+    }
+}
+
+/// The note a row's (i) is showing: its words, and where the icon sits in the
+/// page — the page draws the card over the rows below, so the card the row
+/// lives in never cuts it off.
+struct HoverNote: Equatable {
+    let title: String
+    let text: String
+    let icon: CGRect
+}
+
+/// Which (i) the pointer is on. One for the whole panel: two rows can't be
+/// pointed at at once, and the page needs the one to draw.
+@MainActor final class NoteSpot: ObservableObject {
+    @Published private(set) var showing: HoverNote?
+
+    func show(title: String, text: String, at icon: CGRect) {
+        let note = HoverNote(title: title, text: text, icon: icon)
+        if note != showing { showing = note }
+    }
+
+    /// Only the row that put it there takes it away: the pointer reaches the
+    /// next row's (i) before the row it left has said it left.
+    func hide(_ title: String) {
+        if showing?.title == title { showing = nil }
+    }
+}
+
+/// The note itself: a small card of the window's own ground, over whatever it
+/// covers, and never in the way of the pointer.
+private struct NoteCard: View {
+    let text: String
+
+    var body: some View {
+        Text(text.localized)
+            .font(.system(size: 11.5))
+            .foregroundStyle(Palette.ink.opacity(0.9))
+            .lineSpacing(2.5)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(Palette.ground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(Palette.hairline, lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.14), radius: 16, y: 6)
     }
 }
 

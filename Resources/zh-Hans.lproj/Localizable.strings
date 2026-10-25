@@ -1067,7 +1067,6 @@
 "Waiting for your Mac to show a code" = "正在等你 Mac 显示验证码";
 "Your windows and tabs will close." = "你的窗口和标签页会关闭。";
 "\n\n—\nAura {1}, build {2}, macOS {3}" = "\n\n—\nAura {1}，构建 {2}，macOS {3}";
-"a fork of Search by Office Commun · version {1}" = "Search 的 fork，原作者 Office Commun · 版本 {1}";
 "again to exit full screen" = "再按一次以退出全屏";
 "macOS isn't sharing your location with Aura" = "macOS 没有把你的位置共享给 Aura";
 "Accounts saved in the Passwords app, under the sign-in box. Unofficial: Aura talks to the helper Apple made for its Chrome extension, as that extension. Never in private tabs." = "登录框下方显示「密码」App 里保存的账户。非官方做法：Aura 以 Apple 为自家 Chrome 扩展写的那个助手身份与它对话。无痕标签页里从不用。";
@@ -1099,6 +1098,7 @@
 "Clear" = "清除";
 "Mouse and Trackpad" = "鼠标与触控板";
 "Updates" = "更新";
+"Version {1}" = "版本 {1}";
 "Developer" = "开发者";
 "Default browser" = "默认浏览器";
 "Links in Mail, Slack and the rest open here." = "邮件、Slack 等 App 中的链接将由 Aura 打开。";
