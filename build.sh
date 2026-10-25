@@ -53,8 +53,8 @@ CONFIG="${1:-release}"
 STEP="${2:-app}"
 ARCH="${AURA_ARCH:-$(uname -m)}"
 case "$ARCH" in
-  arm64) OUT="build"; SUBFOLDER="" ;;
-  x86_64) OUT="build/intel"; SUBFOLDER="/intel" ;;
+  arm64) OUT="${AURA_OUT:-build}"; SUBFOLDER="" ;;
+  x86_64) OUT="${AURA_OUT:-build}/intel"; SUBFOLDER="/intel" ;;
   *) echo "AURA_ARCH is arm64 or x86_64, not “$ARCH”" >&2; exit 1 ;;
 esac
 APP="$OUT/Aura.app"

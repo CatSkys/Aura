@@ -36,10 +36,11 @@ VERSION                      版本号；发版才动，前两位由用户定
 ## 命令
 
 ```sh
-# 构建
-./build.sh                                # build/Aura.app（release，ad-hoc 签名）
-./build.sh release dmg | ship             # + DMG/ZIP/appcast；ship 再公证装钉
+# 构建 —— release 约 200 秒（整模块重编，改一行也一样），自证别用它
+./build.sh                                # 交付产物 build/Aura.app；只在要给人看时跑
+AURA_OUT=build/debug ./build.sh debug     # 调试档，秒级；产物在 build/debug，不碰交付产物
 AURA_ARCH=x86_64 ./build.sh release dmg   # Intel 档，出 build/intel/
+./build.sh release dmg | ship             # + DMG/ZIP/appcast；ship 再公证装钉
 
 # 快速腿 —— 默认这条：文案、译文、注释、文档、脚本、样式微调
 ./check.sh                                # 编译＋零新增警告＋译文表语法＋缺口计数，秒级
@@ -54,8 +55,10 @@ swift test                                # 223 例 / 74 秒，全绿（1 例跳
 python3 Tests/<名字>.py                   # 先 ./build.sh
 ./Tests/AddressRegression/run.sh          # 解析类回归；脚本里的源码路径已失效，见「已知遗留」
 
-# 交付：合并 → 构建 → 清场
-./deliver.sh <slug> [--wait 600]
+# 交付：合并 → 需要时构建 → 清场
+./deliver.sh <slug> [--wait 600]           # 一棵树
+./deliver.sh --ready [--wait 600]          # 把能合的都合了：一次窗口、一次构建
+./deliver.sh --status                      # 锁在谁手里、待交付、产物覆盖没覆盖 HEAD
 
 # 测试世界与探针
 ./fresh.sh | ./fresh.sh again             # 测试世界；AURA_PROBE=<slug> 一树一世界
@@ -66,7 +69,8 @@ python3 Tests/<名字>.py                   # 先 ./build.sh
 plutil -lint Resources/*/Localizable.strings
 
 # 并行与提交
-git worktree add ../Aura-<slug> -b feat/<slug>
+./tree.sh <session> [task]                # 会话树：一单一个分支，.build 留热
+git worktree add ../Aura-<slug> -b feat/<slug>   # 一次性任务也可以单独开树
 git worktree remove ../Aura-<slug>        # 收尾再 git branch -d feat/<slug>
 ./hooks.sh [on|off]                       # 机械卡点：主仓检出拒收直接提交
 gitleaks git --pre-commit --staged        # 提交前扫密钥（.gitleaks.toml）
@@ -82,6 +86,7 @@ gitleaks git --pre-commit --staged        # 提交前扫密钥（.gitleaks.toml�
 
 - **默认 `./check.sh`，别默认全量**：文案、译文、注释、文档、脚本、样式微调，编译通过加零新增警告就够（秒级）。全量是最贵的动作，不是稳妥的选择。
 - **什么才算行为改动**：`Sources/Aura` 里除注释与文案字面量之外的改动、`Resources/Shield` 的生成物、`Engine/`、`Package.swift`。这时先窄后全：改了 `X.swift` 而 `Tests/AuraTests/XTests.swift` 在 → `swift test --filter XTests`；没有同名套件 → 只跑 `./check.sh`，并在报告里写明这块没有测试覆盖；跨模块或动契约才 `swift test`。
+- **自证不跑 release**：`./build.sh` 是一次整模块的 release 编译（~200 秒，改一行也一样）。自证用 `swift build`，要看界面就 `AURA_OUT=build/debug ./build.sh debug`（探针加 `--app build/debug/Aura.app`）；release 只在交付、或用户要看时构建一次。
 - **测试纪律**：一条命令一次跑完；同一轮最多重跑两次，仍红就带着输出停下报告；探针先确认世界在答（`./bench --test tabs`）再等它。
 - **自证在测试世界，验收归用户**：世界由启动方式决定（`AURA_PROBE` 有值或可执行文件在 `/.build/` 下＝测试世界；`build/Aura.app` 不带变量＝真身）。改界面、装扩展、窗口尺寸、真键盘事件一律 `--test`/`--world`；不自行截图当验收、不擅自换 `/Applications/Aura.app`。
 - **交付**：`./deliver.sh <slug>`。只改文档/脚本（不碰 `Sources/`、`Resources/`、`Engine/`、`Package.swift`、`VERSION`）就不重建产物；主仓有别处的活时也不重建。产物只代表主仓 HEAD。
@@ -90,7 +95,7 @@ gitleaks git --pre-commit --staged        # 提交前扫密钥（.gitleaks.toml�
 
 ## 并行任务：一棵树一个世界
 
-- **一个任务一棵树**：`git worktree add ../Aura-<slug> -b feat/<slug>` 动手；主仓只收合并，收尾 `git worktree remove` + `git branch -d`，不留残树。
+- **一个会话一棵树，一单一个分支**：`./tree.sh <session>` 建树、`./tree.sh <session> <task>` 换分支——`.build` 留热，第二单起编译是秒级（新树每次从零：debug 44 秒、测试再一分钟）。树名只按会话区分，隔离照样有。
 - **主仓不承接活，但别让分支攒着**：活全在树里。主仓被别的会话占着时，`./deliver.sh` 允许**文件不重叠**的合并先落地（重叠就拒），这次不构建——产物会把那份活编进去。**不许替别人 stash**（教训：为合 `feat/facade` 把 15 个文件的活收起来四分钟，那次构建的产物因此不含那份活）。索引里有 staged 改动时 `git merge` 一律拒收，先让它 unstage。
 - **一棵树一个测试世界**：`./fresh.sh` 与 `./bench --test` 用固定的 `test` 世界，两棵树同时用会抢同一个 socket；并行时 `AURA_PROBE=<slug> ./fresh.sh` 配 `./bench --world <slug>`。`Tests/*.py` 按检出路径自己分世界，不用管。
 - **`../aura-pages` 不是任务树**：那是 `gh-pages` 的检出，`publish.sh` 认这个路径。
@@ -101,6 +106,8 @@ gitleaks git --pre-commit --staged        # 提交前扫密钥（.gitleaks.toml�
 - **合并在锁上排队，排队是脚本的事**：`./deliver.sh <slug>` 抢 `.git/deliver.lock`（所有树共享一把）；第二个**自己等**（默认 300 秒，`--wait 600` 等更久），每 10 秒说一次谁在跑。**不要用 `sleep` 轮询交付**——一轮 30 分钟的体检里大半时间都花在这种轮询上。
 - **锁的进程死了就被接管**：`who` 里记着 pid，拿锁的进程已经不在了就当场接管（被杀的交付不该把所有人都挡住）；确认没在跑才手工 `rm -rf .git/deliver.lock`。
 - **冲突在树里解决**：`git -C ../Aura-<slug> merge main`，在树里解冲突、构建、验证，再交付。`deliver.sh` 用 `git merge-tree` 预演，会冲突就直接拒——主仓永远不出现要人工解的合并。
+- **能合就一次合完**：`./deliver.sh --ready` 把当前所有"树干净、与 main 不冲突、不撞主仓 WIP"的分支在一个锁窗口里合掉，然后**只构建一次**、只清一次场。三个任务从 ~600 秒降到 ~200 秒。
+- **产物戳决定要不要重建**：`.git/artifact` 记着 `build/` 是哪个提交构建的；自那以后没有 `Sources/`、`Resources/`、`Engine/`、`Package.swift`、`VERSION` 的改动就不重建（实测跳过时整次交付 0.6 秒）。`./deliver.sh --status` 直接告诉你覆盖没覆盖 HEAD。
 - **`CHANGELOG.md` 走 union 合并**（`.gitattributes`）：两条任务在同一天、同一处加一行是常态，union 把两行都留下，不为这一处互相挡；别的文件没有这个待遇。
 - **构建失败就撤回合并**（`reset --hard ORIG_HEAD`），树与分支留着；清场失败（树里又长出新东西）一样停下，绝不 `--force` 盖别人的活。
 - **一个检出同时只跑一个 `./build.sh`**：SwiftPM 会让后来者等锁，但 `build/Aura.app` 与签名会互相盖；两棵树各有 `.build`，各跑各的没问题。
