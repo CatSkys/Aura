@@ -48,11 +48,14 @@ echo "$$ $(date '+%F %T') $slug" > "$lock/who"
 git show-ref --verify --quiet "refs/heads/$branch" || refuse "没有分支 $branch"
 [ -d "$tree" ] || refuse "没有树 $tree（先 git worktree add ../Aura-$slug -b $branch）"
 
+# What the merge brings, so a main checkout busy with someone else's task can
+# still take it when the two touch different files — waiting for a clean main
+# is how branches pile up and start conflicting.
+coming="$(git diff --name-only "main...$branch")"
 dirty="$(git status --porcelain)"
-[ -z "$dirty" ] || {
-  printf '%s\n' "$dirty" >&2
-  refuse "主仓检出不干净。这些改动属于某个还没进树的活，由它的会话挪进树；本脚本不替它 stash、也不越过它合并"
-}
+dirty_paths="$(printf '%s\n' "$dirty" | sed 's/^...//')"
+clash="$(comm -12 <(printf '%s\n' "$coming" | sort) <(printf '%s\n' "$dirty_paths" | sort) | grep . || true)"
+[ -z "$clash" ] || { printf '%s\n' "$clash" >&2; refuse "主仓里这些文件正被别人改着，与本次合并重叠：等那份活提交或进树再来"; }
 
 tree_dirty="$(git -C "$tree" status --porcelain)"
 [ -z "$tree_dirty" ] || { printf '%s\n' "$tree_dirty" >&2; refuse "树 $tree 里有未提交的改动"; }
@@ -67,13 +70,22 @@ fi
 
 git merge --no-ff "$branch" -m "合并 $branch：$(git log -1 --format=%s "$branch")"
 
-if ! ./build.sh; then
-  git reset --hard ORIG_HEAD
-  refuse "构建失败，合并已撤回（main 回到 $(git log -1 --format=%h)）；树与分支留着，改完再来"
+# The app is rebuilt only when this merge could have changed it, and only on a
+# clean checkout: main busy with someone else's task would put that task into
+# the product, which is how a build came to wipe another session's work.
+app_paths='^(Sources/|Resources/|Engine/|Package\.swift$|VERSION$)'
+if ! printf '%s\n' "$coming" | grep -qE "$app_paths"; then
+  echo "只改了文档与脚本（$(printf '%s\n' "$coming" | tr '\n' ' ')），产物不受影响，不重建"
+elif [ -n "$dirty" ]; then
+  echo "主仓还有别人的活（$(printf '%s\n' "$dirty" | wc -l | tr -d ' ') 项），这次不构建：产物会把那份活编进去。需要新产物，等主仓干净后 ./build.sh"
+else
+  if ! ./build.sh; then
+    git reset --hard ORIG_HEAD
+    refuse "构建失败，合并已撤回（main 回到 $(git log -1 --format=%h)）；树与分支留着，改完再来"
+  fi
 fi
 
 app="build/Aura.app/Contents/MacOS/Aura"
-[ -x "$app" ] || refuse "构建说成功了但 $app 不在；树与分支留着，先查 build.sh"
 
 git worktree remove "$tree"
 git branch -d "$branch"
@@ -81,7 +93,7 @@ trap - EXIT
 rm -rf "$lock"
 
 echo "交付完成：$(git log -1 --format='%h %s')"
-echo "  产物：$app（$(date -r "$app" '+%F %T')），对应当前 main 的代码"
+echo "  产物：$app（$(date -r "$app" '+%F %T' 2>/dev/null || echo 没有)）"
 echo "  worktree：$(git worktree list | wc -l | tr -d ' ') 个（主仓 + aura-pages）"
 echo "  未合并的任务分支：$(git branch --no-merged main | grep -vc gh-pages || true) 个"
 echo "  stash：$(git stash list | wc -l | tr -d ' ') 项"

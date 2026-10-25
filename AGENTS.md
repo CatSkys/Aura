@@ -78,14 +78,14 @@ gitleaks git --pre-commit --staged        # 提交前扫密钥（.gitleaks.toml�
 - **两种验证，按改动性质选，别混着用**：改文案/译文/注释/文档/脚本/样式微调 → `swift build`（秒级）。改行为（Swift 逻辑、WebKit 交互、扩展、拦截规则）→ `swift test` 全套 + 受影响的那个探针。**拿不准算不算行为改动，按行为改动跑。** 全量的标准是"没有新增失败"，不是"全绿"——既有红在「已知遗留」。
 - **测试纪律**：一条命令一次跑完；同一轮最多重跑两次，仍红就带着输出停下报告；探针先确认世界在答（`./bench --test tabs`）再等它。不为一句话改动去跑全量。
 - **自证在测试世界，验收归用户**：世界由启动方式决定（`AURA_PROBE` 有值或可执行文件在 `/.build/` 下＝测试世界；`build/Aura.app` 不带变量＝真身）。改界面、装扩展、窗口尺寸、真键盘事件一律 `--test`/`--world`；不自行截图当验收、不擅自换 `/Applications/Aura.app`。
-- **交付**：`./deliver.sh <slug>`。产物只代表主仓 HEAD——主仓里有未提交的活时，`build/Aura.app` 就不代表任何人的验收对象。
+- **交付**：`./deliver.sh <slug>`。只改文档/脚本（不碰 `Sources/`、`Resources/`、`Engine/`、`Package.swift`、`VERSION`）就不重建产物；主仓有别处的活时也不重建。产物只代表主仓 HEAD。
 - 改变行为的改动同轮补 `CHANGELOG.md` 的 `Unreleased`；`NOTES.md` 只在发版时写（第一段进 appcast）。
 - 提交信息中文，一句讲清因果；临时探针、`AURA_MEASURE`、临时 `defaults` 当轮撤干净。
 
 ## 并行任务：一棵树一个世界
 
 - **一个任务一棵树**：`git worktree add ../Aura-<slug> -b feat/<slug>` 动手；主仓只收合并，收尾 `git worktree remove` + `git branch -d`，不留残树。
-- **主仓检出不承接任何活**：并行时"合并会不会撞上别人的 WIP"只有一个正解——主仓本来就没有 WIP。发现主仓有改动，由那份活的会话挪进树，**不许替别人 stash**（教训：为合 `feat/facade` 把 15 个文件的活收起来四分钟，那次构建的产物因此不含那份活）。索引里有 staged 改动时 `git merge` 一律拒收，不管合的是不是同一批文件。
+- **主仓不承接活，但别让分支攒着**：活全在树里。主仓被别的会话占着时，`./deliver.sh` 允许**文件不重叠**的合并先落地（重叠就拒），这次不构建——产物会把那份活编进去。**不许替别人 stash**（教训：为合 `feat/facade` 把 15 个文件的活收起来四分钟，那次构建的产物因此不含那份活）。索引里有 staged 改动时 `git merge` 一律拒收，先让它 unstage。
 - **一棵树一个测试世界**：`./fresh.sh` 与 `./bench --test` 用固定的 `test` 世界，两棵树同时用会抢同一个 socket；并行时 `AURA_PROBE=<slug> ./fresh.sh` 配 `./bench --world <slug>`。`Tests/*.py` 按检出路径自己分世界，不用管。
 - **`../aura-pages` 不是任务树**：那是 `gh-pages` 的检出，`publish.sh` 认这个路径。
 - **新树的 `.build/` 是冷的**：第一次 `swift build` 从头编译，属正常；别在两棵树间共享构建目录。
