@@ -4,7 +4,9 @@
 # delivery at a time — the lock in .git is shared by every worktree — and the
 # main checkout has to be empty when it starts.
 #
-#   ./deliver.sh <slug>        branch feat/<slug>, tree ../Aura-<slug>
+#   ./deliver.sh <slug>                  branch feat/<slug>, its tree; waits for
+#                                        another delivery to finish (up to 300s)
+#   ./deliver.sh <slug> --wait 600       wait longer; --no-wait refuses instead
 #
 # The main checkout never holds a task of its own (AGENTS.md「并行交付」), so
 # this is the only writer main has, and it runs alone:
@@ -24,11 +26,22 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-usage() { echo "usage: ./deliver.sh <slug>" >&2; exit 1; }
+usage() { echo "usage: ./deliver.sh <slug> [--wait SECONDS | --no-wait]" >&2; exit 1; }
 refuse() { echo "交付停下：$*" >&2; exit 1; }
 
-[ $# -eq 1 ] || usage
-slug=$1
+wait_seconds=300
+args=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --wait) wait_seconds="${2:-300}"; shift 2 ;;
+    --wait=*) wait_seconds="${1#--wait=}"; shift ;;
+    --no-wait) wait_seconds=0; shift ;;
+    -*) usage ;;
+    *) args+=("$1"); shift ;;
+  esac
+done
+[ ${#args[@]} -eq 1 ] || usage
+slug="${args[0]}"
 branch="feat/$slug"
 tree="../Aura-$slug"
 git_dir="$(git rev-parse --absolute-git-dir)"
@@ -39,11 +52,30 @@ main_tree="$(git worktree list --porcelain | sed -n '1s/^worktree //p')"
 [ "$(git rev-parse --show-toplevel)" = "$main_tree" ] \
   || refuse "要在主仓检出里跑（$(pwd) 是一棵树，不是主仓）"
 
-if ! mkdir "$lock" 2>/dev/null; then
-  refuse "另一个交付正拿着锁：$(cat "$lock/who" 2>/dev/null || echo '（没写是谁）')；确认它没在跑再 rm -rf $lock"
-fi
-trap 'rm -rf "$lock"' EXIT
-echo "$$ $(date '+%F %T') $slug" > "$lock/who"
+# A delivery takes a merge (seconds) and, when the app changed, a build
+# (a minute or two). Rather than hand the wait back to whoever called this —
+# as a `sleep` loop that keeps asking — wait here, saying who holds it. A
+# lock whose process is gone is taken over: a killed delivery must not stop
+# every other one, and the pid is what tells the two apart.
+waited=0
+while :; do
+  if mkdir "$lock" 2>/dev/null; then
+    trap 'rm -rf "$lock"' EXIT
+    echo "$$ $(date '+%F %T') $slug" > "$lock/who"
+    break
+  fi
+  holder="$(cat "$lock/who" 2>/dev/null || true)"
+  held_pid="${holder%% *}"
+  if [ -n "$held_pid" ] && ! kill -0 "$held_pid" 2>/dev/null; then
+    echo "锁被「${holder:-（没写是谁）}」拿着，但那个进程已经不在了：接管"
+    rm -rf "$lock"
+    continue
+  fi
+  [ "$waited" -lt "$wait_seconds" ] ||     refuse "另一个交付拿锁超过了 ${wait_seconds}s：${holder:-（没写是谁）}；再来一次 ./deliver.sh $slug --wait 600"
+  [ $((waited % 10)) -ne 0 ] || echo "等锁：${holder:-（没写是谁）}（已等 ${waited}s，上限 ${wait_seconds}s）"
+  sleep 2
+  waited=$((waited + 2))
+done
 
 git show-ref --verify --quiet "refs/heads/$branch" || refuse "没有分支 $branch"
 # The tree is the one with this branch checked out, whatever it was named.

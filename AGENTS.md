@@ -55,7 +55,7 @@ python3 Tests/<名字>.py                   # 先 ./build.sh
 ./Tests/AddressRegression/run.sh          # 解析类回归；脚本里的源码路径已失效，见「已知遗留」
 
 # 交付：合并 → 构建 → 清场
-./deliver.sh <slug>
+./deliver.sh <slug> [--wait 600]
 
 # 测试世界与探针
 ./fresh.sh | ./fresh.sh again             # 测试世界；AURA_PROBE=<slug> 一树一世界
@@ -98,8 +98,10 @@ gitleaks git --pre-commit --staged        # 提交前扫密钥（.gitleaks.toml�
 
 ## 并行交付：一次只合一个
 
-- **合并在锁上排队**：`./deliver.sh <slug>` 先抢 `.git/deliver.lock`（所有树共享一把）。两个交付同时来，第二个停下并指名谁在跑、从几点开始，而不是两边一起写主仓索引。
+- **合并在锁上排队，排队是脚本的事**：`./deliver.sh <slug>` 抢 `.git/deliver.lock`（所有树共享一把）；第二个**自己等**（默认 300 秒，`--wait 600` 等更久），每 10 秒说一次谁在跑。**不要用 `sleep` 轮询交付**——一轮 30 分钟的体检里大半时间都花在这种轮询上。
+- **锁的进程死了就被接管**：`who` 里记着 pid，拿锁的进程已经不在了就当场接管（被杀的交付不该把所有人都挡住）；确认没在跑才手工 `rm -rf .git/deliver.lock`。
 - **冲突在树里解决**：`git -C ../Aura-<slug> merge main`，在树里解冲突、构建、验证，再交付。`deliver.sh` 用 `git merge-tree` 预演，会冲突就直接拒——主仓永远不出现要人工解的合并。
+- **`CHANGELOG.md` 走 union 合并**（`.gitattributes`）：两条任务在同一天、同一处加一行是常态，union 把两行都留下，不为这一处互相挡；别的文件没有这个待遇。
 - **构建失败就撤回合并**（`reset --hard ORIG_HEAD`），树与分支留着；清场失败（树里又长出新东西）一样停下，绝不 `--force` 盖别人的活。
 - **一个检出同时只跑一个 `./build.sh`**：SwiftPM 会让后来者等锁，但 `build/Aura.app` 与签名会互相盖；两棵树各有 `.build`，各跑各的没问题。
 - **锁只拦交付，不拦手**：锁在时主仓是施工区，谁都不许在里面做手工 git 操作；确认没有交付在跑才 `rm -rf .git/deliver.lock`，永远别删 `index.lock`。
