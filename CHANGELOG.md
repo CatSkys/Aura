@@ -15,6 +15,8 @@ in [ROADMAP.md](ROADMAP.md).
 
 ### Changed
 
+- The address on the tab you're on is off unless you turn it on (Settings › Tabs › Address on the current tab). A site in the title's place, with the title back only under the pointer, read as a title that would not load — the tab you are looking at was the one tab you could not name. On, it works as it did: every page says its site, from the address on screen, and the title comes back under the pointer; off, a plain http page still says Not secure and a look-alike name in another alphabet is still said as the punycode it is. A choice made before stands either way.
+
 ### Fixed
 
 ## 0.1.0 — 25 October 2026
