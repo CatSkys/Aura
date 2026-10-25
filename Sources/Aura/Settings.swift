@@ -953,7 +953,7 @@ struct SettingsPanel: View {
             return updater.lastChecked.map { Localized("Checked \($0.formatted(.relative(presentation: .named))). Every hour on its own.") }
                 ?? Localized("Checked every hour on its own.")
         case .fetching(let next):
-            return next.notes ?? "Downloaded in the background. Nothing you have set is touched."
+            return next.notesHere ?? "Downloaded in the background. Nothing you have set is touched."
         case .ready(let next):
             return next.notes ?? "In place the next time you open Aura."
         case .offered(let next):

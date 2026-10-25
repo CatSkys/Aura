@@ -65,7 +65,21 @@ final class Updater: ObservableObject {
         /// Hex of the disk image, for the one Aura fetches itself.
         var dmgSha256: String? = nil
         let notes: String?
+        /// The same notes in Chinese, when the feed carries them: this Mac
+        /// may speak either, and the feed is the one place a version the app
+        /// has never heard of says what it brings.
+        let notesZh: String?
         let minimumSystemVersion: String?
+
+        /// The notes in the language the Mac speaks — Chinese when it does,
+        /// English otherwise — and whichever there is when only one came.
+        func notes(for language: String) -> String? {
+            let chinese = language.lowercased().hasPrefix("zh")
+            return chinese ? (notesZh ?? notes) : (notes ?? notesZh)
+        }
+
+        /// The same, for this Mac's own language.
+        var notesHere: String? { notes(for: Locale.preferredLanguages.first ?? "en") }
 
         /// A release that wants a newer macOS than this one is not newer for
         /// this Mac, and is not offered.
@@ -316,6 +330,7 @@ final class Updater: ObservableObject {
         let sha = (json["sha256"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let dmgSha = (json["dmgSha256"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let notes = (json["notes"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let notesZh = (json["notesZh"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
         var release = Release(
             version: version,
             build: build,
@@ -323,6 +338,7 @@ final class Updater: ObservableObject {
             dmg: dmg,
             sha256: sha.flatMap { $0.isEmpty ? nil : $0 },
             notes: notes.flatMap { $0.isEmpty ? nil : $0 },
+            notesZh: notesZh.flatMap { $0.isEmpty ? nil : $0 },
             minimumSystemVersion: json["minimumSystemVersion"] as? String
         )
         release.dmgSha256 = dmgSha.flatMap { $0.isEmpty ? nil : $0 }

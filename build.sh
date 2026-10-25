@@ -415,6 +415,14 @@ if [ -f NOTES.md ]; then
   NOTES="$(awk 'NF { printf "%s%s", (n++ ? " " : ""), $0; next } n { exit }' NOTES.md \
     | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')"
 fi
+# The same in Chinese, beside it (NOTES.zh-Hans.md, first paragraph): the feed
+# is where a version this build has never heard of says what it brings, and
+# the app reads whichever of the two the Mac speaks.
+NOTES_ZH=""
+if [ -f NOTES.zh-Hans.md ]; then
+  NOTES_ZH="$(awk 'NF { printf "%s%s", (n++ ? " " : ""), $0; next } n { exit }' NOTES.zh-Hans.md \
+    | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')"
+fi
 # The AI add-on's engine (engine.sh), when this release offers one: Apple
 # Silicon only for now. AURA_AI_ENGINE_VERSION names it — a number that
 # only goes up, as Aura never takes a lower one — and the signed,
@@ -449,6 +457,7 @@ write_appcast() {
   "sha256": "$SHA",
   "dmgSha256": "$DMGSHA",
   "notes": "$NOTES",
+  "notesZh": "$NOTES_ZH",
   "minimumSystemVersion": "$MINIMUM"$AIBLOCK
 }
 JSON
