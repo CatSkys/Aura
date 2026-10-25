@@ -5,8 +5,7 @@ Build first (`./build.sh`), then `python3 Tests/swipe_close.py`. Same harness
 as the split suite: a probe started hidden, in a world of its own, driven
 through the bench, nothing made or shown, everything removed afterwards.
 
-Settings › Keyboard & Mouse › Close a tab with a swipe back is off unless asked
-for, and
+Settings › Tabs › Close a tab with a swipe back is off unless asked for, and
 while it is off a swipe back on a tab's first page must go on doing what it
 did — nothing — and a tab with a page behind it must go back as it always has.
 Turned on, back from the first page closes the tab and the neighbour on the
