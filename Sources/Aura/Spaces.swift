@@ -538,6 +538,12 @@ enum SpaceMenu {
         if folder != nil {
             menu.addItem(item("Downloads to the Folder in Settings".localized) { browser.setSpaceDownloads(here.id, to: nil) })
         }
+        // The two lists, from the menu already under the hand: the same panels
+        // the History menu opens, so the space's own menu is a way in to them
+        // rather than only to the space.
+        menu.addItem(.separator())
+        menu.addItem(item("Show History…".localized) { browser.recalling = true })
+        menu.addItem(item("Downloads…".localized) { browser.hoarding = true })
         if !here.isFirst {
             menu.addItem(.separator())
             menu.addItem(item(Localized("Delete “\(here.name)”…")) {
