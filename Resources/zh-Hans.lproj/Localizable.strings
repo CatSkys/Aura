@@ -35,7 +35,7 @@
 "Address bar commands" = "地址栏命令";
 "A word like \"settings\" or \"new tab\", typed alone in the address field, goes there instead of searching for it" = "在地址栏单独输入 \"settings\" 或 \"new tab\" 这样的词，会直接前往该处，而不是去搜索它";
 "New tab in a floating field" = "新标签页使用浮动地址栏";
-"⌘T raises the address field over the page you're on, as in Arc. Return opens what you typed in a new tab; Escape, ⌘W or a click outside puts it away and leaves the page as it was" = "⌘T 在当前页面上方唤出地址栏，如同 Arc。按 Return 将输入的内容在新标签页打开；按 Escape、⌘W 或点击别处则收起，页面保持原样";
+"⌘T raises the address field over the page you're on, as in Arc. Return opens what you typed in a new tab; ⌘T again, Escape, ⌘W or a click outside puts it away and leaves the page as it was" = "⌘T 在当前页面上方唤出地址栏，如同 Arc。按 Return 将输入的内容在新标签页打开；再按 ⌘T、Escape、⌘W 或点击别处则收起，页面保持原样";
 "Show where links go" = "显示链接去向";
 "Point at a link and its address shows at the bottom of the page" = "指向链接时，其地址显示在页面底部";
 "Scroll with the middle button" = "用中键滚动";
@@ -451,6 +451,7 @@
 "A folder with a manifest.json — your own, or one exported from another browser. Reload picks up what you've changed in it since." = "含有 manifest.json 的文件夹——你自己的，或从其他浏览器导出的。重新载入会应用你之后对它的改动。";
 "Choose…" = "选择…";
 "More for {1}" = "{1} 的更多操作";
+"More" = "更多";
 "Options" = "选项";
 "Reload" = "重新载入";
 "Private Tabs Aren’t Supported" = "不支持无痕浏览标签页";
@@ -808,6 +809,8 @@
 "Titles across the top, or down the side. The grey slides to the tab you pick either way, and you can change your mind with ⇧⌘S." = "标题横跨顶部，或排在侧边。无论哪种，灰色滑块都会滑到你选的标签页；⇧⌘S 可以随时改主意。";
 "Tab strip" = "标签栏";
 "Sidebar" = "侧边栏";
+"Hide Sidebar" = "隐藏侧边栏";
+"Show Sidebar" = "显示侧边栏";
 "A click in Mail, in Slack, in a PDF — macOS sends it to whichever browser is the default. It can be this one." = "在「邮件」、Slack 或 PDF 里点一下——macOS 会把它交给默认浏览器。它可以是这一个。";
 "A new tab. Type a place, or words to search." = "新建标签页。输入网址，或要搜索的词。";
 "Every open tab, by name." = "所有打开的标签页，按名称排列。";
@@ -963,7 +966,7 @@
 
 /* —— The two words on a window that has nothing in it yet —— */
 "New Tab" = "新建标签页";
-"Enter a web address" = "输入网址";
+"Search or enter a web address" = "搜索或输入网址…";
 "Window" = "窗口";
 
 /* —— The words a sentence puts inside itself —— */

@@ -21,6 +21,11 @@ enum Palette {
     /// you are on stands out from them as a live row does from the white.
     static let pinLive = Color(nsColor: NS.pinLive)
     static let hover = Color(nsColor: NS.hover)         // the one under the pointer
+    /// The row the keys are on in the command bar's list, and the row under
+    /// the pointer: one grey, since the two never show at once — the pointer
+    /// takes the mark over the moment it is on a row. Deep enough to be a
+    /// block of its own rather than a hint of one.
+    static let pick = Color(nsColor: NS.pick)
     /// Around the page's card, with the tabs down the side: the column, the
     /// bookmarks bar and the gaps share it, a touch off the page's white, so
     /// the card reads as one (see CardEdge).
@@ -50,6 +55,7 @@ enum Palette {
         static let wash = pair(0.937, 0.175)
         static let pinLive = pair(0.90, 0.21)
         static let hover = pair(0.965, 0.15)
+        static let pick = pair(0.90, 0.20)
         static let frame = pair(0.955, 0.075)
         static let sideWash = pair(0.895, 0.155)
         static let sideHover = pair(0.915, 0.13)
@@ -259,12 +265,14 @@ enum Motion {
     /// The folded column or strip coming out over the page, and going back.
     /// On glide it was slow both ways, next to Arc and Dia timed frame by
     /// frame on the same Mac: each slides its sidebar 90% of the way out in
-    /// about 95ms and back in about 70ms, where glide took over 200ms. These
-    /// match them. Going in is damped all the way, since nothing is arriving
-    /// to settle. Fold.slide moves the window's buttons on the same numbers,
-    /// in Core Animation's terms.
+    /// about 95ms and back in about 70ms, where glide took over 200ms. Coming
+    /// out lands with a little weight behind it — about nine points of
+    /// overshoot on a full column — so the card reads as arriving rather than
+    /// as pushed out of the edge; going in is damped all the way, since
+    /// nothing is arriving to settle. Fold.slide moves the window's buttons on
+    /// the same numbers, in Core Animation's terms.
     static func fold(out: Bool) -> (response: Double, damping: Double) {
-        out ? (0.14, 0.86) : (0.13, 1)
+        out ? (0.30, 0.72) : (0.15, 1)
     }
 
     static func folding(out: Bool) -> Animation? {

@@ -85,6 +85,23 @@ struct Fold: View {
     static let fullScreenCorner: CGFloat = 60
     /// The band along the top that is the title bar over the page.
     private static let top: CGFloat = 8
+    /// The card the column is out over the page as: this far in from the
+    /// window's edges, so it reads as laid over the page rather than as the
+    /// window's own column come loose, and rounded a shade past the page's
+    /// own card, a card standing on one casting a softer corner.
+    static let cardGap: CGFloat = Metrics.cardGap
+    /// A shade past the page card's own radius, a card standing on another
+    /// casting a softer corner.
+    static let cardRadius: CGFloat = Metrics.cardRadius + 2
+    static var card: RoundedRectangle {
+        RoundedRectangle(cornerRadius: Fold.cardRadius, style: .continuous)
+    }
+    /// How far in the lights go while the card is out: it takes them with it,
+    /// a card with the window's buttons floating over the page instead of in
+    /// it (see Lights).
+    static func lightsInset(_ browser: Browser) -> CGFloat {
+        browser.prefs.sidebar && browser.folded && browser.peeking ? Fold.cardGap : 0
+    }
     /// How long the pointer rests on the edge before a column folded for
     /// good comes out. Long enough to cross the edge, short enough not to be
     /// waited for.
@@ -135,18 +152,31 @@ struct Fold: View {
                     // whole accessibility tree rebuilt each time, up to
                     // 120ms of the main thread with the slide waiting.
                     //
-                    // Its shadow falls from a ground laid under it, as the
-                    // strip's does. Cast by the column itself, it was drawn
-                    // again from every row, icon and title on each frame of
-                    // the slide, the column's full height over: in full
-                    // screen, the whole screen's, and the slide lagged there.
-                    // The column's own ground is opaque, so it is the same
-                    // rectangle either way. It wears the window's ground, as
-                    // it does beside the page's card (see CardEdge), or its
-                    // own white where the page is no card.
-                    SideBar(browser: browser, prefs: prefs, onFrame: browser.asCards)
-                        .modifier(FoldShadow(x: onRight ? -4 : 4, behind: true, strength: browser.peeking ? 1 : 0))
-                        .offset(x: browser.peeking ? 0 : (onRight ? prefs.sideWidth : -prefs.sideWidth))
+                    // A card laid over the page rather than the window's own
+                    // column come loose: it stands a gap in from the window's
+                    // edges, rounds its corners to a shade past the page
+                    // card's, and is made of the window's own glass (see
+                    // CardGlass), so the page behind it reads through it the
+                    // way the desktop does through the column. Its shadow
+                    // falls from the card's own shape — cast by the rows
+                    // instead, it was drawn again from every title and icon on
+                    // each frame of the slide, the column's full height over,
+                    // and the slide lagged (see FoldShadow).
+                    SideBar(browser: browser, prefs: prefs, glass: true)
+                        .clipShape(Fold.card)
+                        .background {
+                            CardGlass(theme: browser.space.spaceTheme, radius: Fold.cardRadius)
+                                .clipShape(Fold.card)
+                                .shadow(
+                                    color: .black.opacity(0.18 * (browser.peeking ? 1 : 0)),
+                                    radius: 22, x: onRight ? -4 : 4, y: 5
+                                )
+                        }
+                        .padding(.vertical, Fold.cardGap)
+                        .offset(
+                            x: (browser.peeking ? 0 : (onRight ? prefs.sideWidth : -prefs.sideWidth))
+                                + (onRight ? -Fold.cardGap : Fold.cardGap)
+                        )
                         .allowsHitTesting(browser.peeking)
                 }
             }
@@ -164,6 +194,10 @@ struct Fold: View {
             resetPending()
             pointer.stop()
         }
+        // The card takes the window's buttons in with it: out with the column,
+        // and back into the window's corner when it goes (see Fold.lightsInset).
+        .onChange(of: browser.peeking) { _, _ in Lights.refresh(browser.window) }
+        .onChange(of: browser.folded) { _, _ in Lights.refresh(browser.window) }
         // A column folded for good is folded before there is a window to
         // hide the lights of; they go once there is one.
         .background(WindowSetup { window in
@@ -289,7 +323,9 @@ struct Fold: View {
             let top = NSWindow.windowNumber(at: screen, belowWindowWithWindowNumber: 0)
             let onWindow = top == window.windowNumber
             let onOwnPanel = !onWindow && NSApp.windows.contains { $0.windowNumber == top }
-            let reach = prefs.sidebar ? prefs.sideWidth : Metrics.strip
+            // The card takes the gap it stands in from the window's edge over
+            // the page with it: the pointer over its inner edge is still on it.
+            let reach = prefs.sidebar ? prefs.sideWidth + Fold.cardGap : Metrics.strip
             // An extension's popup hangs from its button in the column: the
             // column stays out while it is up, or the popup is left hanging
             // from nothing (see ExtensionPopup).

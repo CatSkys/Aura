@@ -474,23 +474,41 @@ struct PinLine: View {
     }
 }
 
+/// One of the three doors a helm can draw, so it can draw only some of them
+/// where the room is short (see SideBand).
+enum HelmDoor: CaseIterable, Hashable {
+    case back, forward, reload
+
+    var icon: String {
+        switch self {
+        case .back: return "chevron.left"
+        case .forward: return "chevron.right"
+        case .reload: return "arrow.clockwise"
+        }
+    }
+}
+
 /// Back, forward, reload. They watch the live tab, not the window: whether
 /// there is anywhere to go back to is the tab's to say, and it changes with
 /// every page. Used here and, beside the traffic lights instead of at the
 /// far end of the row, in the sidebar.
 struct Helm: View {
     @ObservedObject var browser: Browser
+    /// Which of the three, and the air between them: the column's band gives
+    /// up a door at a time, and closes up, as it narrows.
+    var doors: [HelmDoor] = HelmDoor.allCases
+    var gap: CGFloat = 4
 
     var body: some View {
         if let tab = browser.active {
-            Wheel(browser: browser, tab: tab)
+            Wheel(browser: browser, tab: tab, doors: doors, gap: gap)
         } else {
             // Nowhere to go and nothing to reload: the doors stay in place,
             // greyed, so the row doesn't shift when a tab arrives.
-            HStack(spacing: 4) {
-                Door(icon: "chevron.left") {}
-                Door(icon: "chevron.right") {}
-                Door(icon: "arrow.clockwise") {}
+            HStack(spacing: gap) {
+                ForEach(doors, id: \.self) { door in
+                    Door(icon: door.icon) {}
+                }
             }
             .opacity(0.3)
             .allowsHitTesting(false)
@@ -500,34 +518,42 @@ struct Helm: View {
     private struct Wheel: View {
         let browser: Browser
         @ObservedObject var tab: Tab
+        let doors: [HelmDoor]
+        let gap: CGFloat
 
         var body: some View {
             let back = !tab.isBlank && tab.canGoBack
             let forward = !tab.isBlank && tab.canGoForward
-            HStack(spacing: 4) {
-                Door(icon: "chevron.left", help: "Back   ⌘[") { browser.back() }
-                    .disabled(!back)
-                    .opacity(back ? 1 : 0.3)
-                Door(icon: "chevron.right", help: "Forward   ⌘]") { browser.forward() }
-                    .disabled(!forward)
-                    .opacity(forward ? 1 : 0.3)
-                // Reload, or stop while it is still coming.
-                Door(
-                    icon: tab.loading ? "xmark" : "arrow.clockwise",
-                    help: tab.loading ? "Stop   ⌘." : "Reload   ⌘R"
-                ) {
-                    if tab.loading { tab.stop() } else { browser.reload() }
+            HStack(spacing: gap) {
+                if doors.contains(.back) {
+                    Door(icon: HelmDoor.back.icon, help: "Back   ⌘[") { browser.back() }
+                        .disabled(!back)
+                        .opacity(back ? 1 : 0.3)
                 }
-                .disabled(tab.isBlank)
-                .opacity(tab.isBlank ? 0.3 : 1)
-                // The menu's second item is the reason for it: ⌥⌘R has no
-                // button. Nothing to offer while the door is Stop.
-                .contextMenu {
-                    if !tab.loading && !tab.isBlank {
-                        Button("Reload Page") { browser.reload() }
-                            .shortcut("view.reload")
-                        Button("Reload Page From Origin") { browser.reload(fromOrigin: true) }
-                            .shortcut("view.reloadOrigin")
+                if doors.contains(.forward) {
+                    Door(icon: HelmDoor.forward.icon, help: "Forward   ⌘]") { browser.forward() }
+                        .disabled(!forward)
+                        .opacity(forward ? 1 : 0.3)
+                }
+                // Reload, or stop while it is still coming.
+                if doors.contains(.reload) {
+                    Door(
+                        icon: tab.loading ? "xmark" : HelmDoor.reload.icon,
+                        help: tab.loading ? "Stop   ⌘." : "Reload   ⌘R"
+                    ) {
+                        if tab.loading { tab.stop() } else { browser.reload() }
+                    }
+                    .disabled(tab.isBlank)
+                    .opacity(tab.isBlank ? 0.3 : 1)
+                    // The menu's second item is the reason for it: ⌥⌘R has no
+                    // button. Nothing to offer while the door is Stop.
+                    .contextMenu {
+                        if !tab.loading && !tab.isBlank {
+                            Button("Reload Page") { browser.reload() }
+                                .shortcut("view.reload")
+                            Button("Reload Page From Origin") { browser.reload(fromOrigin: true) }
+                                .shortcut("view.reloadOrigin")
+                        }
                     }
                 }
             }

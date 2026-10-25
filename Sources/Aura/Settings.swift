@@ -331,7 +331,7 @@ struct SettingsPanel: View {
                 Switch(on: $prefs.commandBar)
             }
             Rule()
-            Line("New tab in a floating field", "⌘T raises the address field over the page you're on, as in Arc. Return opens what you typed in a new tab; Escape, ⌘W or a click outside puts it away and leaves the page as it was") {
+            Line("New tab in a floating field", "⌘T raises the address field over the page you're on, as in Arc. Return opens what you typed in a new tab; ⌘T again, Escape, ⌘W or a click outside puts it away and leaves the page as it was") {
                 Switch(on: $prefs.floatingNewTab)
             }
             Rule()
@@ -749,8 +749,6 @@ struct SettingsPanel: View {
 
             Card {
                 Shortcut("⌘L", "Address")
-                Rule()
-                Shortcut("⌘K", "Switch tab")
                 Rule()
                 Shortcut("⌘T  ⌘W  ⇧⌘T", "New, close, reopen tab")
                 Rule()

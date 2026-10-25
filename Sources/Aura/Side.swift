@@ -54,6 +54,10 @@ struct SideBar: View {
     /// them away, and back, forward and reload move up to the edge (idea 184).
     private var lights: CGFloat { browser.fullScreen ? 0 : Metrics.sideLights }
 
+    /// What the band beside the lights holds at this width, so the drag strip
+    /// under it can leave exactly that much alone.
+    private var band: SideBand.Plan { SideBand.plan(column: prefs.sideWidth, lights: lights) }
+
     var body: some View {
         ZStack(alignment: .top) {
             // Not under the card for a new space: it isn't made of views that
@@ -62,29 +66,26 @@ struct SideBar: View {
 
             // The band the lights sit in is this mode's title bar: the window
             // is dragged by it and a double-click fills the screen with it,
-            // everywhere but over the three doors, which take their own
-            // clicks. The lights are the title bar's own and answer first.
+            // everywhere but over the doors the band holds, which take their
+            // own clicks. The lights are the title bar's own and answer first.
             HStack(spacing: 0) {
                 DragStrip()
                     .frame(width: 10 + lights)
                 Color.clear
-                    .frame(width: Metrics.helm)
+                    .frame(width: band.width)
                     .allowsHitTesting(false)
                 DragStrip()
             }
             .frame(height: Metrics.strip)
 
             VStack(alignment: .leading, spacing: 0) {
-                // The traffic lights' corner, with back, forward and reload
-                // sitting right of them — the same three doors as the top
-                // bar, moved beside the lights since there's no far end of a
-                // row to put them at in this mode.
-                HStack(spacing: 0) {
-                    Color.clear.frame(width: lights)
-                    Helm(browser: browser)
-                    Spacer(minLength: 0)
-                }
-                .frame(height: Metrics.strip)
+                // The traffic lights' corner, with the column's own fold and
+                // back, forward and reload right of them — the same doors as
+                // the top bar, moved beside the lights since there's no far
+                // end of a row to put them at in this mode, and as many of
+                // them as the column is wide enough for (see SideBand).
+                SideBand(browser: browser, prefs: prefs, lights: lights)
+                    .frame(height: Metrics.strip)
 
                 // The spaces side by side, as pages: two fingers sideways move
                 // the one on screen and the next one together, the next one

@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 
 /// The window's own bottom: glass, wherever the window paints nothing.
 ///
@@ -56,6 +57,35 @@ final class GlassBacking: NSView {
     /// The grain a window with no theme wears — the neutral glass's whisper.
     private static let lightGrain: CGFloat = 0.05
     private static let darkGrain: CGFloat = 0.07
+
+    /// The glass's own corner: a window cuts its glass with its own corners,
+    /// so the window's ground is square here and clipped by AppKit; a card
+    /// laid over the page has no corner of its own, and is rounded by this.
+    var radius: CGFloat = 0 {
+        didSet {
+            guard radius != oldValue, #available(macOS 26.0, *),
+                  let glass = glass as? NSGlassEffectView else { return }
+            glass.cornerRadius = radius
+        }
+    }
+
+    /// Whether this is the window's own ground or a card laid over the page
+    /// (see `CardGlass`). The ground is seen through the window, so it samples
+    /// the desktop behind it; a card has the page behind it, in the window,
+    /// and samples that instead.
+    var laysOverPage = false {
+        didSet {
+            guard laysOverPage != oldValue else { return }
+            material.blendingMode = laysOverPage ? .withinWindow : .behindWindow
+        }
+    }
+
+    /// How firmly the tint calms the glass. The window's ground is against the
+    /// desktop and wants a firm hand, or the sidebar is a flat plate; a card
+    /// laid over the page is a card, and the page is meant to show through it.
+    var calm: CGFloat = 1 {
+        didSet { guard calm != oldValue else { return }; applyTint() }
+    }
 
     override init(frame: NSRect) {
         if #available(macOS 26.0, *) {
@@ -117,6 +147,7 @@ final class GlassBacking: NSView {
         } else {
             colour = dark ? Self.darkTint : Self.lightTint
         }
+        colour = colour.withAlphaComponent(colour.alphaComponent * calm)
         if #available(macOS 26.0, *), let glass = glass as? NSGlassEffectView {
             glass.tintColor = colour
         } else {
@@ -181,6 +212,30 @@ private final class Grain: NSView {
     override func layout() {
         super.layout()
         needsDisplay = true
+    }
+}
+
+/// A card of the window's own glass, laid over the page: the column out over
+/// it when folded (see Fold). The same recipe the window's ground is made of —
+/// liquid glass on 26 and later, sidebar vibrancy before it, tinted with the
+/// space's colour — at the size of a card, rounded, and calmer, since the page
+/// it stands on is meant to read through it.
+struct CardGlass: NSViewRepresentable {
+    var theme: SpaceTheme?
+    var radius: CGFloat
+
+    func makeNSView(context: Context) -> GlassBacking {
+        let view = GlassBacking(frame: .zero)
+        view.laysOverPage = true
+        view.calm = 0.62
+        view.radius = radius
+        view.setSpaceTheme(theme)
+        return view
+    }
+
+    func updateNSView(_ view: GlassBacking, context: Context) {
+        view.radius = radius
+        view.setSpaceTheme(theme)
     }
 }
 

@@ -128,13 +128,19 @@ enum TabOffersPanel {
 /// The list itself, drawn as ⌘L's is.
 private struct TabOffersList: View {
     @ObservedObject var browser: Browser
+    /// The row under the pointer, which takes the mark off the keys' row.
+    @State private var pointing: Suggestion.ID?
 
     var body: some View {
         VStack(spacing: 0) {
             ForEach(Array(browser.tabOffers.enumerated()), id: \.element.id) { index, offer in
-                Omnibox.Row(offer: offer, picked: browser.tabPicked == index)
-                    .contentShape(Rectangle())
-                    .onTapGesture { browser.takeTabOffer(offer) }
+                Omnibox.Row(
+                    offer: offer,
+                    picked: pointing == nil ? browser.tabPicked == index : pointing == offer.id,
+                    onHover: { over in pointing = over ? offer.id : nil }
+                )
+                .contentShape(Rectangle())
+                .onTapGesture { browser.takeTabOffer(offer) }
             }
         }
         .padding(6)

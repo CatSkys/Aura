@@ -346,13 +346,6 @@ final class Browser: NSObject, ObservableObject {
     /// What was typed in that moment, for the field once it has the keys.
     private var heldKeys: [NSEvent] = []
 
-    /// True while the field is a switcher rather than an address bar. ⌘K asks
-    /// one question — which of the pages I already have open — and answering it
-    /// with somewhere you went last week would be answering a different one.
-    @Published private(set) var summoning = false
-    /// True between the first ⌘K and letting go of ⌘.
-    var cycling = false
-
     var active: Tab? { tabs.first { $0.id == activeID } }
     var fieldShowing: Bool { editing || active?.isBlank ?? true }
 
@@ -362,7 +355,7 @@ final class Browser: NSObject, ObservableObject {
         // the resting list marks a row there; lifting its name into the field
         // would put words there that nobody typed, and put them in the path of
         // the next keystroke.
-        if let picked, offers.indices.contains(picked), !(typed.isEmpty && !summoning) {
+        if let picked, offers.indices.contains(picked), !typed.isEmpty {
             return offers[picked].key
         }
         return typed + (ending ?? "")
@@ -2713,7 +2706,6 @@ final class Browser: NSObject, ObservableObject {
             // Find stays open with what it was looking for, and looks in
             // this page instead (see activeID).
             cancelTabEdit()
-            summoning = false
             suggesting = nil
             looked = nil
             editing = false
@@ -2878,12 +2870,51 @@ final class Browser: NSObject, ObservableObject {
         // Again while it is up: it stays, with what was typed cleared.
         reviewing = false
         cancelTabEdit()
-        summoning = false
         siteChip = nil
         typed = ""
         editing = true
         launching = true
         focusRequest += 1
+    }
+
+    /// ⌘T. The bar it raises, the same key puts away: Arc's command bar is a
+    /// toggle, and a shortcut that opens a thing but can't close it is half a
+    /// gesture. Words typed keep a tab open, as they do for Escape — a draft is
+    /// not nothing — but a field raised over a page left the page as it was,
+    /// so taking it away costs nothing there.
+    ///
+    /// `repeated`: the key held down. A key held is one press still being
+    /// made, not a second one, so it can't flicker the bar open and shut.
+    func newTabKey(repeated: Bool = false) {
+        if repeated {
+            launch()
+            return
+        }
+        if launching {
+            dismiss()
+            return
+        }
+        if active?.isBlank == true, typed.trimmingCharacters(in: .whitespaces).isEmpty, discardBlank() {
+            return
+        }
+        launch()
+    }
+
+    /// The blank page a new tab leaves behind, taken away again: back to the
+    /// page you were on, which is the one touched last. Chosen before closing,
+    /// so `close` doesn't wake a neighbour on the way.
+    ///
+    /// Escape and ⌘T both come here, so the two can't drift apart on what
+    /// counts as a blank page worth keeping.
+    @discardableResult
+    func discardBlank() -> Bool {
+        guard let blank = active, blank.isBlank,
+              let back = tabs.filter({ $0.id != blank.id }).max(by: { $0.touched < $1.touched })
+        else { return false }
+        editing = false
+        select(back)
+        close(blank)
+        return true
     }
 
     func newTab() {
@@ -2899,7 +2930,6 @@ final class Browser: NSObject, ObservableObject {
         // take the place of: which one has new tabs stays yours to say.
         if #available(macOS 15.4, *), let page = Extensions.shared.newTabPage {
             let tab = open(page, foreground: true)
-            summoning = false
             rememberSession()
             Extensions.shared.offerNewTabPage(into: tab)
             return
@@ -2910,7 +2940,6 @@ final class Browser: NSObject, ObservableObject {
             placeBlank(blank)
             if activeID != blank.id { leaving() }
             activeID = blank.id
-            summoning = false
             typed = ""
             blank.draft = ""
             editing = false
@@ -2927,7 +2956,6 @@ final class Browser: NSObject, ObservableObject {
         tabs.insert(tab, at: placeForFront())
         leaving()
         activeID = tab.id
-        summoning = false
         typed = ""
         editing = false
         focusRequest += 1
@@ -2965,11 +2993,10 @@ final class Browser: NSObject, ObservableObject {
         }
         // A peek is over the tab it was opened from; another tab puts it away.
         if peekTab != nil, tab.id != activeID { closePeek() }
-        // Before ⌘K is put away below: its words were for finding a tab, not
-        // a draft for the blank one it was pressed on.
-        if tab.id != activeID, !summoning, let here = active, here.isBlank { here.draft = typed }
+        // Words typed into the field are the blank tab's draft, and come back
+        // with it.
+        if tab.id != activeID, let here = active, here.isBlank { here.draft = typed }
         cancelTabEdit()
-        summoning = false
         suggesting = nil
         // Back on a tab with the caret still in a box, the list may come again.
         looked = nil
@@ -3746,8 +3773,21 @@ final class Browser: NSObject, ObservableObject {
     func switchTabs(backwards: Bool) {
         guard let activeID else { return }
         tabSwitcher.partners = switcherPartners
-        tabSwitcher.step(row: tabs.filter(standsInRow).map(\.id), current: activeSplit?.left ?? activeID,
+        tabSwitcher.step(row: switcherRow.map(\.id), current: activeSplit?.left ?? activeID,
                          backwards: backwards, moons: LittleWindow.stacked)
+    }
+
+    /// The row as ⌃Tab walks it: the pages open in this space, and the one on
+    /// screen even when that one is a pin, since the gesture begins where you
+    /// are.
+    ///
+    /// A pin is not a card to walk past. It is a page you keep rather than one
+    /// you opened, and eight of them made a walk through squares nothing had
+    /// opened before it reached what had (see openPages, which says the same
+    /// thing of the field).
+    var switcherRow: [Tab] {
+        let here = activeSplit?.left ?? activeID
+        return tabs.filter { standsInRow($0) && ($0.pin == nil || $0.id == here) }
     }
 
     /// A pair once, under its first page, pictured with its other one.
@@ -3758,7 +3798,7 @@ final class Browser: NSObject, ObservableObject {
     /// The row as the switcher's grid shows it, for a small window's
     /// switcher to show as its planet (see TabSwitcher.ordered).
     var switcherPlanet: [Tab.ID] {
-        tabSwitcher.ordered(row: tabs.filter(standsInRow).map(\.id), current: activeSplit?.left ?? activeID)
+        tabSwitcher.ordered(row: switcherRow.map(\.id), current: activeSplit?.left ?? activeID)
     }
 
     /// A letter pressed on a card while a switcher is up (see
@@ -4010,7 +4050,6 @@ final class Browser: NSObject, ObservableObject {
             placeBlank(blank)
             if activeID != blank.id { leaving() }
             activeID = blank.id
-            summoning = false
             typed = ""
             blank.draft = ""
             editing = false
@@ -4022,7 +4061,6 @@ final class Browser: NSObject, ObservableObject {
         tabs.insert(tab, at: placeForFront())
         leaving()
         activeID = tab.id
-        summoning = false
         typed = ""
         editing = false
         focusRequest += 1
@@ -4575,51 +4613,14 @@ final class Browser: NSObject, ObservableObject {
 
     // MARK: - guessing
 
-    /// ⌘K again, with ⌘ still down: one step further down the list.
-    func stepSummon() {
-        cycling = true
-        walk(1)
-    }
-
-    /// ⌘ let go of: take whatever the walk landed on.
-    func landSummon() {
-        guard cycling else { return }
-        cycling = false
-        guard picked != nil else { return }
-        submit()
-    }
-
-    /// ⌘K. Only what is open, nothing else.
-    func summon() {
-        reviewing = false
-        cancelTabEdit()
-        launching = false
-        summoning = true
-        typed = ""
-        editing = true
-        // An empty field that was already empty didn't change, so nothing
-        // recomputed the list: the switcher asks for its own again.
-        guess()
-        focusRequest += 1
-    }
-
     /// The list under the field and the ending inside it, worked out again
     /// from what is typed. Not private: a space switch asks for it too.
     func guess() {
         // Only a plain field asks the engine (see askEngine, at the end).
-        if summoning || siteChip != nil || typed.trimmingCharacters(in: .whitespaces).isEmpty {
+        if siteChip != nil || typed.trimmingCharacters(in: .whitespaces).isEmpty {
             suggester.stop()
             engineWords = ("", [])
         }
-        guard !summoning else {
-            offers = openPages(matching: typed)
-            ending = nil
-            // The most recent page is already chosen, so ⌘K then Return is the
-            // whole gesture.
-            picked = offers.isEmpty ? nil : 0
-            return
-        }
-
         // A site in the field: only its search, for what is typed after it.
         if let site = siteChip {
             siteOffer = nil
@@ -4639,12 +4640,14 @@ final class Browser: NSObject, ObservableObject {
             // blank page; this one is already replying.
             offers = resting()
             ending = nil
-            picked = nil
+            // The first row is already the answer, as it is in Arc's bar: ⌘T
+            // and then Return is back to the page you were reading.
+            picked = offers.isEmpty ? nil : 0
             siteOffer = nil
             return
         }
         // "red": Reddit's search, a Tab away.
-        let site = prefs.searchesSites && !summoning ? SiteSearch.match(typed) : nil
+        let site = prefs.searchesSites ? SiteSearch.match(typed) : nil
         if siteOffer != site { siteOffer = site }
 
         (offers, ending) = placeOffers(for: typed)
@@ -4667,10 +4670,10 @@ final class Browser: NSObject, ObservableObject {
     private var engineWords: (asked: String, words: [String]) = ("", [])
 
     /// The question this field may ask the engine, or nil when it may not:
-    /// the switch off, a private tab, ⌘K, a site or a shortcut in charge,
-    /// or words that look like anything but a search.
+    /// the switch off, a private tab, a site or a shortcut in charge, or words
+    /// that look like anything but a search.
     func engineQuestion(for typed: String) -> URL? {
-        guard prefs.engineSuggests, !summoning, siteChip == nil, active?.shy != true,
+        guard prefs.engineSuggests, siteChip == nil, active?.shy != true,
               EngineSuggest.sendable(typed),
               Keyword.match(typed, in: prefs.keywords) == nil
         else { return nil }
@@ -4713,15 +4716,40 @@ final class Browser: NSObject, ObservableObject {
         }
     }
 
-    /// What an address field offers for what is typed in it, and the rest of
-    /// the address it would complete to: ⌘L's field and the one in the tab
-    /// ask the same question (#534).
+    /// What the bar offers for what is typed in it, and the rest of the
+    /// address it would complete to: ⌘L's field and the one in the tab ask the
+    /// same question (#534), and so does Arc's command bar — one list, in the
+    /// order things are worth, rather than a list of addresses and a switcher
+    /// that only knows about tabs (⌘K, `openPages`).
+    ///
+    /// What the app itself can do, the pages already open, the places you have
+    /// been, and last the words you typed. An open page comes before a place
+    /// you only visited: taking it costs nothing.
     func placeOffers(for typed: String) -> (offers: [Suggestion], ending: String?) {
-        // Three places and, if it can't be a place, a search. No open pages:
-        // ⌘K exists for those, and mixing them in here made the list long
-        // enough that reading it cost more than typing the address would have.
-        var list = history.suggestions(for: typed, limit: 3)
-        // Last in the list, and only when what was typed cannot be a place.
+        var list: [Suggestion] = []
+        // First, not last: typing "settings" to reach Settings is the whole
+        // point, and it would otherwise sit under a search for the word.
+        let command = prefs.commandBar ? AddressCommand.matching(typed, in: self) : nil
+        if let command { list.append(.command(command)) }
+
+        // Pages already open, naming them the way their tabs are named. They
+        // used to be left out of this list, ⌘K being the switcher for them;
+        // finding the tab you have open is the thing a command bar is asked
+        // for most, and it should not need a second key to ask it.
+        let open = openPages(matching: typed)
+        list += open
+
+        // Where you have been, and never somewhere already in the list under
+        // another name.
+        var seen = Set(open.map { History.identity(for: $0.url) })
+        for offer in history.suggestions(for: typed, limit: 3) {
+            let key = History.identity(for: offer.url)
+            guard !seen.contains(key) else { continue }
+            seen.insert(key)
+            list.append(offer)
+        }
+
+        // Last, and only when what was typed cannot be a place: a search.
         if !typed.isEmpty, Address.url(from: typed) == nil {
             if let (keyword, rest) = Keyword.match(typed, in: prefs.keywords),
                let asked = Engine.url(for: rest, template: keyword.template) {
@@ -4732,10 +4760,6 @@ final class Browser: NSObject, ObservableObject {
                 )
             }
         }
-        // First, not last: typing "settings" to reach Settings is the whole
-        // point, and it would otherwise sit under a search for the word.
-        let command = prefs.commandBar ? AddressCommand.matching(typed, in: self) : nil
-        if let command { list.insert(.command(command), at: 0) }
         // Neither a page already open nor a command has an address to
         // complete towards. And with a command on top, Return runs it: a
         // grey ending in the field ("history" finishing as history.com)
@@ -4748,9 +4772,16 @@ final class Browser: NSObject, ObservableObject {
     /// What is open, most recently looked at first, filtered by what has been
     /// typed. On an empty field this is the whole point of the summon: it is
     /// the tab strip, except you read it only when you ask for it.
+    ///
+    /// A pinned tab is not one of these. A pin is a page you keep rather than
+    /// one you opened: it stands at the top of the column by itself, ⌘1–⌘9 and
+    /// a press reach it, and it was offered here as a page to switch to even
+    /// when it had never left its square — a space with nothing opened in it
+    /// said eight pages were open, all of them pins.
     private func openPages(matching typed: String) -> [Suggestion] {
         let needle = typed.trimmingCharacters(in: .whitespaces).lowercased()
         return tabs
+            .filter { $0.pin == nil }
             .filter { $0.id != activeID && !$0.isBlank }
             .filter { tab in
                 guard !needle.isEmpty else { return true }
@@ -4799,9 +4830,9 @@ final class Browser: NSObject, ObservableObject {
     /// The field just came up, or down, or a tab changed under it: an empty
     /// field offers the resting list again, so what is open now is in it.
     private func restLooks() {
-        guard !summoning, typed.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        guard typed.trimmingCharacters(in: .whitespaces).isEmpty else { return }
         offers = resting()
-        picked = nil
+        picked = offers.isEmpty ? nil : 0
         ending = nil
         siteOffer = nil
     }
@@ -4811,7 +4842,6 @@ final class Browser: NSObject, ObservableObject {
     /// same question but must not share an answer: a list that appears under a
     /// resting cursor would otherwise rewrite the field before you had moved.
     func take(_ offer: Suggestion) {
-        summoning = false
         if case .command(let command) = offer.kind {
             command.run(on: self)
         } else if let id = offer.tab, let tab = tabs.first(where: { $0.id == id }) {
@@ -4862,9 +4892,15 @@ final class Browser: NSObject, ObservableObject {
     // MARK: - the address field
 
     /// ⌘L. The current address comes up selected, so typing over it replaces it
-    /// and Escape puts it back.
+    /// and Escape puts it back. Pressed again with the field up over a page, it
+    /// puts the field away: the key that raises a thing lowers it, as in Arc.
+    /// A blank page's field is the page itself, so there it only takes the
+    /// caret.
     func edit() {
-        summoning = false
+        if editing, active?.isBlank != true {
+            dismiss()
+            return
+        }
         launching = false
         // Never a name and password written into the address: they would be
         // on screen, and in whatever you copy from here.
@@ -4880,8 +4916,6 @@ final class Browser: NSObject, ObservableObject {
     }
 
     func dismiss() {
-        summoning = false
-        cycling = false
         // The floating new tab was never a tab: nothing is left behind.
         if launching {
             launching = false
@@ -4928,7 +4962,6 @@ final class Browser: NSObject, ObservableObject {
         if let picked, offers.indices.contains(picked),
            let id = offers[picked].tab,
            let tab = tabs.first(where: { $0.id == id }) {
-            summoning = false
             // From the empty page of a pair: that tab comes into the pair.
             if let blank = active, blank.isBlank, split(for: blank) != nil, !aside,
                tab.shy == blank.shy, split(for: tab)?.contains(blank.id) != true {
@@ -4939,18 +4972,6 @@ final class Browser: NSObject, ObservableObject {
             editing = false
             typed = ""
             return
-        }
-
-        // The switcher proposes nothing but pages you have open. It still has
-        // to accept an address typed into it, though — the two fields look
-        // alike, and a Return that quietly does nothing is the worst answer
-        // either of them could give.
-        if summoning {
-            summoning = false
-            guard !typed.trimmingCharacters(in: .whitespaces).isEmpty else {
-                editing = false
-                return
-            }
         }
 
         // The row the arrow keys chose, or else the top one: a command is

@@ -147,7 +147,7 @@ struct Command: Identifiable {
         Command("app.passwords", "Passwords…", .app, KeyCombo("l", option: true)) { $0.managing = true },
 
         Command("file.newWindow", "New Window", .file, KeyCombo("n")) { _ in Browsers.newWindow() },
-        Command("file.newTab", "New Tab", .file, KeyCombo("t")) { $0.launch() },
+        Command("file.newTab", "New Tab", .file, KeyCombo("t")) { $0.newTabKey() },
         Command("file.newPrivateTab", "New Private Tab", .file, KeyCombo("n", shift: true)) { $0.newShyTab() },
         Command("file.reopen", "Reopen Closed Tab", .file, KeyCombo("t", shift: true)) { $0.reopen() },
         Command("file.openAddress", "Open Address…", .file, KeyCombo("l")) { $0.edit() },
@@ -185,9 +185,6 @@ struct Command: Identifiable {
         Command("tabs.forward", "Forward", .tabs, KeyCombo("]")) { $0.forward() },
         Command("tabs.next", "Next Tab", .tabs, KeyCombo("]", shift: true)) { $0.step(1) },
         Command("tabs.previous", "Previous Tab", .tabs, KeyCombo("[", shift: true)) { $0.step(-1) },
-        Command("tabs.search", "Search Tabs…", .tabs, KeyCombo("k")) { browser in
-            if browser.editing, !browser.offers.isEmpty { browser.stepSummon() } else { browser.summon() }
-        },
         // ⌥⌘N, Chrome's on the Mac: ⌃⌘S is the Mac's own Show Sidebar, and
         // sits beside ⌘S, which folds the tabs away.
         Command("tabs.split", "Split Current Page", .tabs, KeyCombo("n", option: true)) { browser in

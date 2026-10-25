@@ -1598,7 +1598,7 @@ final class Bench {
                 timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber, context: nil,
                 characters: chars, charactersIgnoringModifiers: chars, isARepeat: false, keyCode: UInt16(code)
             ) else { answer(["error": "no event"]); return }
-            let before = (finding: browser.finding, summoning: browser.editing, folded: browser.folded)
+            let before = (finding: browser.finding, fieldUp: browser.editing, folded: browser.folded)
             var firstPass = "search"
             if ContentView.keyHooks[ObjectIdentifier(browser)]?(event) != nil {
                 firstPass = "page"
@@ -1608,7 +1608,7 @@ final class Bench {
                 web.evaluateJavaScript("JSON.stringify(window.__keys || [])") { seen, _ in
                     MainActor.assumeIsolated {
                         answer(["firstPass": firstPass, "pageSaw": seen as? String ?? "",
-                                "finding": [before.finding, browser.finding], "fieldUp": [before.summoning, browser.editing],
+                                "finding": [before.finding, browser.finding], "fieldUp": [before.fieldUp, browser.editing],
                                 "folded": [before.folded, browser.folded]])
                     }
                 }

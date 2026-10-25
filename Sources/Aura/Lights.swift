@@ -17,19 +17,30 @@ final class Lights: NSObject {
     /// Where the close button's centre goes, from the window's top-left: where
     /// a unified toolbar put it, which Metrics.lights and sideLights are
     /// measured from.
-    static let centre = CGPoint(x: 26, y: 26)
+    nonisolated static let centre = CGPoint(x: 26, y: 26)
 
     private static var kept: [ObjectIdentifier: Lights] = [:]
 
     /// Starts looking after a window's lights, once. `moved` hears each time
     /// they have been put in place. Neither may hold the window: it is
     /// handed to `centreX`, so that a window closed for good is freed.
-    static func keep(_ window: NSWindow, centreX: @escaping (NSWindow) -> CGFloat, moved: @escaping () -> Void) {
+    ///
+    /// `centreX` and `centreY` are where the close button's centre goes, from
+    /// the window's top-left: the column's side, where the lights ride with
+    /// the column (and with the card it comes out over the page as), and the
+    /// strip's height, so a card standing a gap in from the window's edges
+    /// takes them with it.
+    static func keep(
+        _ window: NSWindow,
+        centreX: @escaping (NSWindow) -> CGFloat,
+        centreY: @escaping (NSWindow) -> CGFloat = { _ in Lights.centre.y },
+        moved: @escaping () -> Void
+    ) {
         // A freed window's entry goes, and with it the one a new window at
         // the same address would otherwise be taken for.
         kept = kept.filter { $0.value.window != nil }
         guard kept[ObjectIdentifier(window)] == nil else { return }
-        kept[ObjectIdentifier(window)] = Lights(window, centreX: centreX, moved: moved)
+        kept[ObjectIdentifier(window)] = Lights(window, centreX: centreX, centreY: centreY, moved: moved)
     }
 
     static func refresh(_ window: NSWindow?) {
@@ -47,6 +58,7 @@ final class Lights: NSObject {
     private weak var window: NSWindow?
     private let moved: () -> Void
     private let centreX: (NSWindow) -> CGFloat
+    private let centreY: (NSWindow) -> CGFloat
     private var placing = false
     /// AppKit's own spacing between the three, read once from its first
     /// layout and kept. Read again on every pass, it was caught while AppKit
@@ -56,9 +68,15 @@ final class Lights: NSObject {
     /// from the one before. Reproduced with ./bench resize, 23 Sep 2026.
     private let spacing: CGFloat
 
-    private init(_ window: NSWindow, centreX: @escaping (NSWindow) -> CGFloat, moved: @escaping () -> Void) {
+    private init(
+        _ window: NSWindow,
+        centreX: @escaping (NSWindow) -> CGFloat,
+        centreY: @escaping (NSWindow) -> CGFloat,
+        moved: @escaping () -> Void
+    ) {
         self.window = window
         self.centreX = centreX
+        self.centreY = centreY
         self.moved = moved
         let row = [NSWindow.ButtonType.closeButton, .miniaturizeButton].compactMap { window.standardWindowButton($0) }
         let measured = row.count == 2 ? row[1].frame.minX - row[0].frame.minX : 0
@@ -98,7 +116,7 @@ final class Lights: NSObject {
             let size = button.frame.size
             let origin = NSPoint(
                 x: centreX(window) - size.width / 2 + CGFloat(index) * spacing,
-                y: bar.bounds.height - Lights.centre.y - size.height / 2
+                y: bar.bounds.height - centreY(window) - size.height / 2
             )
             if button.frame.origin != origin { return true }
         }
@@ -127,7 +145,7 @@ final class Lights: NSObject {
             let size = button.frame.size
             let origin = NSPoint(
                 x: centreX(window) - size.width / 2 + CGFloat(index) * spacing,
-                y: bar.bounds.height - Lights.centre.y - size.height / 2
+                y: bar.bounds.height - centreY(window) - size.height / 2
             )
             if button.frame.origin != origin { button.setFrameOrigin(origin) }
         }

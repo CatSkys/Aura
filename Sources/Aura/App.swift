@@ -193,8 +193,6 @@ struct SearchApp: App {
                     .shortcut("tabs.next")
                 Button("Previous Tab") { browser.step(-1) }
                     .shortcut("tabs.previous")
-                Button("Search Tabs…") { browser.summon() }
-                    .shortcut("tabs.search")
                 Divider()
                 if browser.prefs.splitView {
                     Button("Split Current Page") { browser.startSplit() }
@@ -673,7 +671,7 @@ struct ContentView: View {
         .animation(Motion.settle, value: browser.offering)
     }
 
-    /// The address field: raised over a page by ⌘L or ⌘K, and standing on its
+    /// The address field: raised over a page by ⌘L, ⌘T or ⌘K, and standing on its
     /// own whenever a tab has nowhere to be yet.
     @ViewBuilder
     private var field: some View {
@@ -1174,12 +1172,15 @@ struct ContentView: View {
         // The traffic lights set in from the corner and centred in the strip's
         // height, in both modes, without a toolbar's rounder corners — see
         // Lights.swift. The column's first row is the strip's height too, so
-        // its three doors sit on the lights' line.
+        // its three doors sit on the lights' line. Over the page the column is
+        // a card standing a gap in from the window's edges, and the lights go
+        // in with it (see Fold.lightsInset).
         Lights.keep(window, centreX: { window in
-            browser.prefs.sidebar && browser.prefs.sidePosition == .right
-                ? window.frame.width - browser.prefs.sideWidth + Lights.centre.x
-                : Lights.centre.x
-        }) { measureLights() }
+            let card = Fold.lightsInset(browser)
+            return browser.prefs.sidebar && browser.prefs.sidePosition == .right
+                ? window.frame.width - browser.prefs.sideWidth + Lights.centre.x - card
+                : Lights.centre.x + card
+        }, centreY: { _ in Lights.centre.y + Fold.lightsInset(browser) }) { measureLights() }
         DispatchQueue.main.async { measureLights() }
 
         // The traffic lights are drawn — measured, they paint themselves — but
@@ -1228,8 +1229,6 @@ struct ContentView: View {
                 if browser.tabSwitcher.active, !event.modifierFlags.contains(.control) {
                     browser.commitTabSwitch()
                 }
-                // ⌘ let go of ends a ⌘K walk, wherever it stopped.
-                if !event.modifierFlags.contains(.command) { browser.landSummon() }
                 return event
             }
             if browser.holdKey(event) { return nil }
@@ -1273,7 +1272,8 @@ struct ContentView: View {
     ///
     /// ⌘K is always Aura's, on every page: the way to any open page is
     /// the one key that must never be taken (Drice; #238). Slack, X, GitHub
-    /// and ChatGPT use it themselves, and given it first they kept it.
+    /// and ChatGPT use it themselves, and given it first they kept it. It is
+    /// ⌘T's other half — the same bar — so both go the same way.
     ///
     /// ⌘← and ⌘→ are Aura's too while nothing is being typed: WebKit takes
     /// them to scroll the page sideways and never hands them back, so
@@ -1318,7 +1318,7 @@ struct ContentView: View {
         return !browser.tuning && !browser.recalling && !browser.hoarding &&
             !browser.bookmarking && !browser.welcoming && !browser.managing &&
             !browser.reviewing && !browser.bookmarksOpen &&
-            !browser.veiling && !browser.summoning && !browser.makingSpace &&
+            !browser.veiling && !browser.makingSpace &&
             browser.peekTab == nil && browser.editingTab == nil &&
             browser.asking == nil && browser.offering == nil && browser.suggesting == nil
     }
@@ -1415,22 +1415,19 @@ struct ContentView: View {
                 browser.closeFind()
                 return true
             }
-            // One step at a time: the list first, then the field.
-            if browser.picked != nil {
+            // One step at a time: the list first, then the field. Only a list
+            // that was walked, though — the row an empty field starts on is
+            // where ⌘T and Return go, not a step of its own.
+            if browser.picked != nil, !browser.typed.isEmpty {
                 browser.picked = nil
                 return true
             }
             // A new tab never sent anywhere is itself what is open: Escape
             // takes it away, back to the tab you were on, which is the one
-            // touched last. Chosen before closing, so close() doesn't wake a
-            // neighbour on the way. Anything typed keeps it; so does being
-            // the last tab, where closing it would close the window.
-            if let blank = browser.active, blank.isBlank, browser.typed.isEmpty,
-               let back = browser.tabs.filter({ $0.id != blank.id }).max(by: { $0.touched < $1.touched }) {
-                browser.select(back)
-                browser.close(blank)
-                return true
-            }
+            // touched last. Anything typed keeps it, and so does being the
+            // last tab, where closing it would close the window; both are
+            // discardBlank's to decide (see Browser).
+            if browser.typed.isEmpty, browser.discardBlank() { return true }
             guard browser.editing, browser.active?.isBlank == false else { return false }
             browser.dismiss()
             return true
@@ -1576,7 +1573,9 @@ struct ContentView: View {
 
         switch key {
         case "t" where !shifted:
-            browser.launch()
+            // Opening a tab and putting the bar away again are one key: see
+            // Browser.newTabKey.
+            browser.newTabKey(repeated: event.isARepeat)
         case "t" where shifted:
             browser.reopen()
         case "c" where shifted:
@@ -1620,13 +1619,9 @@ struct ContentView: View {
         case "p" where shifted:
             browser.toggleFloat()
         case "k" where !shifted:
-            // Held down, ⌘K walks the list a step at a time; letting go of ⌘
-            // takes wherever it stopped.
-            if browser.editing, !browser.offers.isEmpty {
-                browser.stepSummon()
-            } else {
-                browser.summon()
-            }
+            // ⌘K and ⌘T are one key: the same bar, raised over the page, put
+            // away again by the same press, and the same Return.
+            browser.newTabKey()
         case "s" where shifted:
             browser.toggleSidebar()
         case "s" where !shifted:
