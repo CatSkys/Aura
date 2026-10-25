@@ -810,6 +810,8 @@ final class Bench {
             // The column folded away, out for a look, and the lights with it (see Fold.swift).
             out["peek"] = browser.peekTab?.address?.absoluteString ?? ""
             out["peekFrom"] = browser.peekFrom?.uuidString ?? ""
+            // The peek's page by name, for a swipe aimed at it (see find).
+            out["peekID"] = browser.peekTab.map(Bench.short) ?? ""
             // The size the peek's page is drawn at (see Tab.applyRememberedZoom).
             out["peekZoom"] = Double(browser.peekTab?.built?.pageZoom ?? 0)
             out["fetching"] = ["showing": browser.fetches.showing, "fraction": browser.fetches.fraction ?? -1, "done": browser.fetches.done]
@@ -3968,7 +3970,10 @@ final class Bench {
     /// `window.open` carries no flask and would be out of reach otherwise.
     private func find(_ request: [String: Any], in browser: Browser) -> Tab? {
         guard let ref = (request["id"] as? String)?.lowercased(), !ref.isEmpty else { return nil }
-        return browser.tabs.first { (Store.testing || $0.bench) && $0.id.uuidString.lowercased().hasPrefix(ref) }
+        // The peek's page is a tab of its own, only not in the row (see
+        // Peek.swift), so a swipe can be asked for on it by name.
+        return (browser.tabs + [browser.peekTab].compactMap { $0 })
+            .first { (Store.testing || $0.bench) && $0.id.uuidString.lowercased().hasPrefix(ref) }
     }
 
     private func missing(_ request: [String: Any]) -> [String: Any] {
