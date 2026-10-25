@@ -63,6 +63,12 @@ LISTS = (
      "https://ublockorigin.github.io/uAssets/filters/privacy.min.txt", "GPL-3.0"),
     ("uBlock Lite extras",
      "https://ublockorigin.github.io/uAssets/filters/ubol-filters.txt", "GPL-3.0"),
+    # A site's own promotions are hidden by its own list: the Chinese sites
+    # Aura is used on have theirs in the Chinese lists, not in EasyList.
+    ("AdGuard Chinese",
+     "https://filters.adtidy.org/extension/ublock/filters/224.txt", "GPL-3.0"),
+    ("EasyList China",
+     "https://easylist-downloads.adblockplus.org/easylistchina.txt", "CC BY-SA 3.0"),
 )
 
 # What a rule blocks when it does not say. `document` is left out on purpose:

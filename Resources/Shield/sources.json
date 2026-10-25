@@ -6,13 +6,13 @@
       "name": "EasyList",
       "url": "https://easylist.to/easylist/easylist.txt",
       "licence": "CC BY-SA 3.0",
-      "lines": 85986
+      "lines": 86126
     },
     {
       "name": "EasyPrivacy",
       "url": "https://easylist.to/easylist/easyprivacy.txt",
       "licence": "CC BY-SA 3.0",
-      "lines": 56820
+      "lines": 57179
     },
     {
       "name": "uBlock filters",
@@ -43,32 +43,44 @@
       "url": "https://ublockorigin.github.io/uAssets/filters/ubol-filters.txt",
       "licence": "GPL-3.0",
       "lines": 337
+    },
+    {
+      "name": "AdGuard Chinese",
+      "url": "https://filters.adtidy.org/extension/ublock/filters/224.txt",
+      "licence": "GPL-3.0",
+      "lines": 21526
+    },
+    {
+      "name": "EasyList China",
+      "url": "https://easylist-downloads.adblockplus.org/easylistchina.txt",
+      "licence": "CC BY-SA 3.0",
+      "lines": 17808
     }
   ],
   "files": {
     "network": {
-      "rules": 118959,
-      "size": 24895835,
-      "bytes": 1196379,
-      "hash": "1644d51e7860eb67990a5b6846ba41032bc1824f3ad0a2ac2600b5fd45eb7981"
+      "rules": 131012,
+      "size": 27361408,
+      "bytes": 1331931,
+      "hash": "06dfc7cf4526a1e2503d22eef79380470235a97bf467760155142d46e0bd87dc"
     },
     "extra": {
-      "rules": 818,
-      "size": 149068,
-      "bytes": 10769,
-      "hash": "625e64ee51e136a02f9511e314f73418bcadb2620fdb45bb1aa1c04191039f8d"
+      "rules": 864,
+      "size": 159659,
+      "bytes": 12861,
+      "hash": "a40111f2bfa1d54cb1725b35a21bf17937e8f741ba2e32245397a8155f289f80"
     },
     "cosmetic": {
-      "rules": 14877,
-      "size": 2536982,
-      "bytes": 383733,
-      "hash": "c3fbcfe92ed3ba47c38a8f2474d2a6e60eea15d700903a1724b42976450b6d65"
+      "rules": 21453,
+      "size": 3467049,
+      "bytes": 497803,
+      "hash": "2043d93ea2ac26c74d7defb6cce1d345d6a67199bc083213579bdebe5feecb8e"
     },
     "scriptlets": {
-      "rules": 9047,
-      "size": 1173742,
-      "bytes": 257977,
-      "hash": "a15347ae19ce400b9b118d62bc897c6e0ce41db4e0cb62a2e574b72f57772378"
+      "rules": 9254,
+      "size": 1192294,
+      "bytes": 261907,
+      "hash": "20743ddec770287b77c6a67ba22561c1425ad32e1f7085dce5bf5bf5a93a44fc"
     }
   }
 }
