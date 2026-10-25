@@ -24,6 +24,7 @@ in [ROADMAP.md](ROADMAP.md).
 ### Fixed
 
 - Settings › Appearance › Tabs › Bookmarks has its switch back. The row moved out of General in the rework and kept its title, its (i) and its place in the card, but its switch stayed behind on the page it came from, so the row drew nothing to press: with bookmarks turned off there was no way to turn them back on, from Settings or anywhere else. It is the one row of the eighty-two whose control went missing this way.
+- Settings › General › Default browser knows the answer again. macOS names the default browser by bundle identifier and hands back the copy it holds, so a build of Aura running from its folder — with the copy in Applications being the Mac's default — was the same app at another path, and the path-for-path comparison read it as not the default: the row kept offering Make default, and so did Welcome, with every link already coming here. The two are compared by identifier now, so one app gets one answer.
 - Set Up Like Arc says where it already is. With the five settings on, the row's button became a greyed "Set Up" that read as broken and did nothing when pressed; it says "Already set up" now, still in the quiet grey, and Undo is where it was for the session that turned them on.
 
 ## 0.1.0 — 25 October 2026
