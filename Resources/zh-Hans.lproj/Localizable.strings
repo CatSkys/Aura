@@ -44,6 +44,8 @@
 "Animations and scrolling in pages at up to 120 frames a second on a screen that can, instead of 60 as in Safari. Uses more battery, so On power keeps it to when the Mac is plugged in" = "在支持的屏幕上，网页动画与滚动最高每秒 120 帧，而非 Safari 的 60 帧。更耗电，选择「接通电源时」则仅在插电时启用";
 "Hold a swipe to pick from history" = "轻扫并按住，从历史记录中挑选";
 "Swipe back or forward and keep your fingers down: the pages that way appear, and moving up or down picks one to go to" = "向前或向后轻扫并保持手指不放：该方向的历史页面会出现，上下移动即可选择要前往的页面";
+"Close a tab with a swipe back" = "向后轻扫关闭标签";
+"Back from the first page of a tab closes it, as ⌘W does, and the tab beside it comes forward; the disc shows a cross while that is what letting go would do. A pin keeps its page, and a small window still closes as it always has" = "在标签的第一页继续向后轻扫会关闭这个标签，与 ⌘W 相同，旁边的标签随即来到前面；此时圆盘显示的是叉号，表示松手就会关闭。固定标签保留自己的页面，小窗口仍与以往一样关闭";
 "Flick the floating video to a corner" = "把浮动视频甩到角落";
 "Two fingers on it send it to the corner or edge they point at, instead of pushing it along; a strong swipe at the side of the screen it is against tucks it in there, a sliver left to bring it back by. Dragging still puts it anywhere" = "在上面用两根手指轻扫，会把它甩向所指的角落或边缘，而不是推着走；在它贴着的那一侧用力轻扫会把它收进去，只留一条细边，便于再拉出来。拖动仍然可以把它放在任意位置";
 "Videos wait for a click" = "视频需点击才播放";

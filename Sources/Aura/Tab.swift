@@ -436,10 +436,25 @@ final class Tab: ObservableObject, Identifiable {
     @Published var pull: Pull?
 
     /// What going back from the first page does, for a tab where it does
-    /// anything (see PageView.leave).
+    /// anything: a small window's page, which takes its window with it (see
+    /// PageView.leave). A tab in a window's row goes by `onSwipeClose`.
     var leave: (() -> Void)? {
         didSet { built?.leave = leave }
     }
+
+    /// Closing this tab the way ⌘W does it — the neighbour on the right comes
+    /// forward — for the swipe back that has nothing left to go back to.
+    /// Pointed at Browser.close by Browser.prepare; nil on a tab no window has
+    /// taken yet.
+    var onSwipeClose: (() -> Void)?
+
+    /// Whether a swipe back at this tab's first page closes it: Settings ›
+    /// Tabs › Close a tab with a swipe back — never on a pin, whose first page
+    /// is the page it was pinned at, where a pin spends its life, so a swipe
+    /// there would put it down all day long, and never on a blank tab, which
+    /// has nothing behind it to leave and, as the only tab in the window, would
+    /// take the window with it.
+    var closesOnSwipeBack: Bool { Swipe.closesTab && pin == nil && !isBlank && onSwipeClose != nil }
 
     /// What a site opens at until you zoom it yourself: Settings › General ›
     /// Page zoom. Read from the file, not from the one object the window holds.
@@ -718,6 +733,7 @@ final class Tab: ObservableObject, Identifiable {
         // PageView, and it moves nothing but a disc.
         web.allowsBackForwardNavigationGestures = false
         Swipe.calm(web)
+        web.owner = self
         web.onPull = { [weak self] pull in self?.pull = pull }
         web.leave = leave
         web.onTouch = { [weak self] in self?.uncover() }
@@ -1915,12 +1931,17 @@ final class PageView: WKWebView {
 
     /// Told where a sideways swipe has got to, and nil when there is none.
     var onPull: ((Pull?) -> Void)?
+    /// The tab this page is for, asked at the moment of the gesture rather
+    /// than told ahead of it: whether a swipe back may close it turns on the
+    /// switch and on the tab being a pin, and both can change while the page
+    /// is up (see Tab.closesOnSwipeBack).
+    weak var owner: Tab?
     /// What a swipe back means with nothing to go back to, where it means
     /// anything: a small window's first page was, a step back, no window at
-    /// all (see Little.swift). Nil everywhere else, where back there does
-    /// nothing. Only the swipe: it shows the disc and can be drawn back
-    /// before letting go, and a mouse's back button can't, so a stray press
-    /// would lose the page with no way to reopen it.
+    /// all (see Little.swift). Nil on a tab in a window's row, where the swipe
+    /// closes the tab instead (see `owner`). Only the swipe: it shows the disc
+    /// and can be drawn back before letting go, and a mouse's back button
+    /// can't, so a stray press would lose the page with no way to reopen it.
     var leave: (() -> Void)?
     /// Told the moment the page is reached for — a click, a scroll — so the
     /// picture of a tab waking up never stands between you and the page.
@@ -2225,7 +2246,7 @@ final class PageView: WKWebView {
                 back = sideways > 0
                 // Nowhere to go that way: nothing to show, and nothing more
                 // to read from this gesture.
-                if back ? !canGoBack && leave == nil : !canGoForward {
+                if back ? !canGoBack && !canLeave : !canGoForward {
                     spent = true
                     return
                 }
@@ -2260,13 +2281,20 @@ final class PageView: WKWebView {
         tell()
     }
 
-    /// Back from the first page, where that means leaving.
-    private var leaves: Bool { back && !canGoBack && leave != nil }
+    /// Going back from the first page does something here: a small window
+    /// closes, or the tab does.
+    private var canLeave: Bool { leave != nil || owner?.closesOnSwipeBack == true }
 
-    /// Not from inside the event: leaving closes the window this view is in,
-    /// and the page with it.
+    /// Back from the first page, where that means leaving.
+    private var leaves: Bool { back && !canGoBack && canLeave }
+
+    /// Not from inside the event: leaving closes the window this view is in —
+    /// or the tab it is the page of, as ⌘W would — and the view with it.
     private func leaveSoon() {
-        DispatchQueue.main.async { [weak self] in self?.leave?() }
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            if let leave { leave() } else { owner?.onSwipeClose?() }
+        }
     }
 
     /// Only the distance in the direction it set off in. Past the origin the

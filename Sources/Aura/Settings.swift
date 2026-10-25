@@ -351,6 +351,10 @@ struct SettingsPanel: View {
                 Switch(on: $prefs.holdsHistory)
             }
             Rule()
+            Line("Close a tab with a swipe back", "Back from the first page of a tab closes it, as ⌘W does, and the tab beside it comes forward; the disc shows a cross while that is what letting go would do. A pin keeps its page, and a small window still closes as it always has") {
+                Switch(on: $prefs.swipeClosesTab)
+            }
+            Rule()
             Line("Flick the floating video to a corner", "Two fingers on it send it to the corner or edge they point at, instead of pushing it along; a strong swipe at the side of the screen it is against tucks it in there, a sliver left to bring it back by. Dragging still puts it anywhere") {
                 Switch(on: $prefs.floatFlicks)
             }
