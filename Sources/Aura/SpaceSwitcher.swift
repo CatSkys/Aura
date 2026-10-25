@@ -154,24 +154,23 @@ struct SpaceSwitcher: View {
         VStack(alignment: .leading, spacing: 0) {
             SpaceCardRow(title: here.name, symbol: "chevron.left", back: true) { page = .settings }
             divider
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(30), spacing: 4), count: 7), spacing: 4) {
-                ForEach(Array(Spaces.icons.enumerated()), id: \.element) { index, symbol in
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(28), spacing: 4), count: 6), spacing: 4) {
+                ForEach(Array(zip(Spaces.icons, Spaces.iconNames)), id: \.0) { symbol, name in
                     Button { browser.setSpaceIcon(here.id, to: symbol) } label: {
-                        Image(systemName: symbol)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(here.symbol == symbol ? Palette.ink : Palette.muted)
-                            .frame(width: 30, height: 28)
-                            .background(RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .fill(here.symbol == symbol ? Palette.faint : .clear))
-                            .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                        SpaceIcon(symbol: symbol, size: 13, shade: here.symbol == symbol ? Palette.ink : Palette.muted)
+                            .frame(width: 28, height: 28)
+                            .background(RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .fill(here.symbol == symbol ? Palette.wash : .clear))
+                            .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
                     }
                     .buttonStyle(.plain)
-                    .help(Spaces.iconNames[index].localized)
-                    .accessibilityLabel(Spaces.iconNames[index].localized)
+                    .help(name.localized)
+                    .accessibilityLabel(name.localized)
                 }
             }
-            .padding(.horizontal, 6)
-            .padding(.top, 4)
+            .padding(.horizontal, 8)
+            .padding(.top, 6)
+            .padding(.bottom, 2)
         }
     }
 
@@ -253,9 +252,7 @@ private struct SpaceCardRow: View {
     var body: some View {
         Button(action: run) {
             HStack(spacing: 9) {
-                Image(systemName: symbol)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(back ? Palette.muted : Palette.ink)
+                SpaceIcon(symbol: symbol, size: 13, shade: back ? Palette.muted : Palette.ink)
                     .frame(width: 18)
                 Text(title)
                     .font(.system(size: 13, weight: checked ? .semibold : .regular))

@@ -154,7 +154,11 @@ struct GroupHeading: View {
                         Button {
                             browser.move(group: group.id, toSpace: space.id)
                         } label: {
-                            Label(space.name, systemImage: space.symbol)
+                            Label {
+                                Text(space.name)
+                            } icon: {
+                                SpaceIcon(symbol: space.symbol, size: 13)
+                            }
                         }
                     }
                 }
