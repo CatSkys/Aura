@@ -65,6 +65,7 @@ gitleaks git --pre-commit --staged        # 提交前扫密钥（.gitleaks.toml�
 git worktree add ../Aura-<slug> -b feat/<slug>   # 开一棵任务树，改动全在树里做
 git worktree remove ../Aura-<slug>               # 收尾清场，再 git branch -d feat/<slug>
 ./hooks.sh [on|off]                              # 机械卡点：主仓检出上拒收直接提交（不带参数＝看状态）
+./deliver.sh <slug>                              # 交付：合并 → 构建 → 删树删分支，串行且自检
 ```
 
 ## 并行任务：一棵树一个世界
@@ -75,11 +76,23 @@ git worktree remove ../Aura-<slug>               # 收尾清场，再 git branch
 - **`../aura-pages` 不是任务树**：那是 `gh-pages` 的检出，`publish.sh` 认这个路径；别拿它当工作区，也别删。
 - **新树的 `.build/` 是冷的**：第一次 `swift build` 从头编译，属正常；不为省时间在两棵树间共享构建目录（一个任务一棵树的意义就在于两棵互不干扰）。
 - **提交前 `git status` 复核**，只 `git add` 本轮文件——工作区长期有 WIP，别把别人的改动卷进你的提交。
-- **主仓检出不留 WIP**：活进树里，主仓只放合并结果。索引里只要有 staged 的改动，`git merge` 就一律拒收——**不管合进来的是不是同一批文件**（`feat/facade` 与这轮规范修正都卡在这儿）。临时收起用 `git stash push -u -m "<任务名>：..."`，办完立刻 pop 回来，别留 `stash@{0}`。
+- **主仓检出不承接任何活**：活全部在树里，主仓只收合并——并行时刻"合并会不会撞上别人的 WIP"只有一个正解：主仓本来就没有 WIP。发现主仓里有改动，由那份活的会话挪进树，**不许替别人 stash**（2026-10-25 教训：为了合 `feat/facade` 把 15 个文件的活收起来四分钟，那次构建的产物因此不含那份活）。主仓的索引里有 staged 改动时 `git merge` 一律拒收，**不管合的是不是同一批文件**。
+
+## 并行交付：一次只合一个
+
+主仓是单写者：谁在合、合的是哪棵树、构建出的 app 属于哪份代码，一条链上不能有两份。
+
+- **合并在锁上排队**：`./deliver.sh <slug>` 先抢 `.git/deliver.lock`（共享 git 目录，所有树同一把）。两棵树同时交付，第二个停下并指名谁在跑、从几点开始——不是两边一起写主仓的 index，然后一边死在 `index.lock` 上。
+- **主仓不干净就不合**，脚本列出行数让你看清是谁的活；那份活该进树，不该被绕过去（见「并行任务」最后一条）。
+- **冲突在树里解决**：`git -C ../Aura-<slug> merge main`，在树里解冲突、构建、测试，再交付。`deliver.sh` 用 `git merge-tree` 预演，会冲突就直接拒，主仓永远不出现要人工解的合并。
+- **构建失败就把合并撤回**（`reset --hard ORIG_HEAD`），树与分支留着；清场失败（树里又长出新东西）一样停下，绝不 `--force` 盖掉别人的活。
+- **一个检出同时只跑一个 `./build.sh`**：SwiftPM 会让后来者等锁，但 `build/Aura.app` 与签名会互相盖。两棵树各有自己的 `.build`，各跑各的没问题。
+- **产物只代表主仓 HEAD**：主仓里一旦有未提交的活，`build/Aura.app` 就不再对应任何人的交付，别拿它验收别人的改动。
+- **锁只拦交付，不拦手**：锁在的时候主仓是施工区，谁都不许在里面做手工 git 操作；确认没有交付在跑才 `rm -rf .git/deliver.lock`，永远别去删 `index.lock`。
 
 ## 完成的定义：测试与交付
 
-- **交付＝提交 → 合并 → 构建 → 清场，四步都做完**：树里把改动提交（一句讲因果的提交信息）→ 回主仓 `git merge --no-ff feat/<slug>`（一个任务一个合并提交）→ 主仓 `./build.sh` → `git worktree remove` + `git branch -d`。收尾自检：`git worktree list` 只剩主仓与 `aura-pages`，`git branch --no-merged main` 没有任务分支，`git stash list` 空，主仓 `git status` 里只剩别人还在进行的活。停在任何一步，这一轮都算没交付。
+- **交付＝提交 → `./deliver.sh <slug>`**：树里把改动提交（一句讲因果的提交信息），然后一条命令收尾——它串行（锁）、查干净、预演冲突、`merge --no-ff`、`./build.sh`、删树删分支，最后自己把自检打印出来。它拒收时的每一句话都指明下一步该做什么，按它说的做完再跑一次。
 - `swift build` 零新增警告；纯逻辑改动（地址、历史、扩展 shim 一类）跑 `swift test` 或对应的 `Tests/*Regression/run.sh`。测试红且与本次改动相关，就带着输出停下报告，不在同一处反复重跑。
 - **自证用测试世界，验收归用户**：对不对、好不好看由人在真机上看。agent 交付到「`./build.sh` 过了、`build/Aura.app` 是新的」为止——不自行截图当验收、不擅自替换 `/Applications/Aura.app`、不擅自 `release dmg`/`ship`/`publish.sh`/`tap.sh`/动 `VERSION`。
 - **世界由启动方式决定**（`Store.swift`）：`AURA_PROBE` 有值、或可执行文件在 `/.build/` 下的，一律是测试世界；`build/Aura.app` 不带 `AURA_PROBE` 就是**真身**，读写用户在用的那份数据。
@@ -101,7 +114,7 @@ git worktree remove ../Aura-<slug>               # 收尾清场，再 git branch
 8. **"没生效"先读代码与产物**：`git status` → 读改动 → 看 `build/Aura.app` 里实际是什么；不拿"没重启 / 旧实例"打发用户。
 9. **不确定就问**：字段名、契约、行为含义有疑问先查事实源（源码注释、CHANGELOG、WebKit 头文件），查不到就问，不写猜测性代码。
 10. **删就删干净**：删功能时把代码、译文键、设置项、菜单项、CHANGELOG 行、ROADMAP 条目一起处理。
-11. **交付＝提交、合并、构建、清场**：停在树里的提交没人看得见；树里提交 → 主仓 `merge --no-ff` → 主仓构建 → 树与分支删掉，四步齐了才算这一轮做完。
+11. **交付＝提交后跑 `./deliver.sh <slug>`**：停在树里的提交没人看得见；脚本做完合、建、清三件事并打印自检，它拒绝就按它说的先解决，别绕过。
 
 ## 代码约定
 
