@@ -1,12 +1,12 @@
 ---
-name: search-bench
+name: aura-bench
 description: >
   Drive the Aura macOS browser from the repo-root ./bench command: open
   flask-marked bench tabs, wait for load, read text, run JavaScript, click,
   type, submit, screenshot the page, probe window chrome, and install or
   press Chrome extensions. Use when the user asks to test Aura, drive the
   browser, run ./bench, open a page in Aura, screenshot a tab, check a
-  panel, or exercise an extension, and when they run /search-bench.
+  panel, or exercise an extension, and when they run /aura-bench.
 metadata:
   short-description: Drive Aura with ./bench
 ---
@@ -33,7 +33,7 @@ On the installed browser, only when they asked you to drive that window: `tabs`,
 
 ## Get a test world listening
 
-One process per world. Quit a process only after its executable path is this repo's `build/Aura.app` or a `.build/` binary, or its environment contains `AURA_PROBE`. Leave `/Applications/Aura.app` alone. `killall`, quitting by the name Aura, and `osascript` quit hit the installed app too: same bundle id, same process name.
+One process per world. Quit a process only after its executable path is this repo's `build/Aura.app` or a `.build/` binary, or its environment contains `AURA_PROBE`. Leave `/Applications/Aura.app` alone. `killall`, quitting by the name Aura, and `osascript` quit hit the installed app too: same bundle id, same process name. A `AURA_DEV=1 ./build.sh` build shows as `Aura-<branch>` on a yellow icon in the Dock and ⌘Tab (see build.sh), but that name is only what people see: its process is still `Aura`, so go by the executable path.
 
 1. `./bench --test tabs` (or `--world NAME`). A tab list means that world is listening. Do not launch another.
 2. If it prints `Aura isn't listening`:
@@ -69,7 +69,7 @@ before launching, not after, or the world opens in front and has to be thrown aw
 id=$(./bench --test open https://example.com)
 ./bench --test wait "$id" 20
 ./bench --test text "$id"
-./bench --test shot "$id" "$TMPDIR/search-bench.png"
+./bench --test shot "$id" "$TMPDIR/aura-bench.png"
 ./bench --test close "$id"
 ```
 
