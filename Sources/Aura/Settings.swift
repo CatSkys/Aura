@@ -535,6 +535,7 @@ struct SettingsPanel: View {
         case "glyph": Segmented(options: Glyph.allCases.map { ($0, $0.title) }, selection: $prefs.glyph)
         case "tabs.reading": Switch(on: $prefs.showsReading)
         case "tabs.give": Switch(on: $prefs.tabsGive)
+        case "bookmarks.off": Switch(on: $prefs.bookmarks)
         case "bookmarks.bar": Switch(on: $prefs.bookmarksBar)
         case "motion.light": Switch(on: $prefs.lightMotion)
         case "note.split": Always()
@@ -641,7 +642,9 @@ struct SettingsPanel: View {
                     browser.announce("Put back as it was")
                 }
             } else if prefs.looksLikeArc {
-                Always(text: "Set up")
+                // Every one of the five is already on: nothing to press, so
+                // the row says where it is rather than offering a dead button.
+                Always(text: "Already set up")
             } else {
                 Pill("Set Up", filled: true) { setUpLikeArc() }
             }
