@@ -524,6 +524,8 @@ final class Tab: ObservableObject, Identifiable {
     /// download it and then, on at least some sites, does neither — see
     /// ImageMenu.swift for why this is built rather than patched.
     var onImageMenu: ((Tab, URL) -> Void)?
+    /// A right-click on a block, handed to the window to put a menu up.
+    var onBlockMenu: ((Tab, String, String, String) -> Void)?
     /// Where the last image right-clicked came from (see ImageMenu.swift).
     var imageFrame: WKFrameInfo? { images.frame }
     var searchName: (() -> String?)?
@@ -549,6 +551,7 @@ final class Tab: ObservableObject, Identifiable {
     private let veils_ = VeilRelay()
     private let forms = FormRelay()
     private let images = ImageRelay()
+    private let elements = ElementRelay()
     private let media = MediaKeys()
     /// Counting down once the page's sound stops, to give the media keys
     /// back (see MediaKeys.swift). One at most.
@@ -750,6 +753,7 @@ final class Tab: ObservableObject, Identifiable {
         controller.add(relay, contentWorld: Web.world, name: ScrollRelay.name)
         controller.add(veils_, contentWorld: Web.world, name: VeilRelay.name)
         controller.add(images, contentWorld: Web.world, name: ImageRelay.name)
+        controller.add(elements, contentWorld: Web.world, name: ElementRelay.name)
         controller.add(media, contentWorld: Web.world, name: MediaKeys.name)
         controller.add(shop, contentWorld: Web.world, name: StoreRelay.name)
         controller.add(iconChanges, contentWorld: Web.world, name: IconRelay.name)
@@ -831,6 +835,7 @@ final class Tab: ObservableObject, Identifiable {
         veils_.tab = self
         forms.tab = self
         images.tab = self
+        elements.tab = self
         media.tab = self
         shop.tab = self
         iconChanges.tab = self
@@ -901,6 +906,11 @@ final class Tab: ObservableObject, Identifiable {
         )
         controller.addUserScript(
             WKUserScript(source: ImageRelay.watch, injectionTime: .atDocumentStart, forMainFrameOnly: false, in: Web.world)
+        )
+        // Right-click on a block: the menu with "Hide This Element" in it
+        // (ElementMenu.swift). The main frame's own menu, not a frame's.
+        controller.addUserScript(
+            WKUserScript(source: ElementRelay.watch, injectionTime: .atDocumentStart, forMainFrameOnly: true, in: Web.world)
         )
         // Every frame, in Aura's world: a paused video gives the media keys
         // back (see MediaKeys.swift).
@@ -1115,6 +1125,12 @@ final class Tab: ObservableObject, Identifiable {
 
     func picked(selector: String, label: String, note: String) {
         onPick?(self, selector, label, note)
+    }
+
+    /// The element a right-click landed on: the window asks what to do with
+    /// it, and hiding it is the same hand-over a click in pointing mode makes.
+    func blockMenu(selector: String, label: String, note: String) {
+        onBlockMenu?(self, selector, label, note)
     }
 
     /// Show one hidden thing while the pointer rests on its row in the list.
