@@ -11,9 +11,9 @@ import SwiftUI
 /// where it is.
 ///
 /// It is drawn as a card over the window rather than handed to a popover, so
-/// it is made of the window's own glass (`CardGlass`, the liquid glass on 26
-/// and later) and rounds its own corners: a popover brings the system's
-/// corner, its own margin, and a tail on top.
+/// it is made of the system's own liquid glass (`glassEffect`, which refracts
+/// what lies under it and answers the pointer) and rounds its own corners: a
+/// popover brings the system's corner, its own margin, and a tail on top.
 struct SpaceSwitcher: View {
     @ObservedObject var browser: Browser
     /// Puts the card away (see SpaceCardOverlay).
@@ -288,24 +288,33 @@ struct SpaceCardOverlay: View {
         }
     }
 
-    /// The card itself: made of the window's own glass — liquid glass on 26
-    /// and later (see Glass.swift) — rounded and edged as one thing.
+    /// The card itself: the system's own liquid glass, which is what a card
+    /// floating over everything should be made of — it refracts what lies
+    /// under it and answers the pointer (macOS 26 and later). Before it, the
+    /// window's glass over the page, as the column come loose is made (see
+    /// CardGlass).
+    @ViewBuilder
     private var card: some View {
-        SpaceSwitcher(browser: browser, close: close)
+        let shape = RoundedRectangle(cornerRadius: SpaceSwitcher.radius, style: .continuous)
+        let content = SpaceSwitcher(browser: browser, close: close)
             .background(GeometryReader { box in
                 Color.clear.preference(key: SpaceCardSize.self, value: box.size)
             })
-            .background {
-                CardGlass(theme: browser.space.spaceTheme, radius: SpaceSwitcher.radius)
-                    .clipShape(RoundedRectangle(cornerRadius: SpaceSwitcher.radius, style: .continuous))
-            }
-            .clipShape(RoundedRectangle(cornerRadius: SpaceSwitcher.radius, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: SpaceSwitcher.radius, style: .continuous)
-                    .strokeBorder(Palette.hairline, lineWidth: 1)
-            }
-            .shadow(color: .black.opacity(0.20), radius: 24, y: 8)
             .fixedSize()
+        if #available(macOS 26.0, *) {
+            content
+                .glassEffect(.regular.interactive(), in: shape)
+                .shadow(color: .black.opacity(0.22), radius: 26, y: 10)
+        } else {
+            content
+                .background {
+                    CardGlass(theme: browser.space.spaceTheme, radius: SpaceSwitcher.radius)
+                        .clipShape(shape)
+                }
+                .clipShape(shape)
+                .overlay { shape.strokeBorder(Palette.hairline, lineWidth: 1) }
+                .shadow(color: .black.opacity(0.20), radius: 24, y: 8)
+        }
     }
 
     /// Where the dot stands, in the window's own coordinates. The dot reports
