@@ -1297,7 +1297,11 @@ struct TabMenu: View {
                     Button {
                         browser.move(tab, toSpace: space.id)
                     } label: {
-                        Label(space.name, systemImage: space.symbol)
+                        Label {
+                            Text(space.name)
+                        } icon: {
+                            SpaceIcon(symbol: space.symbol, size: 13)
+                        }
                     }
                 }
                 if browser.spaces.count > 1 { Divider() }
