@@ -1,0 +1,3 @@
+# Two tasks adding a line under Unreleased on the same day is the normal
+# case, not a conflict: the file keeps both, one after the other.
+CHANGELOG.md merge=union
