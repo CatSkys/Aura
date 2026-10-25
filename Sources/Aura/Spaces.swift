@@ -67,16 +67,20 @@ enum Spaces {
         Color(red: 0.90, green: 0.33, blue: 0.40), // red
         Color(red: 0.62, green: 0.40, blue: 0.90), // violet
     ]
-    /// The icons a space can wear: Apple's own symbols, drawn in one weight
-    /// and one grey, grouped as work, thinking, leisure and life.
+    /// Aura's own mark, as the first of the icons: a path rather than a
+    /// symbol, and the one a space is asked for by this name (see SpaceIcon).
+    static let mark = "aura"
+
+    /// The icons a space can wear: the mark, then Apple's own symbols, drawn
+    /// in one weight and one grey, grouped as work, thinking, leisure and life.
     static let icons = [
-        "briefcase", "building.2", "desktopcomputer", "laptopcomputer", "chevron.left.forwardslash.chevron.right", "terminal",
+        mark, "briefcase", "building.2", "desktopcomputer", "laptopcomputer", "chevron.left.forwardslash.chevron.right", "terminal",
         "sparkles", "brain.head.profile", "lightbulb", "gamecontroller", "beach.umbrella", "cup.and.saucer",
         "music.note", "film", "paintpalette", "camera", "house", "book",
         "graduationcap", "cart", "airplane", "dumbbell", "leaf", "heart",
     ]
     static let iconNames = [
-        "Work", "Office", "Desktop", "Laptop", "Code", "Terminal",
+        "Aura", "Work", "Office", "Desktop", "Laptop", "Code", "Terminal",
         "AI", "Thinking", "Ideas", "Games", "Leisure", "Café",
         "Music", "Film", "Art", "Photos", "Home", "Reading",
         "Studies", "Shopping", "Travel", "Sport", "Nature", "Personal",
@@ -362,10 +366,12 @@ extension Browser {
         switchSpace(to: spaces[index].id)
     }
 
-    /// The icon a new space gets unless told: the first no space wears yet.
+    /// The icon a new space gets unless told: the first no space wears yet,
+    /// the mark aside — that one is Aura's own, and a space given it unasked
+    /// would look like the app rather than like its owner.
     var freeIcon: String {
         let used = Set(spaces.map(\.symbol))
-        return Spaces.icons.first { !used.contains($0) } ?? "briefcase"
+        return Spaces.icons.first { !used.contains($0) && $0 != Spaces.mark } ?? "briefcase"
     }
 
     /// The colour a new space takes: the next in the wheel after the ones
@@ -502,9 +508,7 @@ struct SpaceDot: View {
     var body: some View {
         Button { SpaceMenu.show(for: browser) } label: {
             ZStack {
-                Image(systemName: shown?.symbol ?? symbol)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(hovering ? side.ink : side.muted)
+                SpaceIcon(symbol: shown?.symbol ?? symbol, size: 12, shade: hovering ? side.ink : side.muted)
                     .id(shown?.key ?? key)
                     // The way the tabs go: sideways in the column; in the bar
                     // across the top, up for the next space, down going back.
@@ -605,7 +609,7 @@ enum SpaceMenu {
             let entry = item(space.name, key: index < 9 ? "\(index + 1)" : "", checked: space.id == browser.spaceID) {
                 browser.switchSpace(to: space.id)
             }
-            entry.image = NSImage(systemSymbolName: space.symbol, accessibilityDescription: nil)
+            entry.image = SpaceIcon.picture(space.symbol)
             menu.addItem(entry)
         }
         menu.addItem(.separator())
@@ -627,7 +631,7 @@ enum SpaceMenu {
         let icons = NSMenu()
         for (symbol, name) in zip(Spaces.icons, Spaces.iconNames) {
             let choice = item(name.localized, checked: here.symbol == symbol) { browser.setSpaceIcon(here.id, to: symbol) }
-            choice.image = NSImage(systemSymbolName: symbol, accessibilityDescription: name.localized)
+            choice.image = SpaceIcon.picture(symbol)
             icons.addItem(choice)
         }
         let icon = NSMenuItem(title: "Icon".localized, action: nil, keyEquivalent: "")

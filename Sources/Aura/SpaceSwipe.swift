@@ -316,9 +316,7 @@ struct NewSpaceCard: View {
     /// laid out in the card.
     private func pick(size: CGFloat, box: CGSize) -> some View {
         Button { choosing = true } label: {
-            Image(systemName: icon)
-                .font(.system(size: size, weight: .medium))
-                .foregroundStyle(Palette.ink)
+            SpaceIcon(symbol: icon, size: size, shade: Palette.ink)
                 .frame(width: box.width, height: box.height)
                 .background(
                     RoundedRectangle(cornerRadius: inline ? 8 : 10, style: .continuous)
@@ -350,9 +348,7 @@ struct NewSpaceCard: View {
     private var icons: some View {
         LazyVGrid(columns: Array(repeating: GridItem(.fixed(28), spacing: 4), count: 6), spacing: 4) {
             ForEach(Array(zip(Spaces.icons, Spaces.iconNames)), id: \.0) { symbol, name in
-                Image(systemName: symbol)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(symbol == icon ? Palette.ink : Palette.muted)
+                SpaceIcon(symbol: symbol, size: 13, shade: symbol == icon ? Palette.ink : Palette.muted)
                     .frame(width: 28, height: 28)
                     .background(
                         RoundedRectangle(cornerRadius: 7, style: .continuous)
