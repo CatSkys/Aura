@@ -190,7 +190,7 @@ final class PageTranslator {
             let hint = try? await web.callAsyncJavaScript("return document.documentElement.lang || ''", contentWorld: Web.world) as? String
             let sample = String(first.prefix(400).map(\.plain).joined(separator: "\n").prefix(4000))
             guard let from = PageTranslator.detect(sample, hint: hint) else {
-                throw Failure("Aura couldn't tell which language this page is in")
+                throw Failure(Localized("Aura couldn't tell which language this page is in"))
             }
             source = from
             report["source"] = PageTranslator.code(from)
@@ -207,7 +207,7 @@ final class PageTranslator {
             }
             report["fullMs"] = ms()
             if (report["applied"] as? Int ?? 0) == 0, PageTranslator.same(from, target) {
-                throw Failure("This page is already in \(PageTranslator.name(PageTranslator.code(target)))")
+                throw Failure(Localized("This page is already in \(PageTranslator.name(PageTranslator.code(target)))"))
             }
             tab.translation?.phase = .done
             finish()
@@ -487,13 +487,13 @@ final class PageTranslator {
             let tag = "[\(PageTranslator.code(from))→\(PageTranslator.code(target))] "
             return { strings in strings.map { tag + $0 } }
         }
-        guard #available(macOS 15, *) else { throw Failure("Translate Page needs macOS 15 or later") }
+        guard #available(macOS 15, *) else { throw Failure(Localized("Translate Page needs macOS 15 or later")) }
         let status = await LanguageAvailability().status(from: from, to: target)
         if main { report["availability"] = "\(status)" }
         switch status {
         case .unsupported:
             if main {
-                throw Failure("\(PageTranslator.name(PageTranslator.code(from))) to \(PageTranslator.name(PageTranslator.code(target))) can't be translated on this Mac")
+                throw Failure(Localized("\(PageTranslator.name(PageTranslator.code(from))) to \(PageTranslator.name(PageTranslator.code(target))) can't be translated on this Mac"))
             }
             return nil
         case .installed:
@@ -505,7 +505,7 @@ final class PageTranslator {
             // To download: only for the page's own language, which you asked for.
             if !main { return nil }
         }
-        guard let content = web?.window?.contentView else { throw Failure("Translate Page needs the tab in a window") }
+        guard let content = web?.window?.contentView else { throw Failure(Localized("Translate Page needs the tab in a window")) }
         let lease = try await SessionLease.open(from: from, to: target, in: content)
         leases.append(lease)
         let session: TranslationSession = lease.session
@@ -996,8 +996,8 @@ struct TranslateMenu: View {
     static func heading(_ mark: TranslationMark) -> String {
         let from = mark.from.map(PageTranslator.name)
         switch mark.phase {
-        case .working: return from.map { "Translating from \($0)…" } ?? "Translating…"
-        case .done: return from.map { "Translated from \($0)" } ?? "Translated"
+        case .working: return from.map { Localized("Translating from \($0)…") } ?? Localized("Translating…")
+        case .done: return from.map { Localized("Translated from \($0)") } ?? Localized("Translated")
         case .failed(let message): return message
         }
     }
@@ -1021,10 +1021,10 @@ struct TranslateMenu: View {
                     if let from = mark.from {
                         let on = tab.alwaysTranslates(from)
                         Item(symbol: on ? "checkmark" : "circle.dashed",
-                             title: tab.shy ? "Translate \(PageTranslator.name(from)) in This Tab" : "Always Translate \(PageTranslator.name(from))") {
+                             title: tab.shy ? Localized("Translate \(PageTranslator.name(from)) in This Tab") : Localized("Always Translate \(PageTranslator.name(from))")) {
                             tab.setAlwaysTranslates(from, !on)
                         }
-                        .help(tab.shy ? "Only until this private tab closes" : "Settings › Browsing › Pages lists the languages always translated")
+                        .help(tab.shy ? Localized("Only until this private tab closes") : Localized("Settings › Browsing › Pages lists the languages always translated"))
                     }
                 }
                 .padding(6)
@@ -1070,7 +1070,7 @@ struct TranslateLanguageList: View {
     var body: some View {
         ForEach(prefs.translateAlways.sorted(), id: \.self) { code in
             Rule()
-            Line("Always translate \(PageTranslator.name(code))", "Pages in \(PageTranslator.name(code)) are translated as they open") {
+            Line(Localized("Always translate \(PageTranslator.name(code))"), Localized("Pages in \(PageTranslator.name(code)) are translated as they open")) {
                 Pill("Remove") { prefs.translateAlways.remove(code) }
             }
         }
