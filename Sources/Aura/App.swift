@@ -488,6 +488,18 @@ struct ContentView: View {
             // side by side are a card each (see PaneStage).
             stage
                 .modifier(CardEdge(on: cards && !browser.prefs.splitView))
+                // The bar Arc puts over a page that is coming: in the room the
+                // window keeps over the page, riding with the page's own edges
+                // (see Beam.swift).
+                .overlay(alignment: .top) {
+                    if fullscreenTab == nil, let tab = browser.active {
+                        LoadingBar(tab: tab)
+                            // In the gap a card leaves, at the page's top
+                            // edge: a pair of pages has no gap, and keeps the
+                            // bar on its edge.
+                            .offset(y: cards && !browser.prefs.splitView ? -(Beam.height + 2) : 0)
+                    }
+                }
                 .padding(pageEdges)
                 .offset(pageOffset)
 
@@ -809,6 +821,11 @@ struct ContentView: View {
         }
     }
 
+    /// The card of spaces, up over the window when the dot has opened it.
+    private var spaceCardOverlay: some View {
+        SpaceCardOverlay(browser: browser)
+    }
+
     /// The ⌃Tab switcher, small windows' moons included. Its own property:
     /// written inline, body is more than the type checker will take.
     private var switcherOverlay: some View {
@@ -851,6 +868,15 @@ struct ContentView: View {
             .overlay { field }
             .overlay { panels }
             .overlay { switcherOverlay }
+            // The card of spaces, over the window and over the page: it is
+            // put away by a click anywhere else or an Escape (see
+            // SpaceCardOverlay).
+            .overlay { spaceCardOverlay }
+            .onPreferenceChange(SpaceDotFrame.self) { frame in
+                MainActor.assumeIsolated {
+                    if browser.spaceDotFrame != frame { browser.spaceDotFrame = frame }
+                }
+            }
             .overlay(alignment: .topTrailing) {
                 if let job = browser.fileImport { ImportProgress(browser: browser, job: job) }
             }
@@ -891,6 +917,7 @@ struct ContentView: View {
             .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { note in
                 if let window, (note.object as? NSWindow) === window {
                     browser.tabSwitcher.cancel()
+                    browser.spaceCardUp = false
                     if browser.commandHeld { browser.commandHeld = false }
                 }
             }
@@ -1424,6 +1451,10 @@ struct ContentView: View {
         if event.keyCode == 53 {
             if browser.editingTab != nil {
                 browser.cancelTabEdit()
+                return true
+            }
+            if browser.spaceCardUp {
+                browser.spaceCardUp = false
                 return true
             }
             if browser.peekTab != nil {
