@@ -109,18 +109,16 @@ extension Plate where Foot == EmptyView {
     }
 }
 
-/// A group of lines in one hairline box.
+/// A group of lines in one block: a step of grey rather than a box drawn
+/// round them, so a page of cards reads as colour, and no edge fights the
+/// hairlines that already divide the lines inside it.
 struct Card<Content: View>: View {
     @ViewBuilder let content: () -> Content
 
     var body: some View {
         VStack(spacing: 0) { content() }
-            .background(Palette.ground)
-            .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .strokeBorder(Palette.hairline, lineWidth: 1)
-            )
+            .background(Palette.card)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
