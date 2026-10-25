@@ -29,9 +29,17 @@ final class Curtain: ObservableObject {
 
     init() { load() }
 
-    func host(of url: URL?) -> String? {
+    /// The site a page is on, by the name every other part of Aura keeps a
+    /// site by: the host, without the `www.` most sites answer to as well.
+    /// Static because a tab tells its own page apart by it too, and two ways
+    /// of naming a site would be two sets of per-site choices.
+    nonisolated static func host(of url: URL?) -> String? {
         guard let host = url?.host()?.lowercased() else { return nil }
         return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
+    }
+
+    func host(of url: URL?) -> String? {
+        Curtain.host(of: url)
     }
 
     func veils(on host: String?) -> [Veil] {

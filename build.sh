@@ -102,7 +102,8 @@ if [ ! -f "Resources/Shield/network.json.z" ]; then
   exit 1
 fi
 mkdir -p "$APP/Contents/Resources/Shield"
-cp Resources/Shield/*.json.z Resources/Shield/sources.json "$APP/Contents/Resources/Shield/"
+cp Resources/Shield/*.json.z Resources/Shield/scriptlets.js Resources/Shield/scriptlets.json \
+   Resources/Shield/sources.json "$APP/Contents/Resources/Shield/"
 
 # Symbols stay out of the app. The linker leaves every function's name and a
 # map back to the source in the binary — 15,000 entries, more than half of

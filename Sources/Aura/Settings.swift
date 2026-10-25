@@ -673,6 +673,13 @@ struct SettingsPanel: View {
                                   ))
                     }
                 }
+                if prefs.shielded, shield.trouble == nil {
+                    Rule()
+                    Line("Answer the checks sites make for a blocker",
+                         "A site asks whether one is here by running a script and reading the answer. A small script from the list runs before it, so the answer is the one the site wants to see. Off, a site that asks shows its wall instead of the page") {
+                        Switch(on: $prefs.scriptlets)
+                    }
+                }
                 Rule()
                 Line("Prevent cross-site tracking", "As in Safari. Off, sites you rarely open keep their sign-ins, and trackers inside other sites can follow you across them again, as in Chrome. Private tabs keep it on") {
                     Switch(on: Binding(get: { !prefs.keepsSignIns }, set: { prefs.keepsSignIns = !$0 }))

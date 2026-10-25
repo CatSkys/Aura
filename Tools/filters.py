@@ -18,6 +18,8 @@ What comes out, in Resources/Shield, one file per question WebKit is asked:
                     ones that take a page away instead of an advert (a filter
                     that says `$document`), and their exceptions
     cosmetic.json   things not to show
+    scriptlets.json the small scripts a list asks a page to run — the part of
+                    a blocker that answers a site's own check for one
     sources.json    which lists, as of when, under what licence, and how many
                     rules survived — read by no code, written for whoever
                     wonders where the block list came from
@@ -106,6 +108,27 @@ PROCEDURAL = (
     ":matches-path(", ":matches-prop(", ":min-text-length(", ":xpath(",
     ":nth-ancestor(", ":remove(", ":style(", ":watch-attr(", ":others(",
     ":shadow(", ":-abp-", ":if(", ":if-not(", ":matches-media(",
+)
+
+# The names a filter list uses for a scriptlet, and the name it is written as
+# here: a list says `acs` where the scriptlet is abort-current-script, and the
+# runtime in Resources/Shield/scriptlets.js knows only the long name.
+ALIASES = {
+    "set": "set-constant",
+    "acs": "abort-current-script",
+    "aost": "abort-on-stack-trace",
+    "aeld": "addEventListener-defuser",
+    "rmnt": "remove-node-text",
+    "nostif": "no-setTimeout-if",
+    "nano-sib": "nano-something",
+}
+
+# What the runtime carries. A rule naming a scriptlet that is not here is left
+# out and counted, rather than sent to a page to do nothing at all.
+SCRIPTLETS = (
+    "set-constant", "abort-current-script", "abort-on-stack-trace",
+    "addEventListener-defuser", "remove-node-text", "set-local-storage-item",
+    "set-cookie", "cookie-remover", "no-xhr-if", "no-fetch-if",
 )
 
 # How many selectors go into one rule. A selector WebKit refuses takes its
@@ -210,6 +233,40 @@ def is_expression(body: str) -> bool:
     so by putting the whole thing between slashes; `/ad/*` is a path that
     starts that way, not an expression."""
     return len(body) > 2 and body.startswith("/") and body.endswith("/")
+
+
+def scriptlet_args(text: str):
+    """A scriptlet's arguments, as a `##+js(name, arg, arg)` line spells them.
+
+    A comma ends an argument unless it was written `\\,`; quotes around a whole
+    argument are the list's way of keeping the commas inside it, and are taken
+    off here. An argument left empty at the end is simply not there.
+    """
+    found, current = [], []
+    index = 0
+    while index < len(text):
+        character = text[index]
+        if character == "\\" and index + 1 < len(text) and text[index + 1] in ",$":
+            current.append(text[index + 1])
+            index += 2
+            continue
+        if character == ",":
+            found.append("".join(current).strip())
+            current = []
+            index += 1
+            continue
+        current.append(character)
+        index += 1
+    found.append("".join(current).strip())
+
+    args = []
+    for argument in found:
+        if len(argument) > 1 and argument[0] == argument[-1] and argument[0] in "'\"":
+            argument = argument[1:-1]
+        args.append(argument)
+    while args and args[-1] == "":
+        args.pop()
+    return args
 
 
 def under(domain: str, parent: str) -> bool:
@@ -450,7 +507,7 @@ def main(argv) -> int:
             if "#@" in line:
                 domains, _, selector = line.partition("#@#")
                 selector = selector.strip()
-                if not selectable(selector):
+                if not selectable(selector) or selector.startswith("+js("):
                     continue
                 if not domains.strip():
                     # "Never hide this anywhere": the selector is taken out of
@@ -466,7 +523,7 @@ def main(argv) -> int:
                 continue
             domains, _, selector = line.partition("##")
             selector = selector.strip()
-            if not selectable(selector):
+            if not selectable(selector) or selector.startswith("+js("):
                 continue
             sites = [d.strip().lower() for d in domains.split(",") if d.strip()]
             for_sites = [d for d in sites if not d.startswith("~")]
@@ -528,6 +585,56 @@ def main(argv) -> int:
     cosmetic_file.extend(sorted(site_rules, key=lambda r: json.dumps(r, sort_keys=True)))
     cosmetic_file.extend(all_off)
 
+    # MARK: small scripts
+
+    # A list asking a page to run one of a handful of named scripts, which is
+    # how a blocker answers a site's own check for one: the check is a script,
+    # and the script can be made to see what it wants to see.
+    asked, canceled = [], []
+    for body in lists:
+        for line in body:
+            line = line.strip()
+            if "+js(" not in line:
+                continue
+            if "#@#" in line:
+                domains, _, rest = line.partition("#@#")
+                exceptioned = True
+            elif "##" in line:
+                domains, _, rest = line.partition("##")
+                exceptioned = False
+            else:
+                continue
+            inner = rest.split("+js(", 1)[1]
+            if inner.endswith(")"):
+                inner = inner[:-1]
+            args = scriptlet_args(inner)
+            if not args:
+                continue
+            call = [ALIASES.get(args[0], args[0]), args[1:]]
+            sites = [d.strip().lower() for d in domains.split(",") if d.strip()]
+            (canceled if exceptioned else asked).append((sites, call))
+
+    scripts = []
+    unseen = {}
+    for sites, call in asked:
+        if call[0] not in SCRIPTLETS:
+            unseen[call[0]] = unseen.get(call[0], 0) + 1
+            continue
+        if any(sites == other and call == other_call for other, other_call in canceled):
+            continue
+        entry = {"sites": sites, "js": call}
+        if entry not in scripts:
+            scripts.append(entry)
+
+    (OUT / "scriptlets.json").write_text(
+        json.dumps(scripts, ensure_ascii=False, separators=(",", ":")) + "\n",
+        encoding="utf-8")
+    sites_named = sum(1 for entry in scripts if entry["sites"])
+    print(f"scriptlets: {len(scripts)} rules, {sites_named} for a named site, "
+          f"{len(scripts) - sites_named} everywhere")
+    for name, count in sorted(unseen.items(), key=lambda pair: -pair[1]):
+        print(f"    left out: {count} {name} — no such scriptlet here")
+
     # MARK: requests
 
     blocks, exceptions, extra_exceptions = [], [], []
@@ -587,7 +694,10 @@ def main(argv) -> int:
         "made": date.today().isoformat(),
         "by": "Tools/filters.py",
         "lists": sources,
-        "files": written,
+        "files": dict(written, scriptlets={
+            "rules": len(scripts),
+            "bytes": (OUT / "scriptlets.json").stat().st_size,
+        }),
     }, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"{len(common)} selectors in the everywhere rule, {len(site_rules)} rules naming a site")
     return 0

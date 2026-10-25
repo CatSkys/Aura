@@ -132,6 +132,8 @@
 "Everything" = "全部";
 "Requests" = "仅请求";
 "Off" = "关闭";
+"Answer the checks sites make for a blocker" = "回答网站对拦截器的检查";
+"A site asks whether one is here by running a script and reading the answer. A small script from the list runs before it, so the answer is the one the site wants to see. Off, a site that asks shows its wall instead of the page" = "网站会跑一段脚本、读结果来判断有没有拦截器。列表里的一小段脚本先跑，于是答案就是网站想看到的那个。关闭后，会做检查的网站用一堵墙代替页面";
 "Prevent cross-site tracking" = "阻止跨站跟踪";
 "As in Safari. Off, sites you rarely open keep their sign-ins, and trackers inside other sites can follow you across them again, as in Chrome. Private tabs keep it on" = "与 Safari 相同。关闭后，你很少打开的网站会保留登录状态，其他网站中的跟踪器也能跨站跟踪你，如同 Chrome。无痕浏览中始终保持开启";
 "Camera, microphone, location and notifications" = "相机、麦克风、位置与通知";

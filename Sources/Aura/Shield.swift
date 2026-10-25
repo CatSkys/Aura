@@ -232,6 +232,14 @@ final class Shield: ObservableObject {
         attach(controller, level: level(on: host))
     }
 
+    /// Whether this site is given the list's own scripts, which are the last
+    /// thing a site gets: they are what answers the check that would otherwise
+    /// cover the page, and a site stepped down to Requests did not ask for
+    /// them.
+    func carriesScriptlets(for host: String?) -> Bool {
+        enabled && level(on: host) == .everything && Scriptlets.isReady
+    }
+
     /// Switched on or off for every page that is already open.
     func apply(to controllers: [(controller: WKUserContentController, host: String?)]) {
         for entry in controllers {

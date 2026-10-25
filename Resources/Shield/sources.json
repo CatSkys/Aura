@@ -29,10 +29,14 @@
       "hash": "e857b906918a13a529799a4b4654fe7c80d161d7672bb022a03742be68f36893"
     },
     "cosmetic": {
-      "rules": 10508,
-      "size": 1795945,
-      "bytes": 269039,
-      "hash": "ccc2cf6aa4435b21f43f0a3504493714bbb65e979e26943b184aa6c81c88d1c8"
+      "rules": 10478,
+      "size": 1783672,
+      "bytes": 265864,
+      "hash": "bd9c9cd48d2fa20a7eeeed7817b83b21b37228c1705befc434187558a0184752"
+    },
+    "scriptlets": {
+      "rules": 29,
+      "bytes": 9684
     }
   }
 }

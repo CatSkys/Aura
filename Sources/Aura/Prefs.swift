@@ -239,6 +239,12 @@ final class Preferences: ObservableObject {
     @Published var shielded: Bool {
         didSet { store.set(shielded, forKey: "shield") }
     }
+    /// The small scripts a filter list asks a page to run, which is how a site's
+    /// own check for a blocker is answered. On unless turned off: off, a site
+    /// that checks shows its wall where the page would have been.
+    @Published var scriptlets: Bool {
+        didSet { store.set(scriptlets, forKey: "shield.scriptlets") }
+    }
     /// Settings › Privacy › Prevent cross-site tracking, turned off: WebKit's
     /// tracking prevention off, as Safari's same switch does (see
     /// Store.keepsSignIns). On unless turned off.
@@ -559,6 +565,7 @@ final class Preferences: ObservableObject {
         siteNotifications = store.object(forKey: "notifications.ask") as? Bool ?? true
         showsReading = store.object(forKey: "tabs.reading") as? Bool ?? true
         shielded = store.object(forKey: "shield") as? Bool ?? true
+        scriptlets = store.object(forKey: "shield.scriptlets") as? Bool ?? true
         let keeps = store.bool(forKey: "sites.keep")
         keepsSignIns = keeps
         // Before the first page is loaded into the store.

@@ -23,7 +23,7 @@ It uses **WebKit**, the engine already inside every Mac — the one Safari runs 
 - **Two pages side by side.** Turn Split View on in Settings › Tabs, then drag a tab onto a page or choose Tabs › Split Current Page.
 - **Reading mode.** `⇧⌘R` strips a page down to the article.
 - **Hide anything, for good.** `⇧⌘H`, then click a cookie banner or a newsletter overlay — it is gone, and it is still gone on that site next time, before the page has drawn.
-- **An ad blocker that runs before the page.** EasyList and EasyPrivacy — what a real blocker is made of — converted at build time into WebKit's own block list, so an advert or a tracker is refused before the request is made and the box it leaves is hidden before the page draws. On by default; a site can be brought down to blocking alone, or off, in Settings › Privacy.
+- **An ad blocker that runs before the page.** EasyList and EasyPrivacy — what a real blocker is made of — converted at build time into WebKit's own block list, so an advert or a tracker is refused before the request is made and the box it leaves is hidden before the page draws. On by default; a site can be brought down to blocking alone, or off, in Settings › Privacy. A site that checks whether a blocker is here is answered by the lists' own scriptlets, run before the page's first script.
 - **Video that follows you.** `⇧⌘P` lifts the video out of the page into a small window above everything.
 - **Passwords, in your keychain.** Offered under the field once a sign-in has actually worked — never filled in on its own. Bring yours in from Chrome, Arc, Dia, Brave, Firefox, Edge or Safari's export; nothing leaves the Mac.
 - **Light, dark, or the Mac's own**, and the Chinese interface follows the Mac too.
