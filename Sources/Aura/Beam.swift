@@ -10,9 +10,11 @@ import SwiftUI
 //
 // Arc's page shows a bar running along its top while it loads. This is the same
 // promise said in light instead of a rule, and it is the field's own breath
-// grown a tail (see Omnibox.swift's Breath): one colour, the window's own ink,
-// so it is a dark haze on a light window and a pale one on a dark window, and it
-// hugs the edge without drawing anything a page could take for its own content.
+// grown a tail (see Omnibox.swift's Breath): one colour — the space's own,
+// where the window is wearing one, so a space's pages load in that space's
+// light (see SpacePalette.glow) — dark on a light window and pale on a dark
+// one, and it hugs the edge without drawing anything a page could take for its
+// own content.
 //
 // It is layers rather than SwiftUI shapes for the reason the breath is layers:
 // animated by SwiftUI this is drawn again on the main thread every frame — 18%
@@ -32,6 +34,9 @@ import SwiftUI
 struct Beam: NSViewRepresentable {
     /// Whether the page is still coming.
     var loading: Bool
+    /// What colour the light is: the space's own where the window is wearing
+    /// it, the window's ink everywhere else (see SpacePalette.glow).
+    var tint: Color
 
     /// The whole of what the light touches: a third of the page's width, over
     /// its middle, and never more of the page than that.
@@ -40,18 +45,20 @@ struct Beam: NSViewRepresentable {
     /// has the other half of the third to travel in.
     static let streak: CGFloat = 0.5
     /// How far the light falls into the page.
-    static let height: CGFloat = 20
-    /// As dark as the light is where it meets the edge; it fades to nothing at
-    /// the bottom of `height`.
-    static let core: CGFloat = 0.24
-    /// One crossing, in seconds: slow enough to read as a drift rather than as
-    /// a metronome, and eased at both ends — the light slows where it turns.
-    static let crossing: CFTimeInterval = 1.45
+    static let height: CGFloat = 22
+    /// How much of the ink shows where the light meets the edge; it fades to
+    /// nothing at the bottom of `height`.
+    static let core: CGFloat = 0.55
+    /// One crossing, in seconds: quick enough to read as the browser working
+    /// rather than as something drifting past, and eased at both ends — the
+    /// light slows where it turns.
+    static let crossing: CFTimeInterval = 0.9
 
     func makeNSView(context: Context) -> Streak { Streak() }
 
     func updateNSView(_ view: Streak, context: Context) {
         view.lit = loading
+        view.tint = tint
     }
 
     /// The room the page was given and no more: it is drawn over the page, and
@@ -70,6 +77,10 @@ final class Streak: NSView {
     /// The size the light was last laid out for, so a layout pass that changed
     /// nothing doesn't put the crossing back to the start.
     private var laid: CGSize = .zero
+    /// The colour the light is, and the one it is told to be.
+    var tint: Color = Palette.ink {
+        didSet { guard tint != oldValue else { return }; ink() }
+    }
     /// The streak's length at that size, and how far its middle may travel
     /// either side of the page's middle.
     private var reach: CGFloat = 0
@@ -151,7 +162,7 @@ final class Streak: NSView {
     /// The streak and its fall, in the window's own ink.
     private func ink() {
         effectiveAppearance.performAsCurrentDrawingAppearance {
-            let ink = Palette.NS.ink
+            let ink = NSColor(tint)
             light.colors = [ink.withAlphaComponent(0).cgColor,
                             ink.withAlphaComponent(Beam.core).cgColor,
                             ink.withAlphaComponent(Beam.core).cgColor,

@@ -147,6 +147,20 @@ extension EnvironmentValues {
     }
 }
 
+/// What colour the page's top edge lights with while the page is coming (see
+/// Beam.swift): the space's own colour where the window is wearing one, and the
+/// window's ink everywhere else.
+private struct SpaceLightKey: EnvironmentKey {
+    static let defaultValue = Palette.ink
+}
+
+extension EnvironmentValues {
+    var spaceLight: Color {
+        get { self[SpaceLightKey.self] }
+        set { self[SpaceLightKey.self] = newValue }
+    }
+}
+
 /// Light, dark, or the Mac's own — the one choice that colours everything.
 enum Look: String, CaseIterable, Identifiable {
     case light, dark, system
