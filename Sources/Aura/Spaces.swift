@@ -290,9 +290,11 @@ extension Browser {
         return URL(fileURLWithPath: path)
     }
 
-    /// ⌃1–⌃9, and the menu on the space's dot.
+    /// ⌃1–⌃9, and the card on the space's dot.
     func switchSpace(to id: UUID) {
         guard prefs.usesSpaces else { return }
+        // Going to a space puts the card away: it was up to say which one.
+        spaceCardUp = false
         enter(id)
     }
 
@@ -486,15 +488,13 @@ extension Browser {
 
 /// The space on screen, as its icon: at the column's foot, or before the
 /// tabs in the row. One icon however many spaces there are; a click opens
-/// the card of spaces (see SpaceSwitcher). When the space changes the icon
-/// turns over the way the spaces went — out on one side, the next one in
-/// from the other.
+/// the card of spaces over the window (see SpaceSwitcher). When the space
+/// changes the icon turns over the way the spaces went — out on one side,
+/// the next one in from the other.
 struct SpaceDot: View {
     @ObservedObject var browser: Browser
     @Environment(\.sideInk) private var side
     @State private var hovering = false
-    /// The card of spaces, up or not.
-    @State private var showing = false
     /// What is drawn, a step behind the browser: the space changes in a
     /// frame with nothing animated (see SpaceSwipe.slide), and the icon
     /// turns over just after, on a change of its own.
@@ -509,7 +509,7 @@ struct SpaceDot: View {
     private var key: String { browser.makingSpace ? "new" : "\(browser.spaceID.uuidString)-\(browser.space.symbol)" }
 
     var body: some View {
-        Button { showing = true } label: {
+        Button { browser.spaceCardUp.toggle() } label: {
             ZStack {
                 SpaceIcon(symbol: shown?.symbol ?? symbol, size: 12, shade: hovering ? side.ink : side.muted)
                     .id(shown?.key ?? key)
@@ -530,11 +530,11 @@ struct SpaceDot: View {
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
         .help("\(browser.space.name) — ⌃1–⌃9, or two fingers \(browser.prefs.sidebar ? "sideways" : "up or down") over the tabs, to switch")
-        // The card: the spaces, what can be done to this one, its icons and
-        // its colour (see SpaceSwitcher).
-        .popover(isPresented: $showing, arrowEdge: .bottom) {
-            SpaceSwitcher(browser: browser) { showing = false }
-        }
+        // Where the dot stands, for the card that opens over it: it is drawn
+        // over the window, not hung from this button (see SpaceCardOverlay).
+        .background(GeometryReader { box in
+            Color.clear.preference(key: SpaceDotFrame.self, value: box.frame(in: .global))
+        })
         .onChange(of: key) { _, now in
             let symbol = symbol
             DispatchQueue.main.async {

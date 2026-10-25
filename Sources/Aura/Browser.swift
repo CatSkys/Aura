@@ -1965,6 +1965,10 @@ final class Browser: NSObject, ObservableObject {
     /// whether the card for a new space stands in for them (see SpaceSwipe).
     @Published var spaceSwipe: CGFloat = 0
     @Published var makingSpace = false
+    /// The card of spaces, up or not, and where the dot that opened it stands
+    /// in the window — the card sits above it or below (see SpaceSwitcher).
+    @Published var spaceCardUp = false
+    @Published var spaceDotFrame: CGRect = .zero
     /// A tab being sent into the Space being made from its context menu.
     var afterSpaceCreated: ((Space) -> Void)?
     /// A link's page, peeked at over this one (see Peek.swift).
