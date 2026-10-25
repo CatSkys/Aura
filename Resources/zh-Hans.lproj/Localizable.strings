@@ -1354,3 +1354,13 @@
 "Qwant" = "Qwant";
 "Startpage" = "Startpage";
 "Brave Search" = "Brave Search";
+
+/* —— 0.10 这一版的说明 —— */
+"Aura, on Search 1.0.6: the same browser, under a name, an identity and a Chinese interface of its own." = "Aura，建立在 Search 1.0.6 之上：同一个浏览器，换了自己的名字、自己的身份，也换了自己的中文界面。";
+"The whole interface in 简体中文 — the menus, every page of Settings, the panels, the welcome page and these notes — chosen by the Mac's own language order, with the English kept as the key, so a sentence with no translation yet shows in English rather than as a blank." = "整套界面都是简体中文——菜单、设置的每一页、各个面板、欢迎页，以及这份说明——按 Mac 自己的语言顺序选择；英文原文作为键保留，于是还没译到的句子显示英文，而不是空白。";
+"An app of its own: com.catskys.aura, installed beside Search rather than over it, with its own settings, its own session, its own signed-in sites and its own update feed. Nothing of Search's is read or moved." = "它是一个自己的 App：com.catskys.aura，装在 Search 旁边而不是覆盖它，有自己的设置、自己的会话、自己的登录站点和自己的更新源。Search 的任何东西都不会被读取或搬动。";
+"Everything Search 1.0.6 brought is here: profiles, websites in the side panel, Apple's Passwords app under a sign-in box, reading mode that follows light and dark and reads a site's own Markdown, Back and Forward held or right-clicked for every page that way, a card before a site shares your screen, sized pop-ups in small windows, two picked tabs in Split View, and the address on the tab you're on." = "Search 1.0.6 带来的东西都在：配置文件、侧边面板里的网站、登录框下方的 Apple「密码」App、跟随明暗并能读网站自带 Markdown 的阅读模式、长按或右键后退/前进列出这一路的所有页面、网站共享屏幕前先出一张卡片、指定尺寸的弹窗开成小窗口、两个选中的标签页并排分屏，以及当前标签页上显示网址。";
+"Settings in ten short sections with their groups, and Find a setting (⌘F). Settings, History, Downloads, Bookmarks, Passwords and What's New open as pages in tabs of their own." = "设置分成十个短小节，每节有自己的分组，还有「查找设置」（⌘F）。设置、历史记录、下载、书签、密码和更新说明都作为页面开在各自的标签页里。";
+"The blocker is the lists a real blocker is made of — EasyList, EasyPrivacy and uBlock Origin's own — and the checks sites make for a blocker are answered, so a detector reads what it wants to see." = "拦截用的是真正拦截器用的那些列表——EasyList、EasyPrivacy 和 uBlock Origin 自己的——网站用来探测拦截器的检查也会得到它想看到的答案。";
+"Help › Send Feedback opens an issue with the version already in it." = "「帮助 › 发送反馈」会打开一个已经写进版本的 issue。";
+"Sentence by sentence, the app now says what it means in two languages: a missing translation shows in English rather than as a blank." = "一句一句地，这个 App 现在用两种语言说自己要说的话：还没译到的句子显示英文，而不是空白。";
