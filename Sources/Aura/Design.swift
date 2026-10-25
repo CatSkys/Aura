@@ -64,10 +64,6 @@ enum Palette {
         /// The resting traffic lights, drawn by hand when the app is behind.
         static let resting = pair(0.80, 0.30)
         static let safe = tint(light: (0.08, 0.50, 0.24), dark: (0.29, 0.87, 0.50))
-        /// The bar along a page's top edge while it is coming: Arc's own, read
-        /// off its loading page's border — #0C50FF in a light window, #2AB6F6
-        /// in a dark one (see Beam.swift).
-        static let loading = tint(light: (0.047, 0.314, 1.0), dark: (0.165, 0.714, 0.965))
         static let unsafe = tint(light: (0.71, 0.33, 0.04), dark: (0.98, 0.75, 0.14))
 
         private static func tint(light: (CGFloat, CGFloat, CGFloat), dark: (CGFloat, CGFloat, CGFloat)) -> NSColor {
