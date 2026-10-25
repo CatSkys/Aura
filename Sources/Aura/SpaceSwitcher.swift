@@ -87,27 +87,32 @@ struct SpaceSwitcher: View {
             }
 
             divider
-            SpaceCardRow(title: "Show History…".localized, symbol: "clock.arrow.circlepath") {
+            SpaceCardRow(title: "Show History…".localized, symbol: "clock.arrow.circlepath",
+                         hint: key("history.show")) {
                 browser.recalling = true
                 close()
             }
-            SpaceCardRow(title: "Downloads…".localized, symbol: "arrow.down.circle") {
+            SpaceCardRow(title: "Downloads…".localized, symbol: "arrow.down.circle",
+                         hint: key("history.downloads")) {
                 browser.hoarding = true
                 close()
             }
 
             divider
-            SpaceCardRow(title: "Settings…".localized, symbol: "gearshape") {
+            SpaceCardRow(title: "Settings…".localized, symbol: "gearshape", hint: key("app.settings")) {
                 close()
                 browser.tuning = true
             }
         }
     }
 
-    /// The key that goes to the space at `number`, as the menu showed it: the
-    /// one Settings › Shortcuts has, and nothing at all once it is cleared.
-    private func key(at number: Int) -> String {
-        ShortcutStore.shared.key(for: "spaces.\(number)")?.display ?? ""
+    /// The key that goes to the space at `number`, and the key a command has,
+    /// as the menus show it: the one Settings › Shortcuts gave it, and nothing
+    /// at all once it is cleared.
+    private func key(at number: Int) -> String { key("spaces.\(number)") }
+
+    private func key(_ command: String) -> String {
+        ShortcutStore.shared.key(for: command)?.display ?? ""
     }
 
     // MARK: - this space's own
