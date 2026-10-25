@@ -26,9 +26,10 @@ struct SpaceSwitcher: View {
     /// Style Editor, on a page of its own (see SpaceThemeEditor).
     private enum Page: Equatable { case spaces, settings, icons, colour }
 
-    /// The card's width, and the colour page's: the editor's 27 swatches need
-    /// the wider one.
-    private var width: CGFloat { page == .colour ? 300 : 272 }
+    /// The card's width — the column's own, as Arc's switcher is as wide as
+    /// the sidebar it stands in — and the colour page's, whose 27 swatches
+    /// need more room than the column has.
+    private var width: CGFloat { page == .colour ? 300 : Metrics.side }
 
     /// How the card is cut: its corner, and the room it leaves around its rows.
     static let radius: CGFloat = 18
