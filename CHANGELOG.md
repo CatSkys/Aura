@@ -15,6 +15,8 @@ in [ROADMAP.md](ROADMAP.md).
 
 ### Changed
 
+- Settings says less, and says it as a product. A group is its heading and its rows now — the line under each heading that explained the group in plain words is gone — and a row is the name of the thing and its switch: the second line is there only where it carries something the title can't (the zoom every site starts at, the sign-ins a profile keeps apart), and what used to be read past — the shortcut, the exception, the state that changes under you — sits behind the row's (i), asked for rather than always on screen. Titles are the short names themselves, in the same words the menus use: Default browser, Import data, Tab position, Auto-hide the column, Answer ad-block checks, Saved passwords, Release notes, with the asides gone ("as in Arc", "one click sets Aura up the way Arc felt", "videos that float while you do something else"). Depended-on rows say what they need in four words (Requires the tabs down a side) instead of a sentence about when they count, the sleep choice reads "Away for half an hour, a tab sleeps and wakes when you go back to it", and the same pass went through the pages inside Settings that draw their own cards: Extensions, Passwords, Profiles, and Find a setting's empty answer ("No setting found").
+
 ### Fixed
 
 ## 0.1.0 — 25 October 2026

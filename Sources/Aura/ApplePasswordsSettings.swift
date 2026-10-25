@@ -20,8 +20,8 @@ struct ApplePasswordsCard: View {
                 }
             } else {
                 Card {
-                    Line("Passwords from Apple's Passwords app",
-                         "Accounts saved in the Passwords app, under the sign-in box. Unofficial: Aura talks to the helper Apple made for its Chrome extension, as that extension. Never in private tabs.") {
+                    Line("Accounts from Apple Passwords",
+                         "Under sign-in boxes. Unofficial: Aura talks to the helper Apple made for its Chrome extension, as that extension. Never in private tabs.") {
                         Switch(on: $prefs.applePasswords)
                     }
                     if prefs.applePasswords {
@@ -40,7 +40,7 @@ struct ApplePasswordsCard: View {
     @ViewBuilder private var pairing: some View {
         switch apple.state {
         case .idle:
-            Line(apple.trouble ?? "Not connected", "Your Mac shows a code, and you type it here. Once per launch of Aura, and only when you first want an account: under a sign-in box, Connect Apple Passwords… asks for it there.") {
+            Line(apple.trouble ?? "Not connected", "Type the code your Mac shows. Once per launch, and only when you first want an account.") {
                 Pill("Connect…") { Task { await apple.connect() } }
             }
         case .starting:
@@ -69,7 +69,7 @@ struct ApplePasswordsCard: View {
                 }
             }
         case .paired:
-            Line("Connected", "Until Aura quits. Accounts show under sign-in boxes, marked Apple Passwords; macOS may ask for Touch ID before one is filled.") {
+            Line("Connected", "Until Aura quits. Accounts show under sign-in boxes; macOS may ask for Touch ID before one is filled.") {
                 Pill("Disconnect") { apple.disconnect() }
             }
         }
