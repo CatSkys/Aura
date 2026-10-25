@@ -91,6 +91,12 @@ struct Greys {
                              tile: Palette.wash.opacity(0.55), pinLive: Palette.pinLive)
     static let frame = Greys(wash: Palette.sideWash, hover: Palette.sideHover,
                              tile: Palette.sideTile, pinLive: Palette.sidePinLive)
+    /// On the window's glass (see Glass.swift): the same steps of contrast,
+    /// taken from the window's ink at a few percent rather than from a grey
+    /// of its own — a solid grey square laid over the desktop reads as a chip
+    /// of paint, and a wash of ink reads the same on light glass and on dark.
+    static let glass = Greys(wash: Palette.ink.opacity(0.12), hover: Palette.ink.opacity(0.07),
+                             tile: Palette.ink.opacity(0.06), pinLive: Palette.ink.opacity(0.16))
 }
 
 private struct GreysKey: EnvironmentKey {
@@ -101,6 +107,37 @@ extension EnvironmentValues {
     var greys: Greys {
         get { self[GreysKey.self] }
         set { self[GreysKey.self] = newValue }
+    }
+}
+
+/// The column's own inks for the ground it is on. On the window's glass the
+/// ground is the space's colour, so the inks are the space's too — Arc's
+/// semantic palette gives each theme a title and secondary colour rather than
+/// one grey for every window (see SpaceTheme.swift). Read through the
+/// environment, as `Greys` is, so a row, a pin or a door takes them wherever
+/// it is in the column.
+struct SideInk {
+    let ink: Color
+    let muted: Color
+    let faint: Color
+
+    static let standard = SideInk(ink: Palette.ink, muted: Palette.muted, faint: Palette.faint)
+
+    static func glass(_ theme: SpaceTheme, dark: Bool) -> SideInk {
+        SideInk(ink: Color(nsColor: SpacePalette.title(theme, dark: dark)),
+                muted: Color(nsColor: SpacePalette.secondary(theme, dark: dark)),
+                faint: Color(nsColor: SpacePalette.tertiary(theme, dark: dark)))
+    }
+}
+
+private struct SideInkKey: EnvironmentKey {
+    static let defaultValue = SideInk.standard
+}
+
+extension EnvironmentValues {
+    var sideInk: SideInk {
+        get { self[SideInkKey.self] }
+        set { self[SideInkKey.self] = newValue }
     }
 }
 

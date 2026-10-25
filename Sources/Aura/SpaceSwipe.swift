@@ -364,7 +364,7 @@ struct NewSpaceCard: View {
                         choosing = false
                         typing = true
                     }
-                    .help(name)
+                    .help(name.localized)
             }
         }
         .padding(10)

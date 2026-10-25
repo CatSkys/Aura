@@ -239,11 +239,11 @@ struct SiteCard: View {
                 Header(title: SiteCard.site(url))
             }
             if let safety {
-                Row(safety.title, submenu: true) { deeper = true }
+                Row(safety.title.localized, submenu: true) { deeper = true }
             }
-            Row("Copy Address", keys: "⇧⌘C") { after { browser.copyAddress() } }
+            Row("Copy Address".localized, keys: "⇧⌘C") { after { browser.copyAddress() } }
             Separator()
-            Row("Print…", keys: "⌘P") { after { browser.printPage() } }
+            Row("Print…".localized, keys: "⌘P") { after { browser.printPage() } }
             zoom
             sound
             grounded
@@ -421,12 +421,12 @@ struct SiteCard: View {
             if let url = tab.pageAddress {
                 Header(title: SiteCard.site(url))
             }
-            Text(safety.title)
+            Text(safety.title.localized)
                 .font(MenuMetrics.font)
                 .foregroundStyle(Color(nsColor: .labelColor))
                 .padding(.leading, MenuMetrics.text)
                 .frame(height: MenuMetrics.row, alignment: .leading)
-            Text(safety.detail)
+            Text(safety.detail.localized)
                 .font(.system(size: 11))
                 .foregroundStyle(Color(nsColor: .secondaryLabelColor))
                 .fixedSize(horizontal: false, vertical: true)
@@ -436,11 +436,11 @@ struct SiteCard: View {
                 .padding(.bottom, 6)
             Separator()
             if let trust = safety.trust {
-                Row(certified == false ? "Show Certificate (Not Valid)…" : "Show Certificate…") {
+                Row((certified == false ? "Show Certificate (Not Valid)…" : "Show Certificate…").localized) {
                     after { SiteCard.show(trust) }
                 }
             }
-            Row("Back") { deeper = false }
+            Row("Back".localized) { deeper = false }
         }
     }
 

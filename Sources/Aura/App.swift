@@ -386,6 +386,7 @@ private final class WeakWindow {
 
 struct ContentView: View {
     @ObservedObject var browser: Browser
+    @Environment(\.colorScheme) private var scheme
 
     /// Its window, held weakly: the window holds this view's state, and
     /// held strongly back, a window closed for good was never freed.
@@ -408,8 +409,11 @@ struct ContentView: View {
             // Black while a page has the screen, so the frame of our own window
             // that survives the transition is not a white band across the top.
             // With the tabs down the side, the ground the page's card and the
-            // column sit on (see CardEdge).
-            (fullscreenTab != nil ? Color.black : cards ? Palette.frame : Palette.ground)
+            // column sit on (see CardEdge) — which, the column being out, is
+            // the window's glass and nothing of ours (see Glass.swift, SideBar).
+            (fullscreenTab != nil ? Color.black
+                : glass ? Color.clear
+                : cards ? Palette.frame : Palette.ground)
 
             // One stage, always. It starts beside the column and under the
             // strip, not behind them — a page sliding beneath floating chrome
@@ -443,7 +447,7 @@ struct ContentView: View {
             // height, so the traffic lights sit in its own corner rather than
             // over the page.
             if sidebar {
-                SideBar(browser: browser, prefs: browser.prefs, onFrame: cards)
+                SideBar(browser: browser, prefs: browser.prefs, onFrame: cards, glass: glass)
                     .frame(maxHeight: .infinity, alignment: .top)
                     .transition(.move(edge: sideOnRight ? .trailing : .leading))
             }
@@ -456,7 +460,8 @@ struct ContentView: View {
             // The bookmarks bar, under the strip or beside the column's top —
             // there on the window's ground above the page's card, and no wider.
             if barShown {
-                BookmarksBar(browser: browser, bookmarks: browser.bookmarks, onFrame: cards)
+                BookmarksBar(browser: browser, bookmarks: browser.bookmarks, onFrame: cards, glass: glass)
+                    .environment(\.sideInk, sideInk)
                     .padding(.leading, sideOnRight ? farGap : chrome.width)
                     .padding(.trailing, sideOnRight ? chrome.width : farGap)
                     .padding(.top, band)
@@ -529,6 +534,32 @@ struct ContentView: View {
     /// window nor a page filling the screen (see Browser.asCards).
     private var cards: Bool {
         browser.asCards && fullscreenTab == nil
+    }
+
+    /// The window's ground is glass under the column (see Glass.swift): the
+    /// column, the bookmarks bar and the frame the page's card sits on paint
+    /// no colour, and the desktop shows through them, blurred. Only while the
+    /// tabs are down the side — the strip's band keeps its own ground — and
+    /// not while a page has the screen, where the ground is black.
+    private var glass: Bool {
+        browser.prefs.sidebar && fullscreenTab == nil
+    }
+
+    /// The space on screen's own colour, on the window's glass (see
+    /// SpaceTheme.swift). Arc tints a space's window with the space's theme;
+    /// Aura's spaces keep one too — hue, how much of it, and the grain — and
+    /// this is where it shows. Neutral with spaces turned off, where there is
+    /// nothing to tell apart.
+    private func washGlass() {
+        guard let window else { return }
+        WindowGlass.setSpaceTheme(browser.prefs.usesSpaces ? browser.space.spaceTheme : nil, in: window)
+    }
+
+    /// The column's inks over that glass, for what is beside it: the bookmarks
+    /// bar on the frame wears the space's title and secondary colours too (see
+    /// `SideInk`). The column itself sets its own.
+    private var sideInk: SideInk {
+        glass ? .glass(browser.space.spaceTheme, dark: scheme == .dark) : .standard
     }
 
     /// The card's gap on the side away from the column, and along the bottom.
@@ -764,16 +795,17 @@ struct ContentView: View {
             .onChange(of: browser.prefs.sidebar) { _, _ in
                 DispatchQueue.main.async { Lights.refresh(window); measureLights() }
             }
-            .onChange(of: browser.asCards) { _, cards in
-                // The ground the page's card sits on, or the page's own.
-                window?.backgroundColor = cards ? Palette.NS.frame : Palette.NS.ground
-            }
             .onChange(of: browser.prefs.sidePosition) { _, _ in
                 DispatchQueue.main.async { Lights.refresh(window); measureLights() }
             }
             .onChange(of: browser.prefs.sideWidth) { _, _ in
                 DispatchQueue.main.async { Lights.refresh(window); measureLights() }
             }
+            // The space on screen takes its colour with it onto the glass (see
+            // washGlass), over the switch, or as the palette changes.
+            .onChange(of: browser.spaceID) { _, _ in washGlass() }
+            .onChange(of: browser.space.spaceTheme) { _, _ in washGlass() }
+            .onChange(of: browser.prefs.usesSpaces) { _, _ in washGlass() }
             // Stepping away to another app: macOS draws its own resting
             // buttons, and on a light window they come out nearly white. Ours
             // go on in their place until the app comes back.
@@ -1090,6 +1122,8 @@ struct ContentView: View {
     private func setUp(_ window: NSWindow) {
         held.window = window
         dress(window)
+        // The space on screen's colour, on the glass laid a moment ago.
+        washGlass()
         if let tab = browser.active { WindowTitle.set(tab, in: window) }
     }
 
@@ -1105,7 +1139,11 @@ struct ContentView: View {
         window.titleVisibility = .hidden
         // A window put back in full screen is so before any notice says it.
         browser.fullScreen = window.styleMask.contains(.fullScreen)
-        window.backgroundColor = browser.asCards ? Palette.NS.frame : Palette.NS.ground
+        // The window's own ground is glass (see Glass.swift): the column and
+        // the frame around the page's card paint no colour of their own any
+        // more, and what shows through them is the desktop, blurred. This
+        // makes the window see-through and lays the glass under everything.
+        WindowGlass.lay(in: window)
         // The strip does the dragging, so the page underneath can't be grabbed
         // by accident while selecting text.
         window.isMovableByWindowBackground = false

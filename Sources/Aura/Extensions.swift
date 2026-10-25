@@ -2069,15 +2069,15 @@ private struct ExtensionMenu: View {
             }
             Divider().overlay(Palette.hairline)
             VStack(spacing: 1) {
-                Foot("storefront", "Chrome Web Store…") {
+                Foot("storefront", "Chrome Web Store…".localized) {
                     extensions.menuOpen = false
                     extensions.browser?.open(Browser.webStore, foreground: true)
                 }
-                Foot("folder", "Load Unpacked…") {
+                Foot("folder", "Load Unpacked…".localized) {
                     extensions.menuOpen = false
                     DispatchQueue.main.async { extensions.installFolder() }
                 }
-                Foot("gearshape", "Manage Extensions…") {
+                Foot("gearshape", "Manage Extensions…".localized) {
                     extensions.menuOpen = false
                     Store.settings.set("extensions", forKey: "settings.page")
                     extensions.browser?.tuning = true

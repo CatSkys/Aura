@@ -15,6 +15,9 @@ struct BookmarksBar: View {
     /// side: the ground's colour and no line of its own, the card's edge
     /// being the line (see CardEdge).
     var onFrame = false
+    /// On the window's glass (see Glass.swift): the bar paints nothing, and
+    /// the ground under it is the desktop, blurred.
+    var glass = false
 
     static let height: CGFloat = 30
 
@@ -40,15 +43,16 @@ struct BookmarksBar: View {
         }
         .frame(height: BookmarksBar.height)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(onFrame ? Palette.frame : Palette.ground)
+        .background(glass ? Color.clear : onFrame ? Palette.frame : Palette.ground)
         .overlay(alignment: .bottom) {
-            if !onFrame { Rectangle().fill(Palette.hairline).frame(height: 1) }
+            if !onFrame, !glass { Rectangle().fill(Palette.hairline).frame(height: 1) }
         }
     }
 
     /// One on the bar. A bookmark without a name is its icon alone, in a
     /// square as tall as the others, its address on hover.
     struct Item: View {
+        @Environment(\.sideInk) private var side
         let node: Bookmark
         let act: () -> Void
         @State private var hovering = false
@@ -58,14 +62,14 @@ struct BookmarksBar: View {
                 if node.isFolder {
                     Image(systemName: "folder")
                         .font(.system(size: 10.5))
-                        .foregroundStyle(Palette.muted)
+                        .foregroundStyle(side.muted)
                 } else {
                     Mark(icon: Favicons.shared.cached(node.site ?? ""), letter: String((node.host ?? "•").prefix(1)).uppercased(), size: 13)
                 }
                 if !node.unnamed {
                     Text(node.title)
                         .font(.system(size: 12))
-                        .foregroundStyle(Palette.ink)
+                        .foregroundStyle(side.ink)
                         .lineLimit(1)
                         .frame(maxWidth: 150, alignment: .leading)
                         .fixedSize(horizontal: true, vertical: false)
@@ -73,7 +77,7 @@ struct BookmarksBar: View {
                 if node.isFolder {
                     Image(systemName: "chevron.down")
                         .font(.system(size: 7.5, weight: .semibold))
-                        .foregroundStyle(Palette.faint)
+                        .foregroundStyle(side.faint)
                 }
             }
             .padding(.horizontal, node.unnamed ? 0 : 8)

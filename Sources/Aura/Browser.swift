@@ -894,9 +894,9 @@ final class Browser: NSObject, ObservableObject {
         let count = shown.count
         let many = count == 1 ? "1 password" : "\(count) passwords"
         Ask.sure(
-            count == 1 ? "Remove 1 Password?" : "Remove \(count) Passwords?",
-            detail: "They're taken out of your keychain. Only the passwords Aura keeps are removed: password managers, other apps and other browsers keep theirs. This can't be undone.",
-            confirm: "Remove",
+            count == 1 ? Localized("Remove 1 Password?") : Localized("Remove \(count) Passwords?"),
+            detail: "They're taken out of your keychain. Only the passwords Aura keeps are removed: password managers, other apps and other browsers keep theirs. This can't be undone.".localized,
+            confirm: "Remove".localized,
             returnCancels: true
         ) { [weak self] in
             Vault.prove("remove \(many)") { ok in
@@ -1639,6 +1639,9 @@ final class Browser: NSObject, ObservableObject {
     /// whether the card for a new space stands in for them (see SpaceSwipe).
     @Published var spaceSwipe: CGFloat = 0
     @Published var makingSpace = false
+    /// The space's own colour sheet, open in a popover on its dot (see
+    /// SpaceThemeEditor).
+    @Published var spaceThemeEditing = false
     /// A tab being sent into the Space being made from its context menu.
     var afterSpaceCreated: ((Space) -> Void)?
     /// A link's page, peeked at over this one (see Peek.swift).
@@ -3323,9 +3326,9 @@ final class Browser: NSObject, ObservableObject {
             else { return }
             if unsaved {
                 Ask.sure(
-                    "Move Tab?",
+                    "Move Tab?".localized,
                     detail: Localized("This page has unsaved form entries. It will reopen in “\(destination.name)” with that Space’s sign-ins, so the entries may be lost."),
-                    confirm: "Move",
+                    confirm: "Move".localized,
                     then: complete
                 )
             } else {

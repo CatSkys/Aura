@@ -195,7 +195,9 @@ struct BlockedPopupsMenu: View {
             if let site {
                 Divider().overlay(Palette.hairline)
                 Item(symbol: "checkmark.circle",
-                     title: tab.shy ? "Allow Pop-ups from \(site) in This Tab" : "Always Allow Pop-ups from \(site)", lines: 2) {
+                     title: tab.shy
+                        ? Localized("Allow Pop-ups from \(site) in This Tab")
+                        : Localized("Always Allow Pop-ups from \(site)"), lines: 2) {
                     browser.allowPopups(from: tab)
                     done()
                 }

@@ -518,7 +518,7 @@ final class Bookmarks: ObservableObject {
     /// A folder of your own, its name asked for as a rename's is: inside
     /// `parent`, or at the top level for nil. An empty name makes none.
     func askNewFolder(in parent: Bookmark.ID?, made: @escaping (Bookmark.ID) -> Void = { _ in }) {
-        Ask.name("New Folder", placeholder: "Folder name", confirm: "Make") { name in
+        Ask.name("New Folder".localized, placeholder: "Folder name".localized, confirm: "Make".localized) { name in
             made(self.insert(.folder(name, []), into: parent).id)
         }
     }
@@ -529,11 +529,11 @@ final class Bookmarks: ObservableObject {
         guard node.isFolder, let kids = node.children, !kids.isEmpty else { return remove(node.id) }
         let count = Bookmarks.count(kids)
         let detail = switch count {
-        case 0: "The empty folders in it go too."
-        case 1: "The bookmark in it goes too."
+        case 0: "The empty folders in it go too.".localized
+        case 1: "The bookmark in it goes too.".localized
         default: Localized("The \(count) bookmarks in it go too.")
         }
-        Ask.sure("Remove \u{201C}\(node.title)\u{201D}?", detail: detail, confirm: "Remove") {
+        Ask.sure(Localized("Remove “\(node.title)”?"), detail: detail, confirm: "Remove".localized) {
             self.remove(node.id)
         }
     }
@@ -715,12 +715,12 @@ struct BookmarkOutline: View {
     /// folder; a bookmark left without one is its icon alone on the bar.
     private func rename(_ node: Bookmark) {
         if node.isFolder {
-            Ask.name("Rename Folder", placeholder: node.title, initial: node.title, confirm: "Rename") {
+            Ask.name("Rename Folder".localized, placeholder: node.title, initial: node.title, confirm: "Rename".localized) {
                 bookmarks.update(node.id, title: $0, url: nil)
             }
         } else {
-            Ask.name("Rename Bookmark", detail: "Without a name, the bookmarks bar shows its icon alone.",
-                     placeholder: node.label, initial: node.title, confirm: "Rename", empty: true) {
+            Ask.name("Rename Bookmark".localized, detail: "Without a name, the bookmarks bar shows its icon alone.".localized,
+                     placeholder: node.label, initial: node.title, confirm: "Rename".localized, empty: true) {
                 bookmarks.update(node.id, title: $0, url: nil)
             }
         }
@@ -1055,7 +1055,7 @@ struct BookmarkCard: View {
             }
             Divider()
             Button("New Folder\u{2026}") {
-                Ask.name("New Folder", placeholder: "Name", confirm: "Create") { name in
+                Ask.name("New Folder".localized, placeholder: "Name".localized, confirm: "Create".localized) { name in
                     let made = bookmarks.insert(.folder(name, []), into: nil)
                     bookmarks.move(id, into: made.id)
                 }
@@ -1154,10 +1154,11 @@ struct BookmarksDropdown: View {
             }
             Divider().overlay(Palette.hairline)
             VStack(spacing: 1) {
-                Foot(browser.pageKept ? "bookmark.fill" : "bookmark", browser.pageKept ? "Edit This Bookmark\u{2026}" : "Add This Page") {
+                Foot(browser.pageKept ? "bookmark.fill" : "bookmark",
+                     (browser.pageKept ? "Edit This Bookmark…" : "Add This Page").localized) {
                     browser.bookmarkCurrent()
                 }
-                Foot(nil, "Manage Bookmarks…") { browser.bookmarking = true }
+                Foot(nil, "Manage Bookmarks…".localized) { browser.bookmarking = true }
             }
             .padding(6)
         }

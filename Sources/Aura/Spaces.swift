@@ -20,8 +20,13 @@ struct Space: Codable, Identifiable, Equatable {
     var id: UUID
     var name: String
     /// Which of `Spaces.colours` — from before spaces had icons; kept so an
-    /// older list still reads.
+    /// older list still reads, and the colour a space has before it is given
+    /// one of Arc's own (see `spaceTheme`).
     var colour: Int
+    /// Its colour, as Arc's Space Style Editor keeps one: hue, how much of it,
+    /// and the grain over the glass. Nil for a space that still wears one of
+    /// the six it had before.
+    var theme: SpaceTheme? = nil
     /// Its icon, one of `Spaces.icons`.
     var icon: String?
     /// Signed in wherever the first space is — the same cookies and
@@ -39,6 +44,12 @@ struct Space: Codable, Identifiable, Equatable {
     /// The icon it shows: its own, or a house for the first and a
     /// briefcase for any other that has none yet.
     var symbol: String { icon.flatMap { Spaces.icons.contains($0) ? $0 : nil } ?? (isFirst ? "house" : "briefcase") }
+
+    /// What colours its window: its own theme, or the one of the six colours
+    /// it wore before themes existed, as a theme.
+    var spaceTheme: SpaceTheme {
+        theme ?? SpaceTheme(colour: NSColor(Spaces.colours[min(max(colour, 0), Spaces.colours.count - 1)]))
+    }
 }
 
 enum Spaces {
@@ -50,8 +61,6 @@ enum Spaces {
         Color(red: 0.90, green: 0.33, blue: 0.40), // red
         Color(red: 0.62, green: 0.40, blue: 0.90), // violet
     ]
-    static let colourNames = ["Slate", "Blue", "Green", "Orange", "Red", "Violet"]
-
     /// The icons a space can wear: Apple's own symbols, drawn in one weight
     /// and one grey, grouped as work, thinking, leisure and life.
     static let icons = [
@@ -254,11 +263,16 @@ extension Browser {
         return Spaces.icons.first { !used.contains($0) } ?? "briefcase"
     }
 
+    /// The colour a new space takes: the next in the wheel after the ones
+    /// there, so spaces tell apart at a glance and in the window's glass (see
+    /// `ContentView.washGlass`). Arc gives each space a colour of its own too.
+    var nextSpaceColour: Int { spaces.count % Spaces.colours.count }
+
     /// A new space — signed in where the others are, or starting afresh with
     /// its own cookies and sign-ins. By default it starts empty and on screen.
     func addSpace(named name: String, icon: String? = nil, sharesSignIns: Bool = true) {
         makingSpace = false
-        let made = Space(id: UUID(), name: name, colour: 0, icon: icon ?? freeIcon, sharesSignIns: sharesSignIns)
+        let made = Space(id: UUID(), name: name, colour: nextSpaceColour, icon: icon ?? freeIcon, sharesSignIns: sharesSignIns)
         spaces.append(made)
         Spaces.write(spaces)
         if let afterSpaceCreated {
@@ -309,6 +323,15 @@ extension Browser {
         Spaces.write(spaces)
     }
 
+    /// Arc's palette, as its Space Style Editor keeps it: the hue and how much
+    /// of it, and the grain over the glass (see SpaceTheme.swift). Nil puts
+    /// the space back on the colour it had before themes.
+    func setSpaceTheme(_ id: UUID, to theme: SpaceTheme?) {
+        guard let at = spaces.firstIndex(where: { $0.id == id }) else { return }
+        spaces[at].theme = theme
+        Spaces.write(spaces)
+    }
+
     func setSpaceDownloads(_ id: UUID, to folder: URL?) {
         guard let at = spaces.firstIndex(where: { $0.id == id }) else { return }
         spaces[at].downloads = folder?.path
@@ -351,6 +374,7 @@ extension Browser {
 /// went — out on one side, the next one in from the other.
 struct SpaceDot: View {
     @ObservedObject var browser: Browser
+    @Environment(\.sideInk) private var side
     @State private var hovering = false
     /// What is drawn, a step behind the browser: the space changes in a
     /// frame with nothing animated (see SpaceSwipe.slide), and the icon
@@ -370,7 +394,7 @@ struct SpaceDot: View {
             ZStack {
                 Image(systemName: shown?.symbol ?? symbol)
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(hovering ? Palette.ink : Palette.muted)
+                    .foregroundStyle(hovering ? side.ink : side.muted)
                     .id(shown?.key ?? key)
                     // The way the tabs go: sideways in the column; in the bar
                     // across the top, up for the next space, down going back.
@@ -389,6 +413,14 @@ struct SpaceDot: View {
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
         .help("\(browser.space.name) — ⌃1–⌃9, or two fingers \(browser.prefs.sidebar ? "sideways" : "up or down") over the tabs, to switch")
+        // The space's own colour, in Arc's palette, over the dot it belongs
+        // to (see SpaceThemeEditor): the column beside it is the preview.
+        .popover(isPresented: Binding(
+            get: { browser.spaceThemeEditing },
+            set: { browser.spaceThemeEditing = $0 }
+        ), arrowEdge: .bottom) {
+            SpaceThemeEditor(browser: browser)
+        }
         .onChange(of: key) { _, now in
             let symbol = symbol
             DispatchQueue.main.async {
@@ -467,37 +499,46 @@ enum SpaceMenu {
             menu.addItem(entry)
         }
         menu.addItem(.separator())
-        menu.addItem(item("New Space…") { browser.askForSpace() })
+        menu.addItem(item("New Space…".localized) { browser.askForSpace() })
         menu.addItem(.separator())
         let here = browser.space
-        menu.addItem(item("Rename “\(here.name)”…") {
-            Ask.name("Rename Space", placeholder: here.name, initial: here.name, confirm: "Rename") { browser.renameSpace(here.id, to: $0) }
+        menu.addItem(item(Localized("Rename “\(here.name)”…")) {
+            Ask.name("Rename Space".localized, placeholder: here.name, initial: here.name, confirm: "Rename".localized) { browser.renameSpace(here.id, to: $0) }
         })
         let icons = NSMenu()
         for (symbol, name) in zip(Spaces.icons, Spaces.iconNames) {
-            let choice = item(name, checked: here.symbol == symbol) { browser.setSpaceIcon(here.id, to: symbol) }
-            choice.image = NSImage(systemSymbolName: symbol, accessibilityDescription: name)
+            let choice = item(name.localized, checked: here.symbol == symbol) { browser.setSpaceIcon(here.id, to: symbol) }
+            choice.image = NSImage(systemSymbolName: symbol, accessibilityDescription: name.localized)
             icons.addItem(choice)
         }
         let icon = NSMenuItem(title: "Icon".localized, action: nil, keyEquivalent: "")
         icon.submenu = icons
         menu.addItem(icon)
+        // The space's colour: what tells one space from another at a glance,
+        // and what the window's glass is tinted with while you are in it (see
+        // SpaceTheme.swift and `ContentView.washGlass`), as Arc's space colours
+        // tint its window. The sheet is Arc's own palette — a hue and how much
+        // of it, its 27 colours, and the grain — opened on the dot below.
+        menu.addItem(item("Colour…".localized) { browser.spaceThemeEditing = true })
+        menu.addItem(item("Default Colour".localized) { browser.setSpaceTheme(here.id, to: nil) })
         // The order is the swipe's, and ⌃1–⌃9's.
         if let at = browser.spaces.firstIndex(where: { $0.id == here.id }) {
-            if at > 0 { menu.addItem(item("Move Left") { browser.moveSpace(here.id, to: at - 1) }) }
-            if at < browser.spaces.count - 1 { menu.addItem(item("Move Right") { browser.moveSpace(here.id, to: at + 1) }) }
+            if at > 0 { menu.addItem(item("Move Left".localized) { browser.moveSpace(here.id, to: at - 1) }) }
+            if at < browser.spaces.count - 1 { menu.addItem(item("Move Right".localized) { browser.moveSpace(here.id, to: at + 1) }) }
         }
         let folder = here.downloads.map { URL(fileURLWithPath: $0).lastPathComponent }
-        menu.addItem(item(folder.map { "Downloads to “\($0)”…" } ?? "Downloads Folder…") {
+        menu.addItem(item(folder.map { Localized("Downloads to “\($0)”…") } ?? "Downloads Folder…".localized) {
             Ask.folder { browser.setSpaceDownloads(here.id, to: $0) }
         })
         if folder != nil {
-            menu.addItem(item("Downloads to the Folder in Settings") { browser.setSpaceDownloads(here.id, to: nil) })
+            menu.addItem(item("Downloads to the Folder in Settings".localized) { browser.setSpaceDownloads(here.id, to: nil) })
         }
         if !here.isFirst {
             menu.addItem(.separator())
-            menu.addItem(item("Delete “\(here.name)”…") {
-                Ask.sure("Delete “\(here.name)”?", detail: "Its tabs close, and its cookies and sign-ins are erased from this Mac. History and bookmarks stay.", confirm: "Delete") {
+            menu.addItem(item(Localized("Delete “\(here.name)”…")) {
+                Ask.sure(Localized("Delete “\(here.name)”?"),
+                         detail: "Its tabs close, and its cookies and sign-ins are erased from this Mac. History and bookmarks stay.".localized,
+                         confirm: "Delete".localized) {
                     browser.deleteSpace(here.id)
                 }
             })

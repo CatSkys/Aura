@@ -238,6 +238,8 @@
 "Space {1}" = "空间 {1}";
 
 /* —— The tab's own menu —— */
+"Allow Pop-ups from {1} in This Tab" = "允许 {1} 在此标签页中弹出窗口";
+"Always Allow Pop-ups from {1}" = "始终允许 {1} 弹出窗口";
 "Copy Addresses" = "拷贝地址";
 "Move to Group" = "移到分组";
 "New Group" = "新建分组";
@@ -275,6 +277,17 @@
 "File…" = "文件…";
 "Nothing matches." = "没有匹配项。";
 "Show in Folder" = "在文件夹中显示";
+"Edit This Bookmark…" = "编辑此书签…";
+"Edit Bookmark…" = "编辑书签…";
+"Manage Bookmarks…" = "管理书签…";
+"New Folder" = "新建文件夹";
+"Folder name" = "文件夹名称";
+"Make" = "创建";
+"Rename Folder" = "重命名文件夹";
+"Rename Bookmark" = "重命名书签";
+"Without a name, the bookmarks bar shows its icon alone." = "不填名称时，书签栏只显示它的图标。";
+"The empty folders in it go too." = "里面没有内容的文件夹也会一并删除。";
+"The bookmark in it goes too." = "里面的书签也会一并删除。";
 
 /* —— The questions a page asks —— */
 "OK" = "好";
@@ -290,9 +303,48 @@
 
 /* —— Spaces —— */
 "Icon" = "图标";
+"Colour" = "颜色";
+"Colour…" = "调色盘…";
+"Default Colour" = "默认颜色";
+"Pastel" = "柔和";
+"Drab" = "沉稳";
+"Greyscale" = "灰阶";
+"Grain" = "颗粒";
+"Reset" = "恢复默认";
+"Slate" = "石板灰";
+"Blue" = "蓝色";
+"Green" = "绿色";
+"Orange" = "橙色";
+"Red" = "红色";
+"Violet" = "紫色";
 "New Space" = "新建空间";
 "Its own tabs. Signed in where your other spaces are, unless it starts afresh." = "独立的标签页。除非重新开始，否则沿用你其他空间的登录状态。";
 "Work" = "工作";
+"Office" = "办公室";
+"Desktop" = "桌面";
+"Laptop" = "笔记本电脑";
+"Code" = "代码";
+"Terminal" = "终端";
+"AI" = "AI";
+"Thinking" = "思考";
+"Ideas" = "灵感";
+"Games" = "游戏";
+"Leisure" = "休闲";
+"Café" = "咖啡";
+"Music" = "音乐";
+"Film" = "影视";
+"Art" = "艺术";
+"Photos" = "照片";
+"Home" = "主页";
+"Reading" = "阅读";
+"Studies" = "学习";
+"Shopping" = "购物";
+"Travel" = "旅行";
+"Sport" = "运动";
+"Nature" = "自然";
+"Personal" = "个人";
+"Move Tab?" = "移动标签页？";
+"Move" = "移动";
 "Create" = "创建";
 "Downloads in this space go here. Cancel keeps the folder it has." = "此空间中的下载会存到这里。取消则保留原有文件夹。";
 "New space" = "新空间";
@@ -314,6 +366,9 @@
 
 /* —— Passwords —— */
 "Passwords" = "密码";
+"Remove 1 Password?" = "移除 1 个密码？";
+"Remove {1} Passwords?" = "移除 {1} 个密码？";
+"They're taken out of your keychain. Only the passwords Aura keeps are removed: password managers, other apps and other browsers keep theirs. This can't be undone." = "它们会从你的钥匙串里移除。只移除 Aura 保存的密码：密码管理器、其他 App 和其他浏览器里的密码不受影响。此操作无法撤销。";
 "macOS asks once for that browser's keychain key. Nothing is changed there; everything lands in your own keychain, under Aura." = "macOS 会询问一次那个浏览器的钥匙串密钥。对方的数据不会被改动；所有内容都会存入你自己的钥匙串，归属 Aura。";
 "{1} accounts" = "{1} 个账号";
 "Copy" = "拷贝";
@@ -323,6 +378,8 @@
 "Zoom" = "缩放";
 "{1}%" = "{1}%";
 "Play Sound by Itself" = "自行播放声音";
+"Switch to Tab" = "切换到此标签页";
+"Don't Play Sound by Itself" = "此站不自行出声";
 "from the next page" = "从下一个页面起";
 "Don't Float Videos Here" = "不要在此浮动视频";
 
@@ -371,6 +428,9 @@
 
 /* —— Extensions —— */
 "Chrome extensions" = "Chrome 扩展";
+"Chrome Web Store…" = "Chrome 应用商店…";
+"Load Unpacked…" = "加载已解压的扩展…";
+"Manage Extensions…" = "管理扩展…";
 "Need macOS 15.4 or later — the version whose WebKit can run them." = "需要 macOS 15.4 或更高版本——只有该版本的 WebKit 才能运行它们。";
 "Add from the Chrome Web Store" = "从 Chrome 应用商店添加";
 "Open the Store" = "打开商店";
@@ -472,6 +532,10 @@
 "Download failed" = "下载失败";
 
 /* —— Split View —— */
+"Even Out" = "平均分配";
+"Separate" = "分开";
+"Close Both" = "关闭两侧";
+"Divider between the pages" = "两个页面之间的分隔条";
 "Or bring in an open tab" = "或并入一个已打开的标签页";
 "{1} asks" = "{1} 请求";
 "Split tabs" = "分屏标签页";
@@ -485,6 +549,10 @@
 "Restore" = "恢复";
 
 /* —— Pictures, spaces, the recording pill —— */
+"Open Image in New Tab" = "在新标签页中打开图片";
+"Copy Image" = "拷贝图片";
+"Download Image" = "下载图片";
+"Copy Image Address" = "拷贝图片地址";
 "Couldn't copy that image" = "无法拷贝该图像";
 "Image copied" = "图像已拷贝";
 "This page is playing in the floating window." = "此页面正在浮动窗口中播放。";

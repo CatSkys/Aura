@@ -316,9 +316,9 @@ private struct PaneQuestionCard: View {
                 HStack(spacing: 8) {
                     Spacer(minLength: 0)
                     if question.kind != .alert {
-                        choice("Cancel", strong: false) { answer(false) }
+                        choice("Cancel".localized, strong: false) { answer(false) }
                     }
-                    choice("OK", strong: true) { answer(true) }
+                    choice("OK".localized, strong: true) { answer(true) }
                 }
                 .padding(.top, 2)
             }

@@ -12,8 +12,18 @@ struct SideBar: View {
     /// On the window's ground, beside the page's card (see CardEdge): the
     /// ground's colour and no edge of its own, the card's edge being the line.
     var onFrame = false
+    /// On the window's glass (see Glass.swift): the column paints no ground
+    /// at all, the blurred desktop showing through it, and its rows wear the
+    /// glass's washes rather than the frame's greys.
+    var glass = false
     /// The greys for that ground, handed down to every row, pin and door.
-    private var greys: Greys { onFrame ? .frame : .white }
+    private var greys: Greys { glass ? .glass : onFrame ? .frame : .white }
+    /// The inks for it: the window's light or dark, and the space's own colour
+    /// on the glass (see `SideInk`).
+    @Environment(\.colorScheme) private var scheme
+    private var sideInk: SideInk {
+        glass ? .glass(browser.space.spaceTheme, dark: scheme == .dark) : .standard
+    }
 
     @Namespace private var pill
 
@@ -93,6 +103,7 @@ struct SideBar: View {
             }
         }
         .environment(\.greys, greys)
+        .environment(\.sideInk, sideInk)
         .frame(width: prefs.sideWidth)
         .frame(maxHeight: .infinity)
         // Rows on their way to or from another space stay in the column.
@@ -100,14 +111,22 @@ struct SideBar: View {
         .onAppear { SpaceSwipe.shared.start(for: browser) }
         .background {
             ZStack {
-                landing ? greys.hover : onFrame ? Palette.frame : Palette.ground
+                // Glass: no ground of its own — the window's glass is the
+                // ground (see Glass.swift). Landing on it still says so.
+                if glass {
+                    if landing { greys.hover }
+                } else {
+                    landing ? greys.hover : onFrame ? Palette.frame : Palette.ground
+                }
                 if prefs.splitView {
                     SplitDropZone(browser: browser, tab: nil, kind: .strip)
                 }
             }
         }
         .overlay(alignment: innerEdge) {
-            if !onFrame { Rectangle().fill(Palette.hairline).frame(width: 1) }
+            // Glass needs no line to part it from the page; a colour of its
+            // own on the white ground did.
+            if !onFrame, !glass { Rectangle().fill(Palette.hairline).frame(width: 1) }
         }
         .overlay(alignment: innerEdge) { edge }
         .onDrop(of: [.url, .text], isTargeted: $landing) { providers in
@@ -601,6 +620,7 @@ private struct PinGrid: Layout {
 /// room to spare turns into a wide, short button rather than a bigger icon.
 private struct PinSquare: View {
     @Environment(\.greys) private var greys
+    @Environment(\.sideInk) private var side
     @ObservedObject var browser: Browser
     @ObservedObject var prefs: Preferences
     @ObservedObject var tab: Tab
@@ -629,7 +649,7 @@ private struct PinSquare: View {
             } else {
                 Text(tab.pin ?? "")
                     .font(.system(size: scale * 12 / 34, weight: .medium))
-                    .foregroundStyle((live ? Palette.ink : Palette.muted).opacity(tab.asleep ? 0.45 : 1))
+                    .foregroundStyle((live ? side.ink : side.muted).opacity(tab.asleep ? 0.45 : 1))
             }
         }
         .frame(width: scale * 16 / 34, height: scale * 16 / 34)
@@ -654,7 +674,7 @@ private struct PinSquare: View {
         .overlay {
             if browser.selectedTabIDs.contains(tab.id) {
                 RoundedRectangle(cornerRadius: scale * 9 / 34, style: .continuous)
-                    .strokeBorder(Palette.ink.opacity(0.35), lineWidth: 1)
+                    .strokeBorder(side.ink.opacity(0.35), lineWidth: 1)
                     .allowsHitTesting(false)
             }
         }
@@ -690,6 +710,7 @@ private struct PinSquare: View {
 /// One tab, as a line in the column.
 private struct SideRow: View {
     @Environment(\.greys) private var greys
+    @Environment(\.sideInk) private var side
     @ObservedObject var browser: Browser
     @ObservedObject var prefs: Preferences
     @ObservedObject var tab: Tab
@@ -808,9 +829,9 @@ private struct SideRow: View {
                         // Browser.close), and says so, as Arc's does.
                         Image(systemName: tab.pin != nil ? "minus" : "xmark")
                             .font(.system(size: 8, weight: .semibold))
-                            .foregroundStyle(Palette.muted)
+                            .foregroundStyle(side.muted)
                             .frame(width: 15, height: 15)
-                            .background(Palette.ink.opacity(0.07), in: Circle())
+                            .background(side.ink.opacity(0.07), in: Circle())
                             .transition(.opacity)
                     }
                 }
@@ -832,7 +853,7 @@ private struct SideRow: View {
         .overlay {
             if browser.selectedTabIDs.contains(tab.id) {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .strokeBorder(Palette.ink.opacity(0.35), lineWidth: 1)
+                    .strokeBorder(side.ink.opacity(0.35), lineWidth: 1)
                     .allowsHitTesting(false)
             }
         }
@@ -885,14 +906,15 @@ private struct SideRow: View {
     }
 
     private var colour: Color {
-        if live { return Palette.ink }
-        return hovering ? Palette.ink.opacity(0.7) : Palette.muted
+        if live { return side.ink }
+        return hovering ? side.ink.opacity(0.7) : side.muted
     }
 }
 
 /// A row that is an action rather than a page. Quiet until the pointer is on it.
 struct Quiet: View {
     @Environment(\.greys) private var greys
+    @Environment(\.sideInk) private var side
     let icon: String
     let title: String
     var height: CGFloat = 28
@@ -911,7 +933,7 @@ struct Quiet: View {
                     .font(.system(size: size))
                 Spacer(minLength: 0)
             }
-            .foregroundStyle(hovering ? Palette.ink.opacity(0.7) : Palette.faint)
+            .foregroundStyle(hovering ? side.ink.opacity(0.7) : side.faint)
             .padding(.leading, 10)
             .frame(height: height)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -932,6 +954,7 @@ struct Quiet: View {
 /// the tabs below it closed, everything above it left as it was.
 struct KeepLine: View {
     static let height: CGFloat = 18
+    @Environment(\.sideInk) private var side
     /// Whether there is anything under it to clear.
     let clears: Bool
     let act: () -> Void
@@ -951,7 +974,7 @@ struct KeepLine: View {
                         Text("Clear")
                             .font(.system(size: 11))
                     }
-                    .foregroundStyle(Palette.muted)
+                    .foregroundStyle(side.muted)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -973,6 +996,7 @@ struct KeepLine: View {
 /// it only while the pointer is on it.
 struct Speaker: View {
     @ObservedObject var tab: Tab
+    @Environment(\.sideInk) private var side
 
     @State private var hovering = false
 
@@ -980,9 +1004,9 @@ struct Speaker: View {
         Button(action: tab.toggleMute) {
             Image(systemName: tab.muted ? "speaker.slash.fill" : "speaker.wave.2.fill")
                 .font(.system(size: 8))
-                .foregroundStyle(Palette.muted)
+                .foregroundStyle(side.muted)
                 .frame(width: 15, height: 15)
-                .background(Palette.ink.opacity(hovering ? 0.07 : 0), in: Circle())
+                .background(side.ink.opacity(hovering ? 0.07 : 0), in: Circle())
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
@@ -995,6 +1019,7 @@ struct Speaker: View {
 /// A small square holding one symbol. Lit when what it opens is open.
 struct Door: View {
     @Environment(\.greys) private var greys
+    @Environment(\.sideInk) private var side
     let icon: String
     var on = false
     var help = ""
@@ -1006,7 +1031,7 @@ struct Door: View {
         Button(action: act) {
             Image(systemName: icon)
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(on ? Palette.ink : (hovering ? Palette.ink.opacity(0.7) : Palette.muted))
+                .foregroundStyle(on ? side.ink : (hovering ? side.ink.opacity(0.7) : side.muted))
                 .frame(width: 26, height: 26)
                 .background(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
