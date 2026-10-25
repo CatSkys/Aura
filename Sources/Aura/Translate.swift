@@ -70,13 +70,15 @@ final class PageTranslator {
         Locale.Language(identifier: Locale.preferredLanguages.first ?? "en")
     }
 
-    /// A language as Search's menus name it ("French"): in English, as the
-    /// rest of the interface is.
+    /// A language as Search's menus name it ("简体中文", "French"): in the
+    /// language the rest of the interface is in, which is the Mac's own. A
+    /// name is read in a menu, never compared, so it is the one thing here
+    /// that is translated rather than kept to English's spelling.
     nonisolated static func name(_ code: String) -> String {
-        let english = Locale(identifier: "en")
+        let ui = Locale(identifier: Locale.preferredLanguages.first ?? "en")
         let language = Locale.Language(identifier: code)
-        if language.script != nil, let full = english.localizedString(forIdentifier: code) { return full }
-        return english.localizedString(forLanguageCode: language.languageCode?.identifier ?? code) ?? code
+        if language.script != nil, let full = ui.localizedString(forIdentifier: code) { return full }
+        return ui.localizedString(forLanguageCode: language.languageCode?.identifier ?? code) ?? code
     }
 
     /// How a language is kept and compared: its code, with its script

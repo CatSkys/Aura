@@ -133,17 +133,18 @@ enum WhatsNew {
     /// Newest first.
     static let notes: [Notes] = [
         Notes(
-            version: "0.1.0", date: "24 October 2026",
-            headline: "Aura, in Chinese. The browser is the same one, under a name and an identity of its own, and every sentence of it now reads in 简体中文.",
+            version: "0.1.0", date: "25 October 2026",
+            headline: "Aura, on Search 1.0.6: the same browser, under a name, an identity and a Chinese interface of its own.",
             new: [
-                "The whole interface in 简体中文, chosen by the Mac's own language order, beside the English it is written in.",
-                "An app of its own: com.catskys.aura, installed beside Search rather than over it, with its own settings, its own session and its own signed-in sites. Nothing of Search's is read or moved.",
-                "Updates come from Aura's own feed, and Help › Send Feedback opens an issue with the version already in it.",
-                "Signing in to OpenRouter is not offered, since its callback lives on a server Aura doesn't have; a key pasted into Settings › AI works the same, and the model on this Mac is untouched.",
+                "The whole interface in 简体中文 — the menus, every page of Settings, the panels, the welcome page and these notes — chosen by the Mac's own language order, with the English kept as the key, so a sentence with no translation yet shows in English rather than as a blank.",
+                "An app of its own: com.catskys.aura, installed beside Search rather than over it, with its own settings, its own session, its own signed-in sites and its own update feed. Nothing of Search's is read or moved.",
+                "Everything Search 1.0.6 brought is here: profiles, websites in the side panel, Apple's Passwords app under a sign-in box, reading mode that follows light and dark and reads a site's own Markdown, Back and Forward held or right-clicked for every page that way, a card before a site shares your screen, sized pop-ups in small windows, two picked tabs in Split View, and the address on the tab you're on.",
+                "Settings in ten short sections with their groups, and Find a setting (⌘F). Settings, History, Downloads, Bookmarks, Passwords and What's New open as pages in tabs of their own.",
+                "The blocker is the lists a real blocker is made of — EasyList, EasyPrivacy and uBlock Origin's own — and the checks sites make for a blocker are answered, so a detector reads what it wants to see.",
+                "Help › Send Feedback opens an issue with the version already in it.",
             ],
             better: [
-                "Everything Search 1.0.6 did, which is everything below this line.",
-                "Sentence by sentence, the app says what it means in two languages now: a missing translation shows in English rather than as a blank.",
+                "Sentence by sentence, the app now says what it means in two languages: a missing translation shows in English rather than as a blank.",
             ],
             fixed: []
         ),

@@ -40,7 +40,9 @@ head = f'''  arch arm: "", intel: "-Intel"
 
   url "https://github.com/CatSkys/Aura/releases/download/v#{{version}}/Aura#{{arch}}.dmg"
 '''
-text, found = re.subn(r'(cask "search" do\n)(.*?)(  name )', lambda m: m.group(1) + head + m.group(3), text, count=1, flags=re.S)
+# The cask's own name is left as the tap has it: this fork's is `aura`, and
+# the one it forked from called it `search`.
+text, found = re.subn(r'(cask "(?:aura|search)" do\n)(.*?)(  name )', lambda m: m.group(1) + head + m.group(3), text, count=1, flags=re.S)
 if not found:
     sys.exit("the cask doesn't have the shape tap.sh knows — look at it by hand")
 text = text.replace("  depends_on arch: :arm64\n", "")
