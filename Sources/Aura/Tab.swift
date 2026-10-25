@@ -2389,8 +2389,9 @@ final class PageView: WKWebView {
 
     /// How far the fingers travel before letting go means it. It was 110,
     /// and going back took a long reach across the trackpad — "too far",
-    /// people said; Safari goes on less.
-    private static let arm: CGFloat = 70
+    /// people said; Safari goes on less. The disc grows to its full size over
+    /// exactly this much (see Stage's Disc), so the two never drift apart.
+    static let arm: CGFloat = 70
     /// A quick flick goes too, short of that, as it does in Safari: at least
     /// this far, within `flickTime` of setting off.
     private static let flick: CGFloat = 30

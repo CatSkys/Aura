@@ -39,6 +39,15 @@ enum Palette {
     static let sideHover = Color(nsColor: NS.sideHover)
     static let sideTile = Color(nsColor: NS.sideTile)
     static let sidePinLive = Color(nsColor: NS.sidePinLive)
+    /// The disc a sideways swipe brings in (see Stage's Disc): one dark disc
+    /// with a white arrow on it, dark in both appearances as Arc's is. It is a
+    /// thing over the page rather than part of the page's own greys, and the
+    /// pages it covers are as often dark as light — a page's own ink would be
+    /// white on one and black on the next.
+    static let swipeDisc = Color.black.opacity(0.82)
+    /// The arrow on it, and the cross where letting go would close.
+    static let swipeGlyph = Color.white
+
     /// The only two that aren't grey: a connection nobody can read on the
     /// way, and one anybody can (see SiteCard.swift).
     static let safe = Color(nsColor: NS.safe)           // green-700 · green-400
