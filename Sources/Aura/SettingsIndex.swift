@@ -99,6 +99,20 @@ enum SettingsIndex {
     ]
 
     static func group(_ id: String) -> SettingsGroup? { groups.first { $0.id == id } }
+
+    /// The colour a group's rows wear, in the four steps Settings uses:
+    /// blue for how the browser works, green for how windows and pages are
+    /// laid out and guarded, purple for looks, media and the extras, red for
+    /// the group that erases. One colour a card, so a page reads as blocks.
+    static func tint(of group: String) -> Color {
+        switch group {
+        case "clear": return Palette.tileRed
+        case "theme", "motion", "reading", "video", "arc", "developer": return Palette.tilePurple
+        case "window", "tablook", "newtabs", "memory", "tabbar", "spaces", "pins", "blocking", "permissions":
+            return Palette.tileGreen
+        default: return Palette.tileBlue
+        }
+    }
     static func groups(of page: SettingsPanel.Page) -> [SettingsGroup] { groups.filter { $0.page == page } }
     static func items(in group: String) -> [SettingsItem] { items.filter { $0.group == group && !$0.findOnly } }
 
