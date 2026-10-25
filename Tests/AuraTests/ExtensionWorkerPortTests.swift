@@ -9,13 +9,26 @@ final class ExtensionWorkerPortTests: XCTestCase {
         let fixture = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
             .deletingLastPathComponent().appendingPathComponent("ExtensionWorkerRecovery/shim-harness.js")
         let harness = try String(contentsOf: fixture, encoding: .utf8)
+        let folder = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("shim-entry-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let entry = ExtensionShims.shim(for: folder)
+            .replacingOccurrences(of: "__AURA_WORKER_GENERATION__", with: "0")
         for content in [true, false] {
             let js = try XCTUnwrap(JSContext())
-            js.evaluateScript("const console = { log() {}, error() {} };\n" + harness)
+            // Every level the shim may speak at: in a test run it reports
+            // console.warn as well as console.error, and a stub missing one
+            // makes the whole entry throw (AURA_PROBE is set for the process
+            // by whichever suite runs first).
+            js.evaluateScript("const console = { log() {}, error() {}, warn() {}, info() {}, debug() {} };\n" + harness)
             js.evaluateScript("const fixture = recoveryFixture(\(content)); Object.assign(globalThis, fixture.root); window = globalThis; top = globalThis;")
             // Execute the whole shim: slicing after the content-script return
             // would falsely claim that the content path is covered (#506).
-            js.evaluateScript(ExtensionShims.script.replacingOccurrences(of: "__AURA_WORKER_GENERATION__", with: "0"))
+            // What an extension is given is the composed entry, not the raw
+            // source: the words left in it (verbose, its own events, the
+            // scripts it ships) are replaced by shim(for:) alone.
+            js.evaluateScript(entry)
             XCTAssertNil(js.exception?.toString())
             js.evaluateScript("const port = chrome.runtime.connect(); let count = 0; port.onDisconnect.addListener(() => count++); port.postMessage({ question: 'hello' });")
             drain(js)
