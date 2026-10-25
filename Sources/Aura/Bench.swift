@@ -731,6 +731,16 @@ final class Bench {
             let width = request["width"] as? Double
             shoot(tab, to: URL(fileURLWithPath: path), width: width, answer)
 
+        case "spacecard":
+            // The card of spaces (see SpaceSwitcher), which nothing but a
+            // click on the dot opens: up or down, and where the dot it hangs
+            // over stands in the window.
+            guard Store.testing else { answer(["error": "spacecard only works on a --test run"]); return }
+            browser.spaceCardUp = request["on"] as? Bool ?? true
+            let dot = browser.spaceDotFrame
+            answer(["up": browser.spaceCardUp,
+                    "dot": ["x": dot.minX, "y": dot.minY, "width": dot.width, "height": dot.height]])
+
         case "probe":
             // The state of the window itself, for the bug that is not in a
             // page: which panels are up, whether something modal has the
