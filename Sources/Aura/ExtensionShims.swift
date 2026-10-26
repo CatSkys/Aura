@@ -4309,9 +4309,17 @@ enum ExtensionShims {
                 .filter { !Extensions.withheld($0) }
             let named = found.requestedPermissions.union(found.optionalPermissions)
             // Sites as the manifest names them, optional ones included —
-            // which allRequestedMatchPatterns leaves out.
-            let places = Set(found.allRequestedMatchPatterns.union(found.optionalPermissionMatchPatterns).map(\.string))
-            guard wanted.allSatisfy(named.contains), origins.allSatisfy({ places.contains($0.string) }) else {
+            // which allRequestedMatchPatterns leaves out. A site it covers
+            // is one it named, as Chrome and WebKit both read it: the
+            // optional https://*/* an extension asks its API host under is
+            // the same answer as that host written out, and asking it by
+            // the host is what every API setting does (Bilibili AI Skip's
+            // grant button never worked without this). Matched ignoring
+            // paths, the way WebKit's own permissions.request matches.
+            let places = found.allRequestedMatchPatterns.union(found.optionalPermissionMatchPatterns)
+            guard wanted.allSatisfy(named.contains), origins.allSatisfy({ asked in
+                places.contains { $0.matches(asked, options: .ignorePaths) }
+            }) else {
                 throw Unsupported(what: "Only permissions specified in the manifest may be requested.")
             }
             let missing = wanted.filter { context.permissionStatus(for: $0) != .grantedExplicitly }

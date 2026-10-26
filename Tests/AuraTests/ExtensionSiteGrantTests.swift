@@ -76,6 +76,47 @@ final class ExtensionSiteGrantTests: XCTestCase {
         XCTAssertFalse(compact.hasAccess(to: URL(string: "https://news.example.com/article")!))
     }
 
+    /// An extension's own API setting asks for one host, under the optional
+    /// https://*/* its manifest names — Bilibili AI Skip's grant button does
+    /// exactly this, and it never worked: the manifest's pattern and the
+    /// asked one had to be the same string.
+    func testSiteCoveredByAnOptionalWildcardIsGranted() async throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("covered-\(UUID())")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let manifest: [String: Any] = [
+            "manifest_version": 3, "name": "Covered", "version": "1",
+            "permissions": ["storage"],
+            "host_permissions": ["*://api.bilibili.com/*"],
+            "optional_host_permissions": ["https://*/*", "http://localhost/*", "http://127.0.0.1/*"],
+        ]
+        try JSONSerialization.data(withJSONObject: manifest).write(to: folder.appendingPathComponent("manifest.json"))
+        let ext = try await WKWebExtension(resourceBaseURL: folder)
+        let context = WKWebExtensionContext(for: ext)
+        Extensions.grantSites(context)
+        Extensions.fence(context)
+        let browser = Browser(record: WindowRecord())
+        Browsers.register(browser)
+        defer { browser.closeAll() }
+        let previous = Extensions.shared.answerForTests
+        Extensions.shared.answerForTests = true
+        defer { Extensions.shared.answerForTests = previous }
+        let api = try XCTUnwrap(URL(string: "https://amr-link.open-design.ai/v1/chat/completions"))
+        XCTAssertFalse(context.hasAccess(to: api), "not given yet")
+        Extensions.touched[context.uniqueIdentifier] = Date()
+        let reply = try await ExtensionShims.answer([
+            "api": "permissions.afterClick", "args": [[], ["https://amr-link.open-design.ai/*"]],
+        ], from: context, owner: Extensions.shared) as? [String: Any]
+        XCTAssertEqual(reply?["value"] as? Bool, true, "covered by https://*/*, so the answer is yes: \(String(describing: reply))")
+        XCTAssertTrue(context.hasAccess(to: api))
+        // One the manifest never named, wildcard or not, is still refused.
+        Extensions.touched[context.uniqueIdentifier] = Date()
+        let refused = try await ExtensionShims.answer([
+            "api": "permissions.afterClick", "args": [[], ["ftp://unescaped.invalid/*"]],
+        ], from: context, owner: Extensions.shared) as? [String: Any]
+        XCTAssertNotNil(refused?["error"], "\(String(describing: refused))")
+    }
+
     func testDifferentPathsAndSchemesAreKept() async throws {
         let patterns = ["https://*.example.com/one/*", "https://example.com/two/*", "http://example.com/one/*"]
         let (folder, ext) = try await fixture(patterns)
