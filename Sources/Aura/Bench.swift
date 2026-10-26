@@ -1922,56 +1922,112 @@ final class Bench {
                 browser.prefs.ai = true
                 browser.prefs.aiProvider = provider
                 if let model = request["model"] as? String { browser.prefs.setAIModel(model, for: provider) }
-                answer(["provider": provider.rawValue, "model": browser.prefs.aiModel(for: provider)])
+                // An API of your own is its address, its name and its shape.
+                if provider == .custom {
+                    if let base = request["base"] as? String { browser.prefs.aiCustomAddress = base }
+                    if let name = request["name"] as? String { browser.prefs.aiCustomName = name }
+                    if let wire = request["wire"] as? String { browser.prefs.aiCustomWire = wire }
+                }
+                answer(["provider": provider.rawValue, "model": browser.prefs.aiModel(for: provider),
+                        "address": AIProvider.customAddress])
             case "summarize", "question":
                 // The menu's Summarize Page or Ask About This Page… on a tab,
-                // then — for a question — the question typed and sent.
+                // then — for a question — the question typed and sent. Both
+                // are the window's conversation now (Chat.swift).
                 guard let tab = find(request, in: browser) else { answer(missing(request)); return }
                 browser.select(tab)
                 if request["action"] as? String == "summarize" { browser.summarizePage() } else { browser.askAboutPage() }
                 if let text = request["text"] as? String {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                        browser.assisting?.draft = text
-                        browser.assisting?.submit()
+                        browser.chat?.draft = text
+                        browser.chat?.submit(from: browser.active)
                     }
                 }
-                answer(["open": browser.assisting != nil])
+                answer(["open": browser.chat != nil, "panel": browser.chatUp])
             case "agree":
-                browser.assisting?.agree()
-                answer(["open": browser.assisting != nil])
+                browser.chat?.agree()
+                answer(["open": browser.chat != nil])
             case "chat":
-                // The conversation that belongs to the window (Chat.swift):
-                // opened, closed, or one question sent into it.
+                // The window's conversation (Chat.swift) and the library of
+                // them (Chats.swift): opened in the column, put away, one
+                // question sent into it, and the list a page of its own shows.
                 switch request["sub"] as? String ?? "state" {
                 case "open":
-                    browser.openChat()
-                    answer(["open": browser.chat != nil, "trouble": browser.chat == nil ? "not opened" : ""])
+                    let chat = browser.openChat()
+                    answer(["open": chat != nil, "panel": browser.chatUp,
+                            "trouble": chat == nil ? "not opened" : ""])
                 case "close":
                     browser.closeChat()
-                    answer(["open": browser.chat != nil])
+                    answer(["open": browser.chat != nil, "panel": browser.chatUp])
                 case "ask":
                     guard let chat = browser.chat else { answer(["error": "no chat open"]); return }
                     chat.draft = request["text"] as? String ?? ""
                     chat.submit(from: browser.active)
                     answer(["open": true])
+                case "new":
+                    let chat = browser.newChat()
+                    answer(["id": chat.id.uuidString, "title": chat.title])
+                case "page":
+                    // The page of them all, in a tab of its own.
+                    browser.show(InternalPage(.chat))
+                    answer(["page": browser.pageTab(.chat) != nil, "panel": browser.chatUp])
+                case "pick":
+                    guard let id = (request["text"] as? String).flatMap(UUID.init(uuidString:)),
+                          let chat = browser.chats.open(id)
+                    else { answer(["error": "chat pick ID"]); return }
+                    browser.chat = chat
+                    answer(["id": chat.id.uuidString, "title": chat.title])
+                case "rename":
+                    guard let chat = browser.chat else { answer(["error": "no chat open"]); return }
+                    browser.chats.rename(chat, to: request["text"] as? String ?? "Renamed")
+                    answer(["title": chat.title])
+                case "forget":
+                    guard let chat = browser.chat else { answer(["error": "no chat open"]); return }
+                    browser.chat = nil
+                    browser.chats.forget(chat)
+                    answer(["left": browser.chats.list.count])
+                case "clear":
+                    browser.chats.clear()
+                    browser.chat = nil
+                    answer(["left": browser.chats.list.count])
+                case "keep":
+                    let said = (request["text"] as? String ?? "on").lowercased()
+                    browser.prefs.keepsChats = !(said == "off" || said == "false" || said == "0")
+                    browser.chats.save()
+                    answer(["kept": browser.prefs.keepsChats])
+                case "save":
+                    browser.chats.saveNow()
+                    let name = browser.profileID == Profile.personalID
+                        ? "chats.json" : "chats-\(browser.profileID.uuidString).json"
+                    answer(["file": Store.file(name).path,
+                            "there": FileManager.default.fileExists(atPath: Store.file(name).path)])
+                case "list":
+                    answer(["chats": browser.chats.shown.map { chat in
+                        ["id": chat.id.uuidString, "title": chat.title, "lines": chat.lines.count,
+                         "busy": chat.busy, "provider": chat.provider.rawValue] as [String: Any]
+                    }])
                 default:
                     guard let chat = browser.chat else { answer(["open": false]); return }
                     answer([
-                        "open": true, "busy": chat.busy, "reading": chat.reading,
+                        "open": true, "panel": browser.chatUp, "id": chat.id.uuidString, "title": chat.title,
+                        "busy": chat.busy, "reading": chat.reading,
                         "notice": chat.notice ?? "", "trouble": chat.trouble ?? "",
-                        "place": chat.place,
+                        "place": chat.place, "kept": Chats.keeps, "stored": browser.chats.list.count,
                         "lines": chat.lines.map { ["mine": $0.mine, "text": $0.text, "done": $0.done,
-                                                   "failed": $0.failed ?? "", "page": $0.page ?? ""] as [String: Any] },
+                                                   "failed": $0.failed ?? "", "page": $0.page ?? "",
+                                                   "strays": $0.strays] as [String: Any] },
                     ])
                 }
             case "state":
-                guard let assistant = browser.assisting else { answer(["open": false]); return }
+                // The conversation's, as it stands (the same answer as chat).
+                guard let chat = browser.chat else { answer(["open": false]); return }
                 answer([
-                    "open": true, "reading": assistant.reading, "notice": assistant.notice ?? "", "trouble": assistant.trouble ?? "",
-                    "addressed": assistant.addressed,
-                    "place": assistant.place,
-                    "turns": assistant.turns.map { ["question": $0.question ?? "", "answer": $0.answer, "done": $0.done,
-                                                     "failed": $0.failed ?? "", "strays": $0.strays] as [String: Any] },
+                    "open": true, "panel": browser.chatUp, "title": chat.title,
+                    "busy": chat.busy, "reading": chat.reading,
+                    "notice": chat.notice ?? "", "trouble": chat.trouble ?? "", "place": chat.place,
+                    "lines": chat.lines.map { ["mine": $0.mine, "text": $0.text, "done": $0.done,
+                                               "failed": $0.failed ?? "", "page": $0.page ?? "",
+                                               "strays": $0.strays] as [String: Any] },
                 ])
             case "picture":
                 // The panel as it stands, and Settings › AI, drawn off screen
@@ -1986,8 +2042,13 @@ final class Bench {
                     let url = URL(fileURLWithPath: path).appendingPathComponent(file)
                     if (try? png.write(to: url)) != nil { made.append(url.path) }
                 }
-                if let assistant = browser.assisting { draw(AssistantPanel(browser: browser, assistant: assistant, drawn: true), "ai-panel.png") }
-                draw(ChatPane(browser: browser, chat: .picture(), drawn: true).frame(width: 700, height: 560), "chat-panel.png")
+                draw(ChatPane(browser: browser, chat: .picture(), drawn: true).frame(width: 420, height: 640), "chat-panel.png")
+                // The page of them all, with the conversation in front of it
+                // when there is one.
+                if browser.chat != nil {
+                    draw(ChatsPanel(browser: browser, chats: browser.chats, drawn: true)
+                            .frame(width: 1000, height: 640), "chats-page.png")
+                }
                 draw(AISettings(browser: browser, prefs: browser.prefs, drawn: true).frame(width: 440), "ai-settings.png")
                 answer(["made": made])
             case "read":
@@ -3291,6 +3352,7 @@ final class Bench {
             var content: [String: Any] = ["kind": "none"]
             switch browser.sidePanel {
             case .page(let id, let url, let tab): content = ["kind": "page", "extension": id, "url": url.absoluteString, "tab": tab.map { $0.uuidString } ?? ""]
+            case .ai: content = ["kind": "ai", "chat": browser.chat?.id.uuidString ?? ""]
             case .site(let url, let space): content = ["kind": "site", "url": url.absoluteString, "space": space.uuidString,
                                                        "store": web.map { $0.configuration.websiteDataStore.isPersistent } ?? false,
                                                        "sameStore": web.map { $0.configuration.websiteDataStore === Spaces.store(for: browser.spaceID) } ?? false,

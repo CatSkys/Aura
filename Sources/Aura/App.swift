@@ -197,8 +197,10 @@ struct SearchApp: App {
                 // or not an answer is configured yet: opened with nothing set
                 // up, it says what is missing and offers Settings › AI.
                 if AI.shipped {
-                    Button(browser.chat != nil ? "Close Chat" : "Chat…") { browser.toggleChat() }
+                    Button(browser.chatUp ? "Close Chat" : "Chat…") { browser.toggleChat() }
                         .shortcut("view.chat")
+                    Button("All Chats") { browser.show(InternalPage(.chat)) }
+                        .shortcut("view.chats")
                 }
                 // The page's own, only once the add-on is on (Settings › AI).
                 if browser.prefs.ai {
@@ -507,16 +509,6 @@ struct ContentView: View {
                             .offset(y: cards && !browser.prefs.splitView ? -(Beam.height + 2) : 0)
                     }
                 }
-                // The conversation takes the page's place, over it: the
-                // window's own chrome — the column, the strip — stays where
-                // it is, as it does in Dia.
-                .overlay {
-                    if let chat = browser.chat {
-                        ChatPane(browser: browser, chat: chat)
-                            .transition(.opacity)
-                    }
-                }
-                .animation(Motion.quick, value: browser.chat?.id)
                 .padding(pageEdges)
                 .offset(pageOffset)
 
@@ -576,15 +568,6 @@ struct ContentView: View {
                             .transition(.move(edge: .top).combined(with: .opacity))
                     }
                 }
-                .overlay(alignment: .topTrailing) {
-                    if let assistant = browser.assisting, assistant.tab == tab.id {
-                        AssistantPanel(browser: browser, assistant: assistant)
-                            .padding(.top, browser.finding ? 64 : 14)
-                            .padding(.trailing, 14)
-                            .transition(.move(edge: .trailing).combined(with: .opacity))
-                    }
-                }
-                .animation(Motion.settle, value: browser.assisting?.id)
                 .overlay(alignment: .topLeading) {
                     if let asked = browser.suggesting, asked.tab == tab.id {
                         AccountList(browser: browser, asked: asked)
@@ -680,13 +663,6 @@ struct ContentView: View {
     /// that extension may see, and no page filling the screen.
     private var panelUp: Bool {
         browser.sidePanelShown && browser.sidePanel != nil && !browser.sidePanelHeld && fullscreenTab == nil
-    }
-
-    /// The conversation beside the page: Dia's assistant, in the column the
-    /// side panel would take (see Chat.swift). The one that is opened has the
-    /// column; the other closes, since a window has one of these at a time.
-    private var chatUp: Bool {
-        browser.chat != nil && fullscreenTab == nil
     }
 
     /// The side panel's width as drawn: as you left it, or narrower in a
@@ -1503,11 +1479,10 @@ struct ContentView: View {
                 browser.dropChoice()
                 return true
             }
-            if browser.assisting != nil {
-                browser.closeAssistant()
-                return true
-            }
-            if browser.chat != nil {
+            // The column with the conversation in it, and only while it is
+            // up: a conversation put away is one of many on the page of them,
+            // not a panel standing open.
+            if browser.chatUp {
                 browser.closeChat()
                 return true
             }
@@ -1606,8 +1581,10 @@ struct ContentView: View {
             if let command = ShortcutStore.shared.customCommand(on: combo) {
                 if command.section == .spaces, !browser.prefs.usesSpaces { return false }
                 if Command.split.contains(command.id), !browser.prefs.splitView { return false }
+                // The conversation and the page of them are there whether or
+                // not an answer is set up: they say what is missing instead.
                 if Command.ai.contains(command.id), !browser.prefs.ai,
-                   command.id != "view.chat" { return false }
+                   command.id != "view.chat", command.id != "view.chats" { return false }
                 if Command.dusk.contains(command.id), !browser.prefs.darkensPages { return false }
                 command.run(browser)
                 return true

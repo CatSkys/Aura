@@ -213,17 +213,31 @@ final class AIClient: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
         return key
     }
 
-    /// The models an app on this Mac has, asked only when Settings shows
-    /// them. Ollama's "cloud" models, which it runs on ollama.com, are left
-    /// out: nothing chosen here leaves this Mac.
-    func localModels(_ provider: AIProvider) async -> [String] {
-        guard provider.isLocal else { return [] }
+    /// The models a provider offers, asked only when Settings shows them: an
+    /// app on this Mac, or the API of your own. Ollama's "cloud" models, which
+    /// it runs on ollama.com, are left out: nothing chosen there leaves this
+    /// Mac.
+    @MainActor
+    func models(_ provider: AIProvider) async -> [String] {
+        guard provider.isLocal || provider == .custom else { return [] }
         let url = provider == .ollama
             ? provider.base.deletingLastPathComponent().appendingPathComponent("api/tags")
             : provider.base.appendingPathComponent("models")
         guard Self.allowed(url, for: provider) else { return [] }
         var request = URLRequest(url: url)
-        request.timeoutInterval = 2
+        request.timeoutInterval = provider.isLocal ? 2 : 8
+        // Your own API is asked with its key, the way it is asked anything.
+        if !provider.isLocal, let key = AIKeys.key(for: provider), !key.isEmpty {
+            switch provider.wire {
+            case .anthropic:
+                request.setValue(key, forHTTPHeaderField: "x-api-key")
+                request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+            case .gemini:
+                request.setValue(key, forHTTPHeaderField: "x-goog-api-key")
+            case .openAI:
+                request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+            }
+        }
         guard let (data, response) = try? await session.data(for: request, delegate: self),
               (response as? HTTPURLResponse)?.statusCode == 200,
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]

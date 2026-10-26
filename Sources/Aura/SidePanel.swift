@@ -31,6 +31,10 @@ enum SidePanelContent: Equatable {
     case page(extensionID: String, url: URL, tab: Tab.ID?)
     /// A website, in the space the window was in when it opened.
     case site(url: URL, space: UUID)
+    /// The window's conversation (see Chat.swift): the same column beside the
+    /// page, with the chat in it instead of a page. What it shows is the
+    /// conversation in front, so one window has one.
+    case ai
 }
 
 /// The sites offered in View › Side Panel, as they are typed: a short list,
@@ -588,6 +592,15 @@ struct SidePanelView: View {
                 if let delegate = SidePanelPages.shared.siteDelegate(in: browser) { SiteLine(browser: browser, delegate: delegate) }
                 Rectangle().fill(Palette.hairline).frame(height: 1)
                 PanelPage(browser: browser)
+            }
+        case .ai:
+            if let chat = browser.chat {
+                ChatPane(browser: browser, chat: chat)
+                    .id(chat.id)
+            } else {
+                // The conversation gone — forgotten from the page's list, or
+                // the profile's — and the panel with it.
+                Color.clear.onAppear { browser.closeSidePanel() }
             }
         case nil:
             Color.clear

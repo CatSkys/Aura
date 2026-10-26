@@ -579,6 +579,24 @@ final class Preferences: ObservableObject {
     @Published private(set) var aiModels: [String: String] {
         didSet { store.set(aiModels, forKey: "ai.models") }
     }
+    /// Your own model: the name it goes by, the root of its API, and which
+    /// way requests are written (Settings › AI › Custom). Its key is in the
+    /// keychain with every other, kept for that API's host.
+    @Published var aiCustomName: String {
+        didSet { store.set(aiCustomName, forKey: "ai.custom.name") }
+    }
+    @Published var aiCustomAddress: String {
+        didSet { store.set(aiCustomAddress, forKey: "ai.custom.address") }
+    }
+    /// "openai" or "anthropic": the two shapes of request Aura knows.
+    @Published var aiCustomWire: String {
+        didSet { store.set(aiCustomWire, forKey: "ai.custom.wire") }
+    }
+    /// Whether a conversation is written down at all (Chats.swift): on unless
+    /// turned off, and off means it dies with the window.
+    @Published var keepsChats: Bool {
+        didSet { store.set(keepsChats, forKey: "ai.keep") }
+    }
 
     func aiModel(for provider: AIProvider) -> String {
         let chosen = (aiModels[provider.rawValue] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -733,6 +751,10 @@ final class Preferences: ObservableObject {
         ai = AI.shipped && store.bool(forKey: "ai")
         aiProvider = store.string(forKey: "ai.provider").flatMap(AIProvider.init(rawValue:))
         aiModels = store.dictionary(forKey: "ai.models") as? [String: String] ?? [:]
+        aiCustomName = store.string(forKey: "ai.custom.name") ?? ""
+        aiCustomAddress = store.string(forKey: "ai.custom.address") ?? ""
+        aiCustomWire = store.string(forKey: "ai.custom.wire") ?? "openai"
+        keepsChats = store.object(forKey: "ai.keep") as? Bool ?? true
         commandBar = store.bool(forKey: "commandbar")
         floatingNewTab = store.bool(forKey: "newtab.floating")
         // On for everyone who never touched it (24 Oct 2026).

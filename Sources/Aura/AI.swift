@@ -35,6 +35,12 @@ enum AIProvider: String, CaseIterable, Identifiable {
     case ollama
     /// LM Studio, on this Mac.
     case lmStudio
+    /// An API of your own (Settings › AI › Custom): a root address, one of
+    /// the two ways of writing a request, a model's name and, unless it runs
+    /// on this Mac, a key. Everything the providers above are is worked out
+    /// from those four, so an OpenAI-compatible server — vLLM, llama.cpp's
+    /// own, a gateway in front of several — is this case and nothing else.
+    case custom
 
     var id: String { rawValue }
 
@@ -47,11 +53,32 @@ enum AIProvider: String, CaseIterable, Identifiable {
         case .openRouter: return "OpenRouter"
         case .ollama: return "Ollama"
         case .lmStudio: return "LM Studio"
+        case .custom:
+            let named = AIProvider.customName.trimmingCharacters(in: .whitespacesAndNewlines)
+            return named.isEmpty ? "Custom" : named
         }
     }
 
-    /// Runs on this Mac: nothing leaves it, and no key is needed.
-    var isLocal: Bool { self == .thisMac || self == .ollama || self == .lmStudio }
+    /// Runs on this Mac: nothing leaves it, and no key is needed. Your own
+    /// API counts as here when its address is this Mac's.
+    var isLocal: Bool {
+        switch self {
+        case .thisMac, .ollama, .lmStudio: return true
+        case .custom:
+            let host = base.host()?.lowercased() ?? ""
+            return host == "127.0.0.1" || host == "::1" || host == "localhost"
+        default: return false
+        }
+    }
+
+    /// Your own model's API, as typed in Settings › AI: the root a request is
+    /// added to, the name it goes by, and how requests are written. Read from
+    /// the settings rather than kept on the case, so a change there is a
+    /// change everywhere — a conversation opened before it included.
+    static var customAddress: String {
+        (Store.settings.string(forKey: "ai.custom.address") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    static var customName: String { Store.settings.string(forKey: "ai.custom.name") ?? "" }
 
     /// The one address requests go to. A key is kept for this host and is
     /// never sent to any other (see AIClient.request).
@@ -66,6 +93,9 @@ enum AIProvider: String, CaseIterable, Identifiable {
         case .openRouter: return URL(string: "https://openrouter.ai/api/v1/")!
         case .ollama: return URL(string: "http://127.0.0.1:11434/v1/")!
         case .lmStudio: return URL(string: "http://127.0.0.1:1234/v1/")!
+        // Nothing until an address is given, and then exactly that: no
+        // provider's host is guessed for it.
+        case .custom: return URL(string: AIProvider.customAddress) ?? URL(string: "http://127.0.0.1:1/")!
         }
     }
 
@@ -85,7 +115,7 @@ enum AIProvider: String, CaseIterable, Identifiable {
         case .openAI: return "gpt-5.4-mini"
         case .gemini: return "gemini-3.8-flash"
         case .openRouter: return "google/gemini-3.8-flash"
-        case .ollama, .lmStudio: return ""
+        case .ollama, .lmStudio, .custom: return ""
         }
     }
 
@@ -96,6 +126,9 @@ enum AIProvider: String, CaseIterable, Identifiable {
         switch self {
         case .anthropic: return .anthropic
         case .gemini: return .gemini
+        // The one choice your own model asks for: most APIs of one's own
+        // speak OpenAI's, and Anthropic's is the other shape Aura writes.
+        case .custom: return (Store.settings.string(forKey: "ai.custom.wire") ?? "openai") == "anthropic" ? .anthropic : .openAI
         default: return .openAI
         }
     }

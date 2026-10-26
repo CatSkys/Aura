@@ -92,6 +92,7 @@ final class Profiles: ObservableObject {
 
     private static var histories: [UUID: History] = [:]
     private static var bookmarkLists: [UUID: Bookmarks] = [:]
+    private static var chatLists: [UUID: Chats] = [:]
 
     /// Its history: Personal's in history.json, as always; another's in a
     /// file of its own.
@@ -107,6 +108,22 @@ final class Profiles: ObservableObject {
         let made = Bookmarks(file: id == Profile.personalID ? "bookmarks.json" : "bookmarks-\(id.uuidString).json")
         bookmarkLists[id] = made
         return made
+    }
+
+    /// Its conversations (see Chats.swift): Personal's in chats.json,
+    /// another's in a file of its own. One object per profile, since two
+    /// windows of a profile read the same list.
+    static func chats(_ id: UUID) -> Chats {
+        if let made = chatLists[id] { return made }
+        let made = Chats(file: id == Profile.personalID ? "chats.json" : "chats-\(id.uuidString).json")
+        chatLists[id] = made
+        return made
+    }
+
+    /// Everything asked and answered so far, on the disk: for the way out,
+    /// where a second's wait to save is a second too long.
+    static func flushChats() {
+        for made in chatLists.values { made.saveNow() }
     }
 
     // MARK: - making, renaming, deleting
@@ -159,8 +176,10 @@ final class Profiles: ObservableObject {
         Spaces.eraseStore(Profiles.stores.removeValue(forKey: id), id: id)
         Profiles.histories.removeValue(forKey: id)?.retire()
         Profiles.bookmarkLists.removeValue(forKey: id)?.retire()
+        Profiles.chatLists.removeValue(forKey: id)?.retire()
         // Never opened this run: their files go all the same.
-        for name in ["history-\(id.uuidString).json", "bookmarks-\(id.uuidString).json"] {
+        for name in ["history-\(id.uuidString).json", "bookmarks-\(id.uuidString).json",
+                     "chats-\(id.uuidString).json"] {
             Disk.remove(Store.file(name))
         }
         Store.settings.removeObject(forKey: "space.current.\(id.uuidString)")
