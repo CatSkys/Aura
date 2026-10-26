@@ -216,7 +216,16 @@ enum Spaces {
     }
 
     /// Every store of a deleted space that is still there, tried again.
+    ///
+    /// Only where there is an app under this process to run WebKit's own main
+    /// run loop: the removal below is dispatched through it, and a process
+    /// without one — `swift test`'s xctest, which builds an `NSApplication`
+    /// but never gives it a delegate — is killed by it, which took
+    /// `ProfilesTests` with it. The ids stay written down and the app sweeps
+    /// them at its next launch (see `Browser.init`), which is where they were
+    /// going to be erased anyway (see `eraseStore`).
     @MainActor static func sweep() {
+        guard NSApp?.delegate != nil else { return }
         for text in Store.settings.stringArray(forKey: "spaces.erasing") ?? [] {
             guard let id = UUID(uuidString: text) else { continue }
             Task { @MainActor in
