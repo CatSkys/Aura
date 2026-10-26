@@ -44,7 +44,9 @@ final class SettingsIndexTests: XCTestCase {
             XCTAssertTrue(prefs.pinsKeepSite)
             XCTAssertEqual(prefs.fastPages, .onPower)
             XCTAssertTrue(prefs.holdsHistory)
-            XCTAssertTrue(prefs.showsAddress)
+            // Off unless it was turned on: a site in the title's place read
+            // as a title that would not load (see Prefs.showsAddress).
+            XCTAssertFalse(prefs.showsAddress)
             XCTAssertEqual(prefs.sleepChoice, .normal)
             XCTAssertEqual(prefs.floatOwn, .tabs)
             XCTAssertEqual(prefs.peekChoice, .shift)
@@ -69,6 +71,8 @@ final class SettingsIndexTests: XCTestCase {
             XCTAssertFalse(prefs.showsAddress)
             XCTAssertFalse(prefs.showsLinks)
             XCTAssertFalse(prefs.floatFlicks)
+            Store.settings.set(true, forKey: "tabs.address")
+            XCTAssertTrue(Preferences().showsAddress, "off by default, on once it is chosen")
             XCTAssertFalse(prefs.pinsKeepSite, "one off, the other never set: off")
             Store.settings.set(true, forKey: "pins.peek")
             XCTAssertTrue(Preferences().pinsKeepSite, "either on: on")
