@@ -2003,12 +2003,12 @@ final class Bench {
                     answer(["title": chat.title])
                 case "forget":
                     guard let chat = browser.chat else { answer(["error": "no chat open"]); return }
-                    browser.chat = nil
+                    browser.forgetChat(chat)
                     browser.chats.forget(chat)
                     answer(["left": browser.chats.list.count])
                 case "clear":
+                    browser.forgetChats()
                     browser.chats.clear()
-                    browser.chat = nil
                     answer(["left": browser.chats.list.count])
                 case "attach":
                     // A file from this Mac, as the plus takes one.
