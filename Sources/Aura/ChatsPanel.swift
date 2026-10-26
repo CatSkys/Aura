@@ -40,8 +40,10 @@ struct ChatsPanel: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Palette.ground)
-        // Nothing chosen yet: the one last talked in, as the column opens on.
-        .onAppear { if browser.chat == nil { browser.chat = chats.newest } }
+        // Nothing opened by coming here: this page is the library, and a
+        // conversation on it is the one brought from the tab it was had on
+        // (Browser.chat) or one chosen from the list. Dia's library opens
+        // nothing of its own either — the list is the list.
     }
 
     // MARK: - the column of conversations
@@ -161,8 +163,8 @@ struct ChatsPanel: View {
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 8) {
                     Pill("Forget Them", filled: true) {
+                        browser.forgetChats()
                         chats.clear()
-                        browser.chat = nil
                         clearing = false
                     }
                     Pill("Cancel") { clearing = false }
@@ -241,7 +243,7 @@ struct ChatsPanel: View {
     }
 
     private func forget(_ chat: Chat) {
-        if browser.chat?.id == chat.id { browser.chat = nil }
+        browser.forgetChat(chat)
         chats.forget(chat)
     }
 }

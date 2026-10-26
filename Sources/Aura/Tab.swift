@@ -315,6 +315,14 @@ final class Tab: ObservableObject, Identifiable {
     /// The stylesheet a page not yet built is to be armed with.
     private var veils = ""
 
+    /// The conversation this tab was asked about, if it has one: Dia keeps a
+    /// chat with the tab it was had on — its own words for the list are "a
+    /// synced tab points to a chat" — so coming back to a tab comes back to
+    /// its chat, and a tab nothing has been asked of has none (Chat.swift).
+    /// Not written down: after a launch a tab starts without one, which is
+    /// what Dia does with a tab it has no chat for.
+    var chat: Chat?
+
     @Published private(set) var title = ""
     @Published private(set) var address: URL?
     /// The address of the page that is actually on screen. `address` moves

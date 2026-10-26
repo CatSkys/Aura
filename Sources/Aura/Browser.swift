@@ -66,6 +66,9 @@ final class Browser: NSObject, ObservableObject {
                 DispatchQueue.main.async { held.forEach { $0.present() } }
             }
             guard oldValue != activeID else { return }
+            // The column beside the page follows the tab into it (Chat.swift):
+            // this tab's chat, or a new one for this tab when it has none.
+            takeUpChat()
             if displayTab?.id == oldValue { cancelDisplay() }
             clearTabSelection()
             // What was found belongs to the page just left; the words typed
@@ -388,10 +391,22 @@ final class Browser: NSObject, ObservableObject {
     /// page or on its own page (see Chat.swift): nil until one is made. It
     /// stays in the profile's list when the column is put away (Chats.swift).
     ///
+    /// It is the front tab's, not the window's: a chat belongs to the tab it
+    /// was asked on (Tab.chat), so the tab you come back to has its chat back
+    /// and a tab nothing has been asked of has none.
+    ///
     /// Setting it is also what tells the conversation which window it acts in
     /// — the assistant's tools click in this one (AITool) — so it is said here
     /// once rather than at every door that opens a conversation.
-    @Published var chat: Chat? { didSet { chat?.browser = self } }
+    @Published var chat: Chat? {
+        didSet {
+            chat?.browser = self
+            // Bound to the tab it is asked on — but the page of them all is
+            // the library, and owns no conversation of its own (takeUpChat).
+            guard pageTab(.chat)?.id != activeID else { return }
+            if active?.chat?.id != chat?.id { active?.chat = chat }
+        }
+    }
     /// The side panel, beside the page (see SidePanel.swift): up or
     /// not, and what is in it.
     @Published var sidePanelShown = false

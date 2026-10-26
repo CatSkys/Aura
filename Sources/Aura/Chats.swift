@@ -62,10 +62,6 @@ final class Chats: ObservableObject {
 
     func open(_ id: Chat.ID) -> Chat? { list.first { $0.id == id } }
 
-    /// The one last talked in: what the column opens on, and what the page
-    /// shows before you have chosen.
-    var newest: Chat? { list.max { $0.updated < $1.updated } }
-
     @discardableResult
     func make(provider: AIProvider, model: String) -> Chat {
         let chat = Chat(provider: provider, model: model)
@@ -140,10 +136,14 @@ final class Chats: ObservableObject {
 
     /// Now, for anything that ends — a profile going, the page cleared, the
     /// switch turned off, which takes the file with it.
+    ///
+    /// A conversation nothing has been said in is not one: every tab the
+    /// column was opened on has an empty one waiting in it (Chat.swift), and
+    /// those would otherwise be a list of blanks by the end of an afternoon.
     func save() {
         guard !retired else { return }
         guard Chats.keeps else { Disk.remove(file); return }
-        let records = list.map(\.record)
+        let records = list.filter { !$0.empty }.map(\.record)
         Disk.write(file) { try? JSONEncoder().encode(records) }
     }
 

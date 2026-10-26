@@ -424,17 +424,19 @@ extension Browser {
         return nil
     }
 
-    /// The conversation in front: made on the way in, when there isn't one.
+    /// The conversation in front: this tab's own, and a new one for a tab
+    /// that has never asked anything.
     @discardableResult
     func openChat() -> Chat? {
         // Off entirely until the add-on is in the build. Everything else the
         // conversation needs is said inside the column (chatSetup), so the
         // door always opens onto something rather than doing nothing.
         guard AI.shipped || Store.testing else { return nil }
-        // The conversation you were last in, rather than a fresh one every
-        // time the door is opened: Dia's assistant comes back where it was.
-        let chat = self.chat ?? chats.newest ?? newChat()
-        self.chat = chat
+        // Not the last conversation this profile had — that one belongs to
+        // the tab it was had on, and is in the list to be gone back to. Dia
+        // opens the assistant on the tab's own chat, and on a tab that has
+        // none it opens an empty one, not somebody else's afternoon.
+        let chat = self.chat ?? newChat()
         showChat()
         return chat
     }
@@ -449,14 +451,41 @@ extension Browser {
         sidePanelShown = true
     }
 
-    /// A conversation of its own, in front: New Chat, or the first word in a
-    /// window that has none.
+    /// A conversation of its own, in front, belonging to the tab in front:
+    /// New Chat, or the first word in a tab that has none.
     @discardableResult
     func newChat() -> Chat {
         let provider = prefs.aiProvider ?? .thisMac
         let chat = chats.make(provider: provider, model: prefs.aiModel(for: provider))
+        // Setting it binds it to the tab in front (Browser.chat).
         self.chat = chat
         return chat
+    }
+
+    /// The tab in front brought its conversation with it — the one it was
+    /// asked on, or a new empty one when the column is up and this tab has
+    /// never been asked anything. A column that is put away makes nothing:
+    /// a chat is a thing that exists once something has been said in it.
+    ///
+    /// The page of them all is the library and not a page a conversation
+    /// hangs off: it shows the one in front (ChatsPanel), so landing on it
+    /// keeps that one rather than starting a chat nothing is said in.
+    func takeUpChat() {
+        if pageTab(.chat)?.id == activeID { return }
+        if active?.chat == nil, chatUp { newChat() } else { chat = active?.chat }
+    }
+
+    /// A conversation taken out of the list is taken off every tab that had
+    /// it, so a tab cannot go on showing what was just forgotten.
+    func forgetChat(_ chat: Chat) {
+        for tab in tabs where tab.chat?.id == chat.id { tab.chat = nil }
+        if self.chat?.id == chat.id { self.chat = nil }
+    }
+
+    /// Forget All: every conversation this window's tabs had.
+    func forgetChats() {
+        for tab in tabs { tab.chat = nil }
+        chat = nil
     }
 
     /// The conversation put away, and not thrown away: it is in the list, and
@@ -468,10 +497,12 @@ extension Browser {
     /// Dia's expand: the conversation into a page of its own, which is a tab
     /// like Settings and History are (InternalPages.swift).
     func expandChat() {
-        if chat == nil { openChat() }
+        let chat = self.chat ?? openChat()
         show(InternalPage(.chat))
-        // Dia's expand is the panel turning into a tab: the column gives the
-        // page back once the page has the conversation.
+        // Dia's expand is the panel turning into a tab: the conversation the
+        // column had is the one the page shows, rather than an empty one of
+        // its own making.
+        self.chat = chat
         if case .ai = sidePanel { closeSidePanel() }
     }
 }
