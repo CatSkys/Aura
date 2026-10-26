@@ -53,7 +53,15 @@ final class TranslateTests: XCTestCase {
     func testCodesAndNames() {
         XCTAssertEqual(PageTranslator.code(Locale.Language(identifier: "fr-FR")), "fr")
         XCTAssertEqual(PageTranslator.code(Locale.Language(identifier: "zh-Hant")), "zh-Hant")
-        XCTAssertEqual(PageTranslator.name("fr"), "French")
+        // The name is said in the Mac's own language, as the menu that offers
+        // it is (see PageTranslator.name): "French" on an English Mac and 法语
+        // on this one, so what it may not be is the code itself, or the same
+        // for two languages.
+        XCTAssertNotEqual(PageTranslator.name("fr"), "fr")
+        XCTAssertNotEqual(PageTranslator.name("fr"), PageTranslator.name("de"))
+        // A script of its own is part of the name, not dropped for the base
+        // language it shares with 简体.
+        XCTAssertNotEqual(PageTranslator.name("zh-Hant"), PageTranslator.name("zh-Hans"))
         XCTAssertTrue(PageTranslator.same(Locale.Language(identifier: "en-US"), Locale.Language(identifier: "en")))
         XCTAssertFalse(PageTranslator.same(Locale.Language(identifier: "zh-Hans"), Locale.Language(identifier: "zh-Hant")))
     }
