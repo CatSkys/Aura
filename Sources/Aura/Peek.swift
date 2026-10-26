@@ -14,6 +14,26 @@ import WebKit
 // The page is a tab of its own, only not in the row: keeping it is moving
 // it there, with nothing loaded twice.
 
+/// The peek's own motion. Arc's floating page does not fade in: it hops in,
+/// a little past its size and back, as a card dropped on the page would — and
+/// leaves on a short ease, so Escape gives the page back at once. The dimming
+/// behind only fades, never grows: edges travelling across the window read as
+/// the page moving rather than the light going out (Drice, 24 Sep 2026).
+enum PeekMotion {
+    /// Coming: a spring with a little give at the end of it.
+    static var arrive: Animation? {
+        Motion.reduced ? nil : Motion.light ? .easeOut(duration: 0.16) : .spring(response: 0.42, dampingFraction: 0.74)
+    }
+    /// Going, as Escape or a click beside it takes it away.
+    static var leave: Animation? {
+        Motion.reduced ? nil : .easeOut(duration: 0.16)
+    }
+    /// The page behind it, dimmed by a fade of its own.
+    static var dim: Animation? {
+        Motion.reduced ? nil : .easeOut(duration: 0.24)
+    }
+}
+
 extension Browser {
     /// A modified click on a link, from a tab in the row.
     func peek(_ url: URL, from tab: Tab) {
@@ -26,7 +46,7 @@ extension Browser {
         prepare(page)
         page.go(to: url)
         putAwayBySwipe(page)
-        withAnimation(Motion.settle) {
+        withAnimation(PeekMotion.arrive) {
             peekTab = page
             peekFrom = tab.id
         }
@@ -73,7 +93,7 @@ extension Browser {
         page.setAddressOptimistically(url)
         putAwayBySwipe(page)
         if let host = url.host()?.lowercased() { tab.peeked = (Vault.registrable(host), Date()) }
-        withAnimation(Motion.settle) {
+        withAnimation(PeekMotion.arrive) {
             peekTab = page
             peekFrom = tab.id
         }
@@ -94,7 +114,7 @@ extension Browser {
     /// Put away: the page goes with the panel.
     func closePeek() {
         guard let page = peekTab else { return }
-        withAnimation(Motion.quick) {
+        withAnimation(PeekMotion.leave) {
             peekTab = nil
             peekFrom = nil
         }
@@ -114,7 +134,7 @@ extension Browser {
         // Kept from a grouped tab, it joins that group, as a link opened
         // from there does (see open).
         if prefs.usesTabGroups, !page.shy, let from = active { page.groupID = from.groupID }
-        withAnimation(Motion.quick) {
+        withAnimation(PeekMotion.leave) {
             peekTab = nil
             peekFrom = nil
         }
@@ -127,33 +147,40 @@ extension Browser {
     }
 }
 
-/// The peek over the page: the page dimmed around it, and the panel.
-struct PeekLayer: View {
+/// The window behind a peek, dimmed: the column and the strip with it, not just
+/// the page. Arc's floating page takes the whole window's attention — the
+/// sidebar's own clicks wait for it — and a dimming that stopped at the page's
+/// edge left the column looking like something you could still go and press.
+///
+/// A click anywhere on it puts the peek away, as a click on the page does.
+struct PeekDim: View {
     @ObservedObject var browser: Browser
-    /// The page's corners, as a card (see CardEdge). The dimming is cut to
-    /// them as well as laid out to the page's edges (see ContentView's
-    /// `pageEdges`): a rectangle inside a rounded card left a darker notch
-    /// at each of the card's corners, on the window's own ground rather than
-    /// on the page. A click that closes the peek is a click on the page, so
-    /// the dimming's own shape is what takes it.
-    var corner: CGFloat = 0
+
+    private var on: Bool { browser.peekTab != nil }
 
     var body: some View {
-        ZStack {
-            // The dimming only fades. Grown and shrunk with the panel, its
-            // edges travelled across the window as it came (Drice, 24 Sep 2026).
-            if browser.peekTab != nil {
-                let page = RoundedRectangle(cornerRadius: corner, style: .continuous)
-                Color.black.opacity(0.22)
-                    .clipShape(page)
-                    .contentShape(page)
-                    .onTapGesture { browser.closePeek() }
-                    .transition(.opacity)
-            }
-            if let tab = browser.peekTab {
-                PeekPanel(browser: browser, tab: tab)
-                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
-            }
+        Color.black
+            // Drawn whether or not a peek is up — a clear sheet over the window
+            // costs nothing — so its own fade is its own, on the dimming's
+            // curve, rather than riding the panel's spring.
+            .opacity(on ? 0.3 : 0)
+            .contentShape(Rectangle())
+            .onTapGesture { if on { browser.closePeek() } }
+            .allowsHitTesting(on)
+            .animation(PeekMotion.dim, value: on)
+    }
+}
+
+/// The peek over the page: the panel, and nothing else — the dimming behind it
+/// is the window's own (see PeekDim and ContentView). The panel hops in a
+/// little past its size, on `PeekMotion.arrive`.
+struct PeekLayer: View {
+    @ObservedObject var browser: Browser
+
+    var body: some View {
+        if let tab = browser.peekTab {
+            PeekPanel(browser: browser, tab: tab)
+                .transition(.scale(scale: 0.92).combined(with: .opacity))
         }
     }
 }
@@ -162,6 +189,15 @@ struct PeekLayer: View {
 struct PeekPanel: View {
     @ObservedObject var browser: Browser
     @ObservedObject var tab: Tab
+
+    /// The gap the panel keeps from the page's own edges. Small and the same
+    /// all round: Arc's floating page nearly fills the window's height, and a
+    /// panel sized as a share of the page looked like a card laid on it rather
+    /// than a page brought forward.
+    private static let margin: CGFloat = 26
+    /// Where the column of buttons stands, out past the page's right edge: the
+    /// panel is centred with this much room kept for them.
+    private static let knobs: CGFloat = 38
 
     var body: some View {
         GeometryReader { geo in
@@ -177,12 +213,12 @@ struct PeekPanel: View {
                                 PeekSkeleton().transition(.opacity.animation(Motion.quick))
                             }
                         }
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
                                 .strokeBorder(Palette.hairline, lineWidth: 1)
                         )
-                        .shadow(color: .black.opacity(0.25), radius: 30, y: 10)
+                        .shadow(color: .black.opacity(0.32), radius: 42, y: 14)
                     VStack(spacing: 8) {
                         Knob("xmark", help: "Close (esc)") { browser.closePeek() }
                         // ⌥ on it keeps the page beside this one, with Split
@@ -195,8 +231,15 @@ struct PeekPanel: View {
                         }
                     }
                 }
-                .frame(width: geo.size.width * 0.82, height: geo.size.height * 0.86)
-                .offset(x: 21)
+                // Three wide to two tall, as Arc's floating page is, whatever
+                // the window's shape: the page nearly fills the height, and the
+                // width follows it until the window itself runs out.
+                .frame(width: min(geo.size.width - PeekPanel.margin * 2,
+                                  (geo.size.height - PeekPanel.margin * 2) * 1.5),
+                       height: geo.size.height - PeekPanel.margin * 2)
+                // Centred with the buttons in the room kept for them, so the
+                // page itself sits in the middle of the page it covers.
+                .offset(x: PeekPanel.knobs / 2)
             }
             .frame(width: geo.size.width, height: geo.size.height)
         }
