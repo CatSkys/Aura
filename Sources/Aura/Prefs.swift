@@ -597,6 +597,22 @@ final class Preferences: ObservableObject {
     @Published var keepsChats: Bool {
         didSet { store.set(keepsChats, forKey: "ai.keep") }
     }
+    /// Whether the conversation may act on the page as well as read it (see
+    /// AITool): clicks, typing, keys, other tabs. A switch of its own, off
+    /// unless asked for, and not tied to `ai`: reading a page and pressing
+    /// buttons on it are different amounts of trust.
+    @Published var aiTools: Bool {
+        didSet {
+            if aiTools, !AI.shipped, !Store.testing { aiTools = false; return }
+            store.set(aiTools, forKey: "ai.tools")
+        }
+    }
+    /// Whether an element is framed for a moment before the assistant touches
+    /// it (AIToolReveal): on unless turned off, since it is the cheapest way
+    /// to see what is happening.
+    @Published var aiToolsReveal: Bool {
+        didSet { store.set(aiToolsReveal, forKey: "ai.tools.reveal") }
+    }
 
     func aiModel(for provider: AIProvider) -> String {
         let chosen = (aiModels[provider.rawValue] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -755,6 +771,8 @@ final class Preferences: ObservableObject {
         aiCustomAddress = store.string(forKey: "ai.custom.address") ?? ""
         aiCustomWire = store.string(forKey: "ai.custom.wire") ?? "openai"
         keepsChats = store.object(forKey: "ai.keep") as? Bool ?? true
+        aiTools = AI.shipped && store.bool(forKey: "ai.tools")
+        aiToolsReveal = store.object(forKey: "ai.tools.reveal") as? Bool ?? true
         commandBar = store.bool(forKey: "commandbar")
         floatingNewTab = store.bool(forKey: "newtab.floating")
         // On for everyone who never touched it (24 Oct 2026).

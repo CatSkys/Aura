@@ -71,14 +71,8 @@ final class Bench {
 
     /// The key code of a letter on a US keyboard, which is what WebKit reads
     /// alongside the characters; anything else goes as the space bar's.
-    static func keyCode(for character: Character) -> UInt16 {
-        let codes: [Character: UInt16] = [
-            "a": 0, "s": 1, "d": 2, "f": 3, "h": 4, "g": 5, "z": 6, "x": 7, "c": 8, "v": 9,
-            "b": 11, "q": 12, "w": 13, "e": 14, "r": 15, "y": 16, "t": 17, "o": 31, "u": 32,
-            "i": 34, "p": 35, "l": 37, "j": 38, "k": 40, "n": 45, "m": 46,
-        ]
-        return codes[Character(character.lowercased())] ?? 49
-    }
+    /// PageAct's, because the assistant's `press` sends the same codes.
+    static func keyCode(for character: Character) -> UInt16 { PageAct.code(for: character) }
 
     /// Where the traffic lights are: each one's left edge and its centre's
     /// height from the top, in the window's points.
@@ -521,12 +515,10 @@ final class Bench {
             let view = page.webKit
             page.evaluateJavaScript(Bench.locate(selector)) { value, error in
                 MainActor.assumeIsolated {
-                    guard let point = value as? [Double], point.count == 2, let window = view.window else {
+                    guard let point = value as? [Double], point.count == 2, view.window != nil else {
                         answer(["error": error?.localizedDescription ?? "nothing matches \(selector)"])
                         return
                     }
-                    let local = NSPoint(x: point[0], y: view.isFlipped ? point[1] : view.bounds.height - point[1])
-                    let spot = view.convert(local, to: nil)
                     // Held while clicking: "shift", "cmd", "opt".
                     var held: NSEvent.ModifierFlags = []
                     for name in request["mods"] as? [String] ?? [] {
@@ -536,25 +528,9 @@ final class Bench {
                     }
                     // "button": "middle" clicks with the middle button.
                     let middle = request["button"] as? String == "middle"
-                    let types: [NSEvent.EventType] = middle ? [.otherMouseDown, .otherMouseUp] : [.leftMouseDown, .leftMouseUp]
-                    for type in types {
-                        guard var event = NSEvent.mouseEvent(
-                            with: type, location: spot, modifierFlags: held,
-                            timestamp: ProcessInfo.processInfo.systemUptime,
-                            windowNumber: window.windowNumber, context: nil,
-                            eventNumber: 0, clickCount: 1, pressure: type == types[0] ? 1 : 0
-                        ) else { continue }
-                        if middle, let raw = event.cgEvent {
-                            raw.setIntegerValueField(.mouseEventButtonNumber, value: 2)
-                            if let again = NSEvent(cgEvent: raw) { event = again }
-                        }
-                        switch type {
-                        case .leftMouseDown: view.mouseDown(with: event)
-                        case .otherMouseDown: view.otherMouseDown(with: event)
-                        case .otherMouseUp: view.otherMouseUp(with: event)
-                        default: view.mouseUp(with: event)
-                        }
-                    }
+                    guard PageAct.press(view, at: CGPoint(x: point[0], y: point[1]),
+                                        modifiers: held, middle: middle)
+                    else { answer(["error": "the page isn't in a window"]); return }
                     answer(["ok": true, "at": point.map { Int($0) }])
                 }
             }
@@ -2087,7 +2063,7 @@ final class Bench {
                     guard let chat = browser.chat else { answer(["open": false]); return }
                     answer([
                         "open": true, "panel": browser.chatUp, "id": chat.id.uuidString, "title": chat.title,
-                        "busy": chat.busy, "reading": chat.reading,
+                        "busy": chat.busy, "reading": chat.reading, "saying": chat.saying ?? "",
                         "notice": chat.notice ?? "", "trouble": chat.trouble ?? "",
                         "provider": chat.provider.rawValue, "model": chat.model,
                         "kept": Chats.keeps, "stored": browser.chats.list.count,
@@ -2107,7 +2083,7 @@ final class Bench {
                 guard let chat = browser.chat else { answer(["open": false]); return }
                 answer([
                     "open": true, "panel": browser.chatUp, "title": chat.title,
-                    "busy": chat.busy, "reading": chat.reading,
+                    "busy": chat.busy, "reading": chat.reading, "saying": chat.saying ?? "",
                     "notice": chat.notice ?? "", "trouble": chat.trouble ?? "",
                     "provider": chat.provider.rawValue, "model": chat.model,
                     "lines": chat.lines.map { ["mine": $0.mine, "text": $0.text, "done": $0.done,
@@ -2150,8 +2126,13 @@ final class Bench {
                     answer(["error": "ai read a page first, then ai check TEXT"]); return
                 }
                 answer(["strays": AIPage.strays(in: text, from: read)])
+            case "tools":
+                // The assistant's hands (AITool.swift), driven one call at a
+                // time: the same functions the model calls, with the same
+                // arguments, and the result it would have read.
+                BenchTools.handle(request, browser: browser, answer: answer)
             default:
-                answer(["error": "ai mock URL | vault | key PROVIDER KEY | ask PROVIDER MODEL TEXT | read ID | check TEXT"])
+                answer(["error": "ai mock URL | vault | key PROVIDER KEY | ask PROVIDER MODEL TEXT | read ID | check TEXT | tools SUB"])
             }
 
         case "notifications":
@@ -4432,64 +4413,18 @@ final class Bench {
         return String(describing: value)
     }
 
-    /// Where an element's middle is, in the page's own points, scrolled
-    /// into view first. A selector, or `text=…` for a button or link by its
-    /// words.
+    /// Where an element's middle is, in the page's own points, scrolled into
+    /// view first: PageAct's, because the assistant finds elements the same
+    /// way the bench does.
     private static func locate(_ selector: String) -> String {
-        let sel = (try? JSONSerialization.data(withJSONObject: [selector])).flatMap { String(data: $0, encoding: .utf8) }.map { String($0.dropFirst().dropLast()) } ?? "\"\""
-        return """
-        (function () {
-          var s = \(sel), el = null;
-          if (s.indexOf('text=') === 0) {
-            var want = s.slice(5).trim().toLowerCase();
-            el = Array.prototype.find.call(document.querySelectorAll('button, a, [role=button], input[type=submit]'), function (e) {
-              return ((e.innerText || e.value || '').trim().toLowerCase()) === want;
-            }) || null;
-          } else {
-            el = document.querySelector(s);
-          }
-          if (!el) return null;
-          el.scrollIntoView({ block: 'center', inline: 'nearest' });
-          var r = el.getBoundingClientRect();
-          return [r.left + r.width / 2, r.top + r.height / 2];
-        })()
-        """
+        PageAct.middle(of: selector)
     }
 
-    /// Click, type into, or submit the element a selector names. Typing goes
-    /// through the field's own setter and fires the events a keystroke
-    /// would, the same as the password filler, so frameworks notice.
+    /// Click, type into, or submit the element a selector names: PageAct's,
+    /// so a click the bench sends and a click the assistant sends are one act.
     private static func act(_ verb: String, selector: String, text: String) -> String {
-        let sel = (try? JSONSerialization.data(withJSONObject: [selector])).flatMap { String(data: $0, encoding: .utf8) }.map { String($0.dropFirst().dropLast()) } ?? "\"\""
-        let txt = (try? JSONSerialization.data(withJSONObject: [text])).flatMap { String(data: $0, encoding: .utf8) }.map { String($0.dropFirst().dropLast()) } ?? "\"\""
-        return """
-        (function () {
-          var el = document.querySelector(\(sel));
-          if (!el) return 'nothing matches ' + \(sel);
-          if (el.scrollIntoView) el.scrollIntoView({ block: 'center', inline: 'nearest' });
-          var verb = '\(verb)';
-          if (verb === 'click') { el.focus && el.focus(); el.click(); return 'ok'; }
-          if (verb === 'submit') {
-            var form = el.tagName === 'FORM' ? el : el.form || el.closest('form');
-            if (!form) return 'no form around ' + \(sel);
-            if (form.requestSubmit) form.requestSubmit(); else form.submit();
-            return 'ok';
-          }
-          el.focus && el.focus();
-          var value = \(txt);
-          if (el.isContentEditable) {
-            el.textContent = value;
-            el.dispatchEvent(new InputEvent('input', { bubbles: true, data: value, inputType: 'insertText' }));
-            return 'ok';
-          }
-          var proto = el.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
-          var setter = Object.getOwnPropertyDescriptor(proto, 'value');
-          if (setter && setter.set) setter.set.call(el, value); else el.value = value;
-          el.dispatchEvent(new Event('input', { bubbles: true }));
-          el.dispatchEvent(new Event('change', { bubbles: true }));
-          return 'ok';
-        })();
-        """
+        let one: PageAct.Verb = verb == "click" ? .click : verb == "submit" ? .submit : .type
+        return PageAct.act(one, element: PageAct.found(selector), name: selector, text: text)
     }
 }
 

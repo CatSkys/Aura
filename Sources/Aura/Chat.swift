@@ -73,6 +73,11 @@ final class Chat: ObservableObject, Identifiable {
     @Published private(set) var busy = false
     /// The page's own words, if it has any, so the column can say what goes.
     @Published private(set) var reading = false
+    /// The model's own line for the moment: what it is doing right now, as
+    /// the tool call writes it (`say`, AITool.swift's words). One line and no
+    /// history — what was done is on the page's own pages, and the record of
+    /// it is AITool's `did`, not a list in the conversation.
+    @Published private(set) var saying: String?
     /// Whether the page on screen goes with the next question: Dia's chip,
     /// and its cross takes it off for that question.
     @Published var attachPage = true
@@ -80,6 +85,10 @@ final class Chat: ObservableObject, Identifiable {
     /// page — for the next question, and then gone.
     @Published var extras: [AIPage.Attachment] = []
     private var messages: [AIMessage] = []
+    /// The window this conversation is in, so its tools act in the right one:
+    /// set where the conversation is opened, and weak because the window owns
+    /// the conversation, not the other way round.
+    weak var browser: Browser?
     private let fence = AIPage.newFence()
     private var waiting: (ask: AIPage.Ask, tab: Tab?, shown: String)?
     private var task: Task<Void, Never>?
@@ -219,17 +228,34 @@ final class Chat: ObservableObject, Identifiable {
                 self.lines[last].shots = shots.count
             }
             self.messages.append(AIMessage(role: .user, text: asked, images: shots))
-            let system = AIPage.system(fence: self.fence)
-            let stream = provider == .thisMac
-                ? AIEngine.shared.stream(system: system, messages: self.messages)
-                : AIClient.shared.stream(provider, model: model, system: system,
-                                         messages: self.messages, key: key)
+            // Tools are a cloud model's: the engine on this Mac takes words in
+            // and gives words back, and skips any message that isn't text
+            // (Engine/aura-ai-engine.cpp). Saying so is the honest thing; a
+            // silently weaker assistant is not.
+            let tools = self.tools(for: provider)
+            let system = AIPage.system(fence: self.fence, tools: !tools.isEmpty)
+            // The tools act in this window, on the page the question was asked
+            // from — or, when it was asked from the page of its own, on the
+            // tab the window has in front.
+            guard let window = self.browser ?? Browsers.front ?? Browsers.primary else {
+                self.withdraw(Localized("This conversation has no window to act in."))
+                return
+            }
+            guard let acting = tab ?? window.active else {
+                self.withdraw(Localized("Open a page before asking the assistant to act on one."))
+                return
+            }
             do {
-                for try await piece in stream {
-                    guard !self.lines.isEmpty else { return }
-                    self.lines[self.lines.count - 1].text += piece
-                    if self.lines[self.lines.count - 1].text.count > Chat.longest { break }
-                }
+                let added = try await AIToolLoop.run(messages: self.messages, provider: provider, model: model,
+                                                     system: system, key: key, tools: tools,
+                                                     browser: window, tab: acting,
+                                                     stopped: { Task.isCancelled },
+                                                     check: { tool, arguments in
+                                                         await AIToolRisk.weigh(tool: tool, arguments: arguments,
+                                                                                in: window, tab: acting)
+                                                     },
+                                                     event: { event in self.heard(event) })
+                self.messages += added
                 self.finish(nil, reads: reads)
             } catch {
                 self.finish(error.localizedDescription, reads: reads)
@@ -241,9 +267,41 @@ final class Chat: ObservableObject, Identifiable {
     /// and on is stopped, as the page's panel stopped it.
     static let longest = 16_000
 
+    // MARK: - acting
+
+    /// What the model may do, for this conversation: nothing unless the
+    /// `ai.tools` switch is on and the provider can carry tool calls at all.
+    ///
+    /// The engine on this Mac cannot: it reads `content` as a string and skips
+    /// any message that isn't one (Engine/aura-ai-engine.cpp), and a 1.7B
+    /// model's tool calls are not worth the risk anyway. Saying so is the
+    /// honest thing — a silently weaker assistant teaches nobody anything.
+    private func tools(for provider: AIProvider) -> [AITool.Definition] {
+        guard provider != .thisMac, Store.settings.object(forKey: "ai.tools") as? Bool == true else { return [] }
+        return AITool.all
+    }
+
+    /// What the loop tells the panel as it goes.
+    private func heard(_ event: AIToolLoop.Event) {
+        switch event {
+        case .wrote(let piece):
+            guard !lines.isEmpty else { return }
+            lines[lines.count - 1].text += piece
+        case .saying(let said):
+            saying = said
+        case .did:
+            // The record is AITool's own `did`, which is already in the tool's
+            // result; the panel doesn't keep a list of them (see saying).
+            saying = nil
+        case .refused:
+            saying = nil
+        }
+    }
+
     private func finish(_ failed: String?, reads: [AIPage.Read]) {
         reading = false
         busy = false
+        saying = nil
         updated = Date()
         guard let index = lines.indices.last else { return }
         lines[index].done = true
@@ -253,7 +311,6 @@ final class Chat: ObservableObject, Identifiable {
             if !messages.isEmpty { messages.removeLast() }
             return
         }
-        messages.append(AIMessage(role: .assistant, text: answer))
         // A picture went once: left in what follows, every question after it
         // would send it again.
         if let question = messages.lastIndex(where: { $0.role == .user }), !messages[question].images.isEmpty {
@@ -281,6 +338,7 @@ final class Chat: ObservableObject, Identifiable {
     private func withdraw(_ why: String) {
         reading = false
         busy = false
+        saying = nil
         if lines.count >= 2 { lines.removeLast(2) }
         trouble = why
     }

@@ -574,7 +574,7 @@ def main(argv):
             elif word == "words": request["words"] = True
             else: sys.exit("usage: bench find TEXT [next N] [back N] [case] [words]")
     elif verb == "ai":
-        usage = "usage: bench ai mock URL | vault | key PROVIDER KEY | ask PROVIDER MODEL TEXT | read ID | check TEXT | signin | engine [PATH MODELS] | use PROVIDER [MODEL] [--base URL] [--name NAME] [--wire openai|anthropic] | summarize ID | question ID TEXT | agree | state | picture DIR | chat [open|close|ask TEXT|new|page|pick ID|rename NAME|forget|clear|keep ON|save|list|state]"
+        usage = "usage: bench ai mock URL | vault | key PROVIDER KEY | ask PROVIDER MODEL TEXT | read ID | check TEXT | signin | engine [PATH MODELS] | use PROVIDER [MODEL] [--base URL] [--name NAME] [--wire openai|anthropic] | summarize ID | question ID TEXT | agree | state | picture DIR | chat [open|close|ask TEXT|new|page|pick ID|rename NAME|forget|clear|keep ON|save|list|state] | tools [on|off|reveal|list|classes|confirm allow|always|refuse|off|answer done|stop|cancel|snapshot [SCOPE] [--full]|TOOL [TEXT] [--ref N] [--key K] [--url U] [--submit] [--weigh] [--id TAB]]"
         if not args: sys.exit(usage)
         request["action"] = args[0]
         if args[0] == "mock" and len(args) == 2: request["url"] = args[1]
@@ -604,6 +604,39 @@ def main(argv):
             if len(args) == 3: request["text"] = args[2]
         elif args[0] == "picture" and len(args) == 2: request["path"] = args[1]
         elif args[0] == "check" and len(args) == 2: request["text"] = args[1]
+        elif args[0] == "tools":
+            # The assistant's hands: one tool, called with the arguments a
+            # model would send, answered with the result it would read.
+            request["sub"] = args[1] if len(args) > 1 else "list"
+            rest = args[2:]
+            i = 0
+            while i < len(rest):
+                word = rest[i]
+                if word in ("--full", "--submit", "--weigh", "--no-say"):
+                    request[word[2:]] = True
+                    i += 1
+                elif word == "--args" and i + 1 < len(rest):
+                    # A whole arguments object, for a call the one-word form
+                    # can't say: what a wire would have sent.
+                    try:
+                        request["args"] = json.loads(rest[i + 1])
+                    except ValueError:
+                        sys.exit("--args wants a JSON object")
+                    i += 2
+                elif word in ("--ref", "--key", "--url", "--id", "--say", "--value", "--text") and i + 1 < len(rest):
+                    request[word[2:]] = rest[i + 1]
+                    i += 2
+                elif word == "--action" and i + 1 < len(rest):
+                    # Not "action": that is this command's own verb.
+                    request["toolAction"] = rest[i + 1]
+                    i += 2
+                elif word.startswith("--"):
+                    sys.exit(usage)
+                else:
+                    request["text"] = word
+                    i += 1
+            if request["sub"] == "snapshot" and "text" in request:
+                request["scope"] = request.pop("text")
         else: sys.exit(usage)
     elif verb == "answer":
         if args not in (["once"], ["always"], ["no"], ["screen"], ["window"], ["noscreen"]):

@@ -336,6 +336,9 @@ final class Tab: ObservableObject, Identifiable {
     var restAddress: URL? { built == nil ? address : committed }
 
     func didCommit() {
+        // A new document: every number a tool was given for the old one is
+        // gone with it (AIToolSnap), and a tool told to use one is told so.
+        AIToolSnap.invalidate(self)
         popupGesture.clear()
         // What the old page was refused went with it.
         if !blockedPopups.isEmpty { blockedPopups = [] }
@@ -1797,6 +1800,7 @@ final class Tab: ObservableObject, Identifiable {
     /// Called when the tab is thrown away. Without it the view keeps running
     /// whatever the page left behind — timers, video, sockets.
     func close() {
+        AIToolSnap.forget(self)
         onZoom = nil
         onLink = nil
         onPick = nil

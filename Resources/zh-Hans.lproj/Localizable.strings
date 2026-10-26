@@ -1360,3 +1360,39 @@
 "Open a page to take a picture of it" = "先打开一个页面才能截图";
 "That page can't be pictured" = "这一页截不了图";
 "The model on this Mac can't look at pictures. Choose a model that can, in Settings › AI." = "这台 Mac 上的模型看不了图片。去「设置 › AI」换一个能看图的。";
+
+/* —— The assistant's hands (AITool) —— */
+"Act on pages" = "让 AI 操作页面";
+"Let the assistant click, type and open tabs while it answers. Off, it can only read. Not with the model on this Mac" = "让助手回答时点击、输入、打开标签页。关闭时它只能读。这台 Mac 上的模型用不了";
+"Show what it acts on" = "显示它要操作的元素";
+"Flash a frame round what the assistant acts on" = "在助手操作页面前，先把那个元素框一下";
+"Questions already answered" = "已经答过的问题";
+"{1} site rules say yes without asking. Buying is asked every time" = "有 {1} 条站点规则会直接同意，不再问。花钱是每次都问的";
+"Buying, deleting, sending and granting are always asked first" = "花钱、删除、发送和授权，一律先问";
+"Site rules forgotten" = "站点规则已清空";
+"The assistant needs you" = "助手需要你";
+"Done, Go On" = "好了，继续";
+"Stop Here" = "停在这里";
+"Always on This Site" = "在这个网站上总是同意";
+"Yes, Once" = "好，这一次";
+"Spend money?" = "要花钱？";
+"Delete something?" = "要删东西？";
+"Send this?" = "要发送？";
+"Give access?" = "要授权？";
+"The assistant is about to press “{1}” on {2}, which looks like it spends money. Nothing has been pressed yet." = "助手要在 {2} 上按「{1}」，这像是要花钱。现在还什么都没按。";
+"The assistant is about to press “{1}” on {2}, which looks like it deletes something. Nothing has been pressed yet." = "助手要在 {2} 上按「{1}」，这像是要删除东西。现在还什么都没按。";
+"The assistant is about to press “{1}” on {2}, which sends something you can't take back. Nothing has been pressed yet." = "助手要在 {2} 上按「{1}」，这一下会发出东西，收不回来。现在还什么都没按。";
+"The assistant is about to press “{1}” on {2}, which gives something access. Nothing has been pressed yet." = "助手要在 {2} 上按「{1}」，这会给出某种权限。现在还什么都没按。";
+"The person said no to “{1}”. Nothing was pressed. Don't try it again unless they ask you to." = "对方拒绝了「{1}」。什么都没按。除非对方要你做，否则别再试。";
+"The page hasn't changed since the last snapshot." = "页面和上一次快照一样，没有变化。";
+"opened in a new tab" = "在新标签页里打开了";
+"this field" = "这个输入框";
+"this tab" = "这个标签页";
+"One short line for the person watching, in the language they are writing in: what this call is doing, in the present tense, at most 40 characters. No reasoning, and no claim that it worked." = "给旁边看着的人一行话，用对方正在用的语言，现在进行时，说这一次调用在做什么，最多 40 个字。不要讲理由，也不要声称已经成功。";
+"This conversation has no window to act in." = "这个对话没有可以操作的窗口。";
+"Open a page before asking the assistant to act on one." = "先打开一个页面，再让助手在上面操作。";
+"No" = "不要";
+"this" = "这个";
+
+"The page is now {1}." = "页面现在是 {1}。";
+"There's no form around it to send." = "它周围没有表单可以提交。";
