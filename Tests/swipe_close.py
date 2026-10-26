@@ -8,8 +8,8 @@ through the bench, nothing made or shown, everything removed afterwards.
 Settings › Tabs › Close a tab with a swipe back is off unless asked for, and
 while it is off a swipe back on a tab's first page must go on doing what it
 did — nothing — and a tab with a page behind it must go back as it always has.
-Turned on, back from the first page closes the tab and the neighbour on the
-right comes forward, which is what ⌘W does; a pin keeps its page, since its
+Turned on, back from the first page closes the tab as ⌘W does — a tab no page
+opened hands you its neighbour on the right; a pin keeps its page, since its
 first page is the page it was pinned at.
 
 A peek — a link's page in a panel over the one you are reading — goes the
