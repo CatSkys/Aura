@@ -44,10 +44,18 @@ final class Bench {
     static func count(_ name: String) {
         if counting { bodies[name, default: 0] += 1 }
     }
-    /// Each row in the column's own answer to the pointer coming and going,
-    /// the very one its onHover gives (SideRow), for "hoversweep". Counted,
-    /// since a row built anew can appear before the one it replaces has
-    /// gone: the last to appear answers, until the last one goes.
+    /// True while "hoversweep" walks the rows a frame at a time. It calls each
+    /// row's own hover answers, so without this a card would come up at every
+    /// row the pointer passed — which is not what that sweep measures (see
+    /// TabHover). Kept as a deadline rather than a switch: a sweep cut off
+    /// half way leaves no switch to turn back off.
+    static var sweepingUntil: Date?
+    static var sweeping: Bool { sweepingUntil.map { $0 > Date() } ?? false }
+    /// Each tab's own answer to the pointer coming and going, the very one its
+    /// onHover gives — a row in the column, a tab in the strip — for
+    /// "hoversweep" and "hover". Counted, since a row built anew can appear
+    /// before the one it replaces has gone: the last to appear answers, until
+    /// the last one goes.
     static var hoverRows: [Tab.ID: (Bool) -> Void] = [:]
     private static var hoverRowsShown: [Tab.ID: Int] = [:]
     static func rowAppeared(_ id: Tab.ID, hover: @escaping (Bool) -> Void) {
@@ -841,6 +849,12 @@ final class Bench {
                             "windowFullScreen": (browser.window ?? Links.window)?.styleMask.contains(.fullScreen) ?? false]
             out["lightsHidden"] = Fold.titlebar?.isHidden ?? false
             out["siteCard"] = SiteCardPanel.isShown
+            // The card of the tab under the pointer, and where that tab stands
+            // (see TabHover).
+            out["tabCard"] = browser.tabCard.flatMap { id in browser.tabs.first { $0.id == id }.map(Bench.short) } ?? ""
+            let anchor = browser.tabCardAnchor.frame
+            out["tabCardAnchor"] = [Int(anchor.minX), Int(anchor.minY), Int(anchor.width), Int(anchor.height)]
+            out["tabCardBeside"] = browser.tabCardAnchor.beside
             // "Press Esc again to leave full screen", up over a page filling
             // the screen (Settings › General › Press Esc twice to leave full
             // screen).
@@ -1000,12 +1014,14 @@ final class Bench {
             }
             let clock = LoopClock()
             Bench.bodies = [:]
+            Bench.sweepingUntil = Date().addingTimeInterval(Double(path.count) * interval + 3)
             clock.start()
             func walk(_ n: Int) {
                 guard n < path.count else {
                     send(nil)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                         clock.stop()
+                        Bench.sweepingUntil = nil
                         let crossings = path.count
                         answer([
                             "rows": rows, "crossings": crossings, "tabs": browser.tabs.count,
@@ -1021,6 +1037,30 @@ final class Bench {
                 DispatchQueue.main.asyncAfter(deadline: .now() + interval) { walk(n + 1) }
             }
             walk(0)
+
+        case "hover":
+            // The pointer coming to a row or going from it, given to the row's
+            // own answer as AppKit gives it (SideRow) — for what hangs off it,
+            // which is the card a tab shows (see TabHover). Test runs only: it
+            // is a pointer borrowed for the while.
+            guard Store.testing else { answer(["error": "hover only works on a --test run"]); return }
+            guard let prefix = request["id"] as? String,
+                  let tab = browser.tabs.first(where: { $0.id.uuidString.lowercased().hasPrefix(prefix.lowercased()) })
+            else { answer(["error": "no tab"]); return }
+            guard let row = Bench.hoverRows[tab.id] else {
+                answer(["error": "no row for it — only a tab down the side has one"])
+                return
+            }
+            let over = request["on"] as? Bool ?? true
+            row(over)
+            // The card waits a moment before it comes up; the same again after
+            // the pointer has gone, and a little more.
+            DispatchQueue.main.asyncAfter(deadline: .now() + TabHover.pause + 0.3) {
+                answer(["shown": browser.tabCard == tab.id,
+                        "tabCard": browser.tabCard.flatMap { id in browser.tabs.first { $0.id == id }.map(Bench.short) } ?? "",
+                        "anchor": [Int(browser.tabCardAnchor.frame.minX), Int(browser.tabCardAnchor.frame.minY),
+                                   Int(browser.tabCardAnchor.frame.width), Int(browser.tabCardAnchor.frame.height)]])
+            }
 
         case "hit":
             // What a press at a point of the window lands on, and whether
@@ -3171,6 +3211,33 @@ final class Bench {
                 window.contentView = nil
             }
 
+        case "tabcard":
+            // The card a tab shows under the pointer, for the tab on screen —
+            // or the one named — drawn off screen (see TabHover.swift).
+            guard Store.testing else { answer(["error": "tabcard only works on a --test run — it would picture your tab"]); return }
+            guard let path = request["path"] as? String else { answer(["error": "tabcard needs a path"]); return }
+            let named = (request["tab"] as? String).flatMap { prefix in
+                browser.tabs.first { $0.id.uuidString.lowercased().hasPrefix(prefix.lowercased()) }
+            }
+            guard let tab = named ?? browser.active else { answer(["error": "no page on screen"]); return }
+            // On the ground: off screen there is no glass to stand on.
+            let host = NSHostingView(rootView: AnyView(TabHoverCard(browser: browser, tab: tab) {}.fixedSize().background(Palette.ground)))
+            host.frame = NSRect(origin: .zero, size: host.fittingSize)
+            let window = NSWindow(contentRect: host.frame, styleMask: .borderless, backing: .buffered, defer: false)
+            window.appearance = NSApp.effectiveAppearance
+            window.contentView = host
+            host.layoutSubtreeIfNeeded()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                host.frame = NSRect(origin: .zero, size: host.fittingSize)
+                guard let picture = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { answer(["error": "nothing drawn"]); return }
+                host.cacheDisplay(in: host.bounds, to: picture)
+                do {
+                    try picture.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
+                    answer(["saved": path, "size": [Int(host.bounds.width), Int(host.bounds.height)]])
+                } catch { answer(["error": error.localizedDescription]) }
+                window.contentView = nil
+            }
+
         case "column":
             // The column of tabs, drawn off screen at its width, with what the
             // browser has now — the rows, the card for a new space, the dots.
@@ -3526,7 +3593,7 @@ final class Bench {
 
         default:
             answer(["error": "unknown command “\(verb)”", "commands": [
-                "tabs", "open", "go", "openmark", "close", "wait", "sleep", "select", "text", "nowplaying", "eval", "click", "type", "submit", "shot", "probe", "key", "textcheck", "resize", "hit", "film", "float", "window", "pages", "picture", "pdf", "place", "group", "tospace", "field", "bookmark", "marks", "menu", "keyeq", "fill", "pin", "middle", "windows", "quit", "towindow", "news", "pull", "magnify", "wheel", "space", "split", "strip", "column", "fold", "consent", "update", "site", "little", "ui", "import", "import-preview", "import-file", "import-file-start", "import-file-status", "import-file-cancel", "remove-folder", "passwords", "accounts", "find", "answer", "visible", "ai", "notifications", "popups", "suggest", "translate", "profile", "settings",
+                "tabs", "open", "go", "openmark", "close", "wait", "sleep", "select", "text", "nowplaying", "eval", "click", "type", "submit", "shot", "probe", "key", "textcheck", "resize", "hit", "film", "float", "window", "pages", "picture", "pdf", "place", "group", "tospace", "field", "bookmark", "marks", "menu", "keyeq", "fill", "pin", "middle", "hover", "windows", "quit", "towindow", "news", "pull", "magnify", "wheel", "space", "split", "strip", "column", "tabcard", "fold", "consent", "update", "site", "little", "ui", "import", "import-preview", "import-file", "import-file-start", "import-file-status", "import-file-cancel", "remove-folder", "passwords", "accounts", "find", "answer", "visible", "ai", "notifications", "popups", "suggest", "translate", "profile", "settings",
             ]])
         }
     }
