@@ -1044,7 +1044,6 @@
 "Press Esc twice to leave full screen" = "按两次 Esc 退出全屏";
 "The first press shows a reminder." = "第一次按下会显示提示。";
 "Page zoom" = "网页缩放";
-"Page Settings" = "网页设置";
 "Starting zoom for every site. ⌘+ and ⌘− are kept per site" = "每个网站的初始缩放。⌘+ 与 ⌘− 按网站记忆";
 "Pages at 120 Hz" = "页面 120 Hz";
 "Animations and scrolling in pages at up to 120 frames a second, where Safari draws 60." = "页面内动画与滚动最高每秒 120 帧，Safari 为 60 帧。";

@@ -1844,7 +1844,15 @@ final class Browser: NSObject, ObservableObject {
 
     /// ⌘⇧C. The address, in the clipboard, and a line that says as much.
     func copyAddress() {
-        guard let url = active?.address else { return }
+        guard let tab = active else { return }
+        copyAddress(of: tab)
+    }
+
+    /// The same for a tab named rather than the one in front: the card of a tab
+    /// under the pointer copies that tab's address, since copying is one of the
+    /// things it offers without taking you off this page (see TabHover).
+    func copyAddress(of tab: Tab) {
+        guard let url = tab.address else { return }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(url.absoluteString, forType: .string)
         announce("Address copied")

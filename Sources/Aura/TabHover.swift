@@ -2,21 +2,24 @@ import AppKit
 import SwiftUI
 
 // The card a tab shows when the pointer rests on it: the page's name over the
-// site it is on, and four doors — pin it, open the page's own settings, put it
-// beside the page on screen, ask about it.
+// site it is on, and four doors — pin it, copy its address, put it beside the
+// page on screen, ask about it.
 //
 // It is Dia's card, read off Dia's own tab hover: the same shape (the name,
 // the site under it, one row of doors), the same four places to go. The door
-// Dia gives a bookmark wears this browser's page settings instead, because the
-// things a bookmark would save are already the page's own settings here, and
-// they are what the pointer is on. A pin that has wandered off the page it was
-// pinned at gets the way back there in the first door, as Dia's does.
+// Dia gives a bookmark is Copy Link here: bookmarks are a page of their own in
+// this browser, and what a card about a tab you are not on is wanted for is
+// its address — taken without leaving the page you are reading. A pin that has
+// wandered off the page it was pinned at gets the way back there in the first
+// door, as Dia's does.
 //
 // It stands beside the column, or under the strip across the top, drawn over
 // the page rather than inside the column — the column is 236 points narrower
-// than a card. It comes up once the pointer has rested a moment, and goes when
-// the pointer leaves both it and its tab, with the grace a hand needs to cross
-// the gap between them.
+// than a card. It comes up once the pointer has rested a moment, growing out of
+// the edge of its tab, and goes when the pointer leaves both it and its tab,
+// with the grace a hand needs to cross the gap between them. Walking the
+// column with a card already out, it comes again twice as quickly, and the row
+// it speaks for stays lit while the card is the thing being read.
 
 /// Where a tab stands in the window, and which way its card leaves it: beside
 /// the column, or under the strip. The tab reports it while the pointer is on
@@ -43,6 +46,10 @@ struct TabCardAnchorKey: PreferenceKey {
 enum TabHover {
     /// How long the pointer rests on a tab before its card comes up.
     static let pause: TimeInterval = 0.45
+    /// How long it takes to come up again when the pointer is walking the
+    /// column with a card already out — long enough not to flash a card at
+    /// every row crossed, short enough to follow the hand.
+    static let wander: TimeInterval = 0.22
     /// How long the card waits after the pointer leaves its tab, for a hand
     /// crossing to the card itself.
     static let grace: TimeInterval = 0.3
@@ -58,6 +65,8 @@ enum TabHover {
         // A script's sweep walks the row's own hover answers a frame at a
         // time; a card at each is not what that measures (see hoversweep).
         guard !Bench.sweeping else { return }
+        // A tab being carried: the rows it passes are not being looked at.
+        guard NSEvent.pressedMouseButtons == 0 else { return }
         let key = ObjectIdentifier(browser)
         cancel(&going, key)
         cancel(&coming, key)
@@ -65,17 +74,19 @@ enum TabHover {
         // A card that is up is about the tab the pointer has just left: it
         // goes now, rather than standing over another tab's row for the
         // while it takes the pointer to settle.
-        if let up = browser.tabCard, up != id { browser.tabCard = nil }
+        let walking = browser.tabCard != nil && browser.tabCard != id
+        if walking { withAnimation(Motion.quick) { browser.tabCard = nil } }
         let work = DispatchWorkItem { [weak browser] in
             MainActor.assumeIsolated {
                 coming[key] = nil
                 guard let browser, browser.tabs.contains(where: { $0.id == id }) else { return }
                 onCard.remove(key)
-                if browser.tabCard != id { browser.tabCard = id }
+                guard browser.tabCard != id else { return }
+                withAnimation(Motion.settle) { browser.tabCard = id }
             }
         }
         coming[key] = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + pause, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + (walking ? wander : pause), execute: work)
     }
 
     /// The pointer left a tab: its card goes, unless the hand is on the card.
@@ -105,7 +116,8 @@ enum TabHover {
         onCard.remove(key)
         cancel(&coming, key)
         cancel(&going, key)
-        if browser.tabCard != nil { browser.tabCard = nil }
+        guard browser.tabCard != nil else { return }
+        withAnimation(Motion.quick) { browser.tabCard = nil }
     }
 
     private static func putAway(_ browser: Browser, _ key: ObjectIdentifier) {
@@ -114,8 +126,8 @@ enum TabHover {
         let work = DispatchWorkItem { [weak browser] in
             MainActor.assumeIsolated {
                 going[key] = nil
-                guard let browser, !onCard.contains(key) else { return }
-                if browser.tabCard != nil { browser.tabCard = nil }
+                guard let browser, !onCard.contains(key), browser.tabCard != nil else { return }
+                withAnimation(Motion.quick) { browser.tabCard = nil }
             }
         }
         going[key] = work
@@ -178,8 +190,8 @@ struct TabHoverCard: View {
     private var doors: some View {
         HStack(spacing: 0) {
             pinned
-            door("slider.horizontal.3", help: "Page Settings", on: canShowSettings) {
-                pageSettings()
+            door("link", help: "Copy Link", on: tab.isWeb) {
+                browser.copyAddress(of: tab)
             }
             door("rectangle.split.2x1", help: "Open in Split View", on: browser.prefs.splitView && !tab.bench) {
                 browser.openInSplit(tab)
@@ -201,21 +213,6 @@ struct TabHoverCard: View {
         } else {
             door("pin", help: "Pin Tab", on: tab.isWeb && !tab.shy) { browser.pin(tab) }
         }
-    }
-
-    /// A page of the window's own can say what its settings are: the card
-    /// under its address, with the zoom, the sound, the darkening and the
-    /// rest. A pin's address is the pin's own, a blank tab has no page.
-    private var canShowSettings: Bool {
-        !tab.isBlank && tab.address != nil && tab.pin == nil
-    }
-
-    /// The site's card, as a click on the tab you are on shows it: brought
-    /// forward, and its address opened to put the card under (see
-    /// beginTabEdit). The same two steps TabMenu's Site Information… takes.
-    private func pageSettings() {
-        if browser.activeID != tab.id { browser.select(tab) }
-        browser.beginTabEdit(tab)
     }
 
     private func door(_ symbol: String, help: String, on: Bool = true,
@@ -249,12 +246,24 @@ private struct CardDoor: View {
                         .fill(over && on ? Palette.rowHover : .clear)
                 }
                 .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .animation(Motion.quick, value: over)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(DoorPress())
         .disabled(!on)
         .onHover { over = $0 }
         .help(help)
         .accessibilityLabel(help)
+    }
+}
+
+/// The symbol given a little while it is held, as a tab gives under the hand
+/// (see Give), and back on the release — an answer to the press before the card
+/// goes.
+private struct DoorPress: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.92 : 1)
+            .animation(Motion.quick, value: configuration.isPressed)
     }
 }
 
@@ -267,6 +276,10 @@ struct TabCardOverlay: View {
     /// The card's own size, measured: beside the column it ends as tall as it
     /// is drawn, and the column's edge says only where it starts.
     @State private var size: CGSize = .zero
+    /// Whether this card has come in. It is drawn only once it has been
+    /// measured — placed by a size it hasn't got yet, it would slide into place
+    /// from somewhere else — and then it grows out of its tab's edge.
+    @State private var shown = false
 
     var body: some View {
         GeometryReader { geo in
@@ -274,17 +287,42 @@ struct TabCardOverlay: View {
                 let spot = spot(in: geo.size)
                 card(for: tab)
                     .offset(x: spot.x, y: spot.y)
-                    // The first pass has no size to place it by: a moment
-                    // later, rather than a card somewhere wrong.
-                    .opacity(size.height > 0 ? 1 : 0)
+                    .scaleEffect(shown ? 1 : 0.96, anchor: from)
+                    .opacity(shown ? 1 : 0)
+                    .animation(Motion.settle, value: shown)
+                    // Put away with a fade rather than a snap: the pointer may
+                    // be halfway to it, and a card that blinks out reads as a
+                    // flicker of the page behind it.
+                    .transition(.opacity)
             }
         }
         .ignoresSafeArea()
         .onPreferenceChange(TabCardSize.self) { measured in
             MainActor.assumeIsolated {
                 if size != measured { size = measured }
+                if measured.height > 0, !shown { withAnimation(Motion.settle) { shown = true } }
             }
         }
+        .onChange(of: browser.tabCard) { _, id in
+            // The tab went — ⌘W, or the space changed under it: its card goes
+            // with it.
+            if let id, !browser.tabs.contains(where: { $0.id == id }) { TabHover.dismiss(browser) }
+            // The next card comes in afresh, measured from nothing — and after
+            // this one has finished going, so its fade isn't cut short.
+            guard id == nil else { return }
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    shown = false
+                    size = .zero
+                }
+            }
+        }
+    }
+
+    /// The edge it grows out of: the one nearest its tab.
+    private var from: UnitPoint {
+        guard browser.tabCardAnchor.beside else { return .top }
+        return browser.prefs.sidePosition == .left ? .leading : .trailing
     }
 
     /// The system's own liquid glass, as the card of spaces is made (see

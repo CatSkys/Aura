@@ -937,7 +937,7 @@ private struct PinSquare: View {
                 } else {
                     RoundedRectangle(cornerRadius: scale * 9 / 34, style: .continuous)
                         .fill(browser.selectedTabIDs.contains(tab.id) ? greys.wash :
-                              hovering ? greys.hover : greys.tile)
+                              lit ? greys.hover : greys.tile)
                 }
             }
             .animation(Motion.quick, value: live)
@@ -992,8 +992,12 @@ private struct PinSquare: View {
     /// stands beside the column a moment later (see TabHover).
     private func hover(_ over: Bool) {
         hovering = over
-        if over { TabHover.rest(on: tab, in: browser) } else { TabHover.leave(tab, in: browser) }
+        guard over, browser.editingPin != tab.id else { TabHover.leave(tab, in: browser); return }
+        TabHover.rest(on: tab, in: browser)
     }
+
+    /// Lit: the pointer is on the square, or on the card it put up.
+    private var lit: Bool { hovering || browser.tabCard == tab.id }
 }
 
 /// One tab, as a line in the column.
@@ -1200,8 +1204,13 @@ private struct SideRow: View {
 
     private func hover(_ over: Bool) {
         hovering = over
-        if over { TabHover.rest(on: tab, in: browser) } else { TabHover.leave(tab, in: browser) }
+        guard over, !editing else { TabHover.leave(tab, in: browser); return }
+        TabHover.rest(on: tab, in: browser)
     }
+
+    /// Lit: the pointer is on the row, or on the card the row put up — a row
+    /// whose card is being looked at is still the row being looked at.
+    private var lit: Bool { hovering || browser.tabCard == tab.id }
 
     @ViewBuilder
     private var ground: some View {
@@ -1219,7 +1228,7 @@ private struct SideRow: View {
         } else if browser.selectedTabIDs.contains(tab.id) {
             RoundedRectangle(cornerRadius: 9, style: .continuous)
                 .fill(greys.wash)
-        } else if hovering {
+        } else if lit {
             RoundedRectangle(cornerRadius: 9, style: .continuous)
                 .fill(greys.hover)
         }
@@ -1227,7 +1236,7 @@ private struct SideRow: View {
 
     private var colour: Color {
         if live { return side.ink }
-        return hovering ? side.ink.opacity(0.7) : side.muted
+        return lit ? side.ink.opacity(0.7) : side.muted
     }
 }
 

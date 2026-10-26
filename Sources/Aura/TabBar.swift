@@ -773,8 +773,12 @@ private struct TabPill: View {
     /// under it a moment later (see TabHover).
     private func hover(_ over: Bool) {
         hovering = over
-        if over { TabHover.rest(on: tab, in: browser) } else { TabHover.leave(tab, in: browser) }
+        guard over, !editing else { TabHover.leave(tab, in: browser); return }
+        TabHover.rest(on: tab, in: browser)
     }
+
+    /// Lit: the pointer is on the tab, or on the card the tab put up.
+    private var lit: Bool { hovering || browser.tabCard == tab.id }
 
     @ViewBuilder
     private var loose: some View {
@@ -928,7 +932,7 @@ private struct TabPill: View {
         } else if browser.selectedTabIDs.contains(tab.id) {
             RoundedRectangle(cornerRadius: 9, style: .continuous)
                 .fill(Palette.wash)
-        } else if hovering {
+        } else if lit {
             RoundedRectangle(cornerRadius: 9, style: .continuous)
                 .fill(Palette.hover)
         } else if pinned || compact {
@@ -946,7 +950,7 @@ private struct TabPill: View {
 
     private var colour: Color {
         if live { return Palette.ink }
-        return hovering ? Palette.ink.opacity(0.7) : Palette.muted
+        return lit ? Palette.ink.opacity(0.7) : Palette.muted
     }
 }
 
