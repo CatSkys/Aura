@@ -130,11 +130,14 @@ final class AIToolLoopTests: XCTestCase {
             return nil
         }
         XCTAssertEqual(sayings, ["First", "Second"])
-        let dids = events.compactMap { event -> String? in
-            if case .did(let did) = event { return did }
+        // The row the rail keeps, and the record the tool wrote.
+        let steps = events.compactMap { event -> AIToolStep? in
+            if case .did(let step) = event { return step }
             return nil
         }
-        XCTAssertEqual(dids, ["pretended: one", "pretended: two"], "one record for each call")
+        XCTAssertEqual(steps.map(\.detail), ["pretended: one", "pretended: two"], "one record for each call")
+        XCTAssertEqual(steps.map(\.tool), ["pretend", "pretend"], "named by the tool that ran")
+        XCTAssertEqual(steps.map(\.failed), [false, false])
 
         // What the conversation keeps: the answer, with the calls and results
         // that led to it, in order.

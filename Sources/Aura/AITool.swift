@@ -552,7 +552,10 @@ enum AITool {
     private static func askUser(_ arguments: AIToolArguments, _ context: Context) async -> Result {
         let title = arguments.string("title") ?? ""
         let reason = arguments.string("reason") ?? ""
-        switch await AIToolAsk.ask(title: title, reason: reason, in: context.browser) {
+        guard let asking = context.browser.chat?.asking else {
+            return .ok(Localized("Asked you."), detail: Localized("No conversation to ask in."))
+        }
+        switch await asking.ask(title: title, reason: reason) {
         case .done:
             return .ok("Asked the person “\(title)”, and they have answered: they are ready for you to go on. Take a new snapshot before acting.")
         case .stop:

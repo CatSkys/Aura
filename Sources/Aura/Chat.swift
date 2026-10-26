@@ -43,6 +43,11 @@ final class Chat: ObservableObject, Identifiable {
         /// written down: they were sent once, and the answer stands without
         /// them (see AIPage.shot).
         var shots = 0
+        /// What the assistant did before it answered, in order — read off
+        /// Dia's own card, one row each on a rail down the left (AIToolStep).
+        /// Kept with the answer rather than thrown away, because "what did it
+        /// do" is a question people ask after the fact.
+        var steps: [AIToolStep] = []
     }
 
     /// A conversation as it is kept (Chats.swift): everything the page and
@@ -73,6 +78,10 @@ final class Chat: ObservableObject, Identifiable {
     @Published private(set) var busy = false
     /// The page's own words, if it has any, so the column can say what goes.
     @Published private(set) var reading = false
+    /// The card the assistant is asking in, while it waits for an answer:
+    /// drawn in the column rather than as a sheet, so the page it is about
+    /// stays in sight (AIToolAsk).
+    let asking = AIToolAsk()
     /// The model's own line for the moment: what it is doing right now, as
     /// the tool call writes it (`say`, AITool.swift's words). One line and no
     /// history — what was done is on the page's own pages, and the record of
@@ -288,10 +297,18 @@ final class Chat: ObservableObject, Identifiable {
             guard !lines.isEmpty else { return }
             lines[lines.count - 1].text += piece
         case .saying(let said):
+            // The model's line goes on the rail as it is written, so what you
+            // watch while it works is what stays with the answer afterwards.
             saying = said
-        case .did:
-            // The record is AITool's own `did`, which is already in the tool's
-            // result; the panel doesn't keep a list of them (see saying).
+            if let last = lines.indices.last {
+                lines[last].steps.append(.note(said))
+            }
+        case .did(let step):
+            // A row of its own, kept with the answer: the rail is what "what
+            // did it do" is answered with after the turn has ended.
+            if let last = lines.indices.last {
+                lines[last].steps.append(step)
+            }
             saying = nil
         case .refused:
             saying = nil
@@ -371,10 +388,22 @@ final class Chat: ObservableObject, Identifiable {
         chat.lines = [
             Line(mine: true, text: "Of these three files, which one holds the theme colours? And why split it out?",
                  page: "Aura"),
-            Line(mine: false, text: "Design.swift does. Palette and Metrics both live in it — one for colour, one for size — and other files only refer to the names, never write a colour of their own."),
+            Line(mine: false, text: "Design.swift does. Palette and Metrics both live in it — one for colour, one for size — and other files only refer to the names, never write a colour of their own.",
+                 steps: [
+                    .note("先看一下设计文件都写了什么。"),
+                    AIToolStep.named("snapshot", detail: "Read the page."),
+                    AIToolStep.done("navigate", arguments: AIToolArguments(text: #"{"url":"https://www.bilibili.com"}"#),
+                                    did: "Opened https://www.bilibili.com/.", failed: false),
+                    .note("页面已经打开，在读它的内容。"),
+                 ]),
             // And one still being written, so a picture shows what stands
-            // where an answer is coming.
-            Line(mine: false, text: "", done: false),
+            // where an answer is coming — the rail as it grows, and the dots
+            // under it.
+            Line(mine: false, text: "", done: false, steps: [
+                .note("我在查浙江传媒学院的官方信息。"),
+                AIToolStep.done("navigate", arguments: AIToolArguments(text: #"{"url":"https://www.cuz.edu.cn"}"#),
+                                did: "Opened https://www.cuz.edu.cn/.", failed: false),
+            ]),
         ]
         return chat
     }

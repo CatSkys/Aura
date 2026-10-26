@@ -62,8 +62,16 @@ struct ChatThread: View {
             } else {
                 LazyVStack(alignment: .leading, spacing: 22) {
                     ForEach(chat.lines) { line in row(line) }
+                    // The assistant's own question, in the column and not as a
+                    // sheet: it is about this conversation, and the page it is
+                    // about has to stay visible behind it.
+                    if let card = chat.asking.card {
+                        AIToolAskCard(asking: chat.asking, card: card)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .animation(.easeOut(duration: 0.2), value: chat.asking.card?.id)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -87,15 +95,24 @@ struct ChatThread: View {
                     }
             }
         } else if line.text.isEmpty, !line.done {
-            // The model's own line while it acts (`say`), then what the
-            // browser is doing for it: one line, in one place, replaced as the
-            // next thing starts and gone when the turn ends.
-            HStack(spacing: 0) {
-                Pulsing(chat.saying ?? (chat.reading ? Localized("Reading this page…") : Localized("Thinking…")))
-                Spacer(minLength: 0)
+            // The turn as it happens: the same rail the answer keeps, growing a
+            // row at a time — the model's own lines and what the browser did in
+            // between — and the dots under them while it works.
+            VStack(alignment: .leading, spacing: 12) {
+                if line.steps.isEmpty {
+                    HStack(spacing: 0) {
+                        Pulsing(chat.reading ? Localized("Reading this page…") : "")
+                        Spacer(minLength: 0)
+                    }
+                } else {
+                    AIToolRail(steps: line.steps, running: true)
+                }
             }
         } else {
             VStack(alignment: .leading, spacing: 10) {
+                if !line.steps.isEmpty {
+                    AIToolRail(steps: line.steps)
+                }
                 if line.addressed {
                     caution(Localized("This page has text written for an AI to follow. The answer may have been steered by it."))
                 }
@@ -194,25 +211,55 @@ struct ChatThread: View {
     }
 }
 
-/// What stands where an answer is coming: the words, breathing. The sphere
-/// Dia breathes there was a black ball sitting in a column of writing — it
-/// said nothing the words didn't, and it drew the eye to itself. With less
-/// motion asked for, the words hold still.
-private struct Pulsing: View {
+/// What stands where an answer is coming: three dots breathing in turn, and
+/// the model's own line beside them when it has written one.
+///
+/// This is Dia's loader, taken from its app: `.dots` in its stylesheet, 5pt
+/// each and 4pt apart, `0.8s ease-in-out` from half a dot to one and a half,
+/// each dot a third of a cycle behind the one before — which is what makes it
+/// read as a wave rather than three blinks. Its own waiting state is that wave
+/// and nothing else; the sphere it shows elsewhere said nothing these words
+/// didn't. With less motion asked for, the dots hold still.
+struct Pulsing: View {
     let text: String
 
     @Environment(\.accessibilityReduceMotion) private var calm
-    @State private var faint = false
+    @State private var lit = false
+
+    /// Dia's numbers, in points.
+    private static let size: CGFloat = 5
+    private static let gap: CGFloat = 4
+    private static let beats = 3
+    private static let beat = 0.8
 
     init(_ text: String) { self.text = text }
 
     var body: some View {
-        Text(verbatim: text)
-            .font(.system(size: 13, weight: .medium))
-            .foregroundStyle(Palette.Chat.muted)
-            .opacity(faint ? 0.4 : 1)
-            .animation(calm ? nil : .easeInOut(duration: 0.85).repeatForever(autoreverses: true), value: faint)
-            .onAppear { if !calm { faint = true } }
+        HStack(spacing: 8) {
+            HStack(spacing: Self.gap) {
+                ForEach(0..<Self.beats, id: \.self) { index in
+                    Circle()
+                        .fill(Palette.Chat.dot)
+                        .frame(width: Self.size, height: Self.size)
+                        .scaleEffect(lit ? 1.45 : 1)
+                        .animation(calm ? nil : .easeInOut(duration: Self.beat)
+                            .repeatForever(autoreverses: true)
+                            .delay(Double(index) * Self.beat / Double(Self.beats)), value: lit)
+                }
+            }
+            // Wide enough for the three at their widest, so the words beside
+            // them don't shift as they breathe.
+            .frame(width: Self.size * CGFloat(Self.beats) * 1.45
+                   + Self.gap * CGFloat(Self.beats - 1), alignment: .leading)
+            if !text.isEmpty {
+                Text(verbatim: text)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Palette.Chat.muted)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+        }
+        .onAppear { if !calm { lit = true } }
     }
 }
 
