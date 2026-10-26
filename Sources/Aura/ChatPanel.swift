@@ -140,12 +140,12 @@ struct ChatThread: View {
         .background(Palette.Chat.ink.opacity(0.05), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
-    /// What is under an answer in Dia: the thumb that liked it, the one that
-    /// didn't, the copy, and where it ran.
+    /// What is under an answer: the copy, and when it was said. Dia's thumbs
+    /// are not there — nothing counts them — and neither is the sentence
+    /// naming where the answer ran, which is under Settings › AI where it can
+    /// be changed.
     private func marks(_ line: Chat.Line) -> some View {
-        HStack(spacing: 16) {
-            markDoor("hand.thumbsup") { }
-            markDoor("hand.thumbsdown") { }
+        HStack(spacing: 12) {
             markDoor("square.on.square") {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(line.text, forType: .string)
@@ -153,10 +153,6 @@ struct ChatThread: View {
             Text(line.at.formatted(date: .omitted, time: .shortened))
                 .font(.system(size: 11))
                 .foregroundStyle(Palette.Chat.faint)
-            Text(chat.place)
-                .font(.system(size: 11))
-                .foregroundStyle(Palette.Chat.faint)
-                .lineLimit(1)
             Spacer(minLength: 0)
         }
     }
@@ -257,87 +253,261 @@ struct ChatComposer: View {
             } else if let trouble = chat.trouble {
                 troubleCard(trouble)
             } else {
-                pill
+                field
             }
         }
         .frame(maxWidth: column)
         .onAppear { if !drawn { typing = true } }
     }
 
-    private var pill: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let page = chipPage {
-                pageChip(page)
+    // One card, as Dia's is: what goes with the question on chips that can
+    // be taken off, the field, and its doors along the foot — the plus at the
+    // left for another tab, a file or a picture; the send at the right.
+    private var field: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if !chips.isEmpty { chipRow }
+            if drawn {
+                Text(verbatim: placeholder)
+                    .font(.system(size: 15))
+                    .foregroundStyle(Palette.Chat.faint)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                TextField("", text: $chat.draft,
+                          prompt: Text(verbatim: placeholder).foregroundStyle(Palette.Chat.faint),
+                          axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 15))
+                    .foregroundStyle(Palette.Chat.ink)
+                    .lineLimit(1...6)
+                    .focused($typing)
+                    .onSubmit { send() }
+                    .disabled(chat.busy)
             }
-            HStack(alignment: .bottom, spacing: 12) {
+            HStack(spacing: 14) {
                 if drawn {
-                    Text("Ask another question…")
-                        .font(.system(size: 15))
-                        .foregroundStyle(Palette.Chat.faint)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Image(systemName: "plus")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Palette.Chat.muted)
                 } else {
-                    TextField("", text: $chat.draft,
-                              prompt: Text("Ask another question…").foregroundStyle(Palette.Chat.faint),
-                              axis: .vertical)
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 15))
-                        .foregroundStyle(Palette.Chat.ink)
-                        .lineLimit(1...6)
-                        .focused($typing)
-                        .onSubmit { send() }
-                        .disabled(chat.busy)
+                    Menu {
+                        addItems
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Palette.Chat.muted)
+                            .frame(width: 22, height: 22)
+                            .contentShape(Rectangle())
+                    }
+                    .menuStyle(.borderlessButton)
+                    .menuIndicator(.hidden)
+                    .fixedSize()
+                    .help(Localized("Add a Tab, a File or a Picture"))
                 }
-                Image(systemName: "plus")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(Palette.Chat.faint)
-                Image(systemName: "mic")
-                    .font(.system(size: 14))
-                    .foregroundStyle(Palette.Chat.faint)
+                Spacer(minLength: 0)
+                door("camera", help: Localized("Screenshot This Page")) { shot() }
                 Button {
                     if chat.busy { chat.stop() } else { send() }
                 } label: {
                     Image(systemName: chat.busy ? "stop.fill" : "arrow.up")
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(Palette.Chat.raised)
-                        .frame(width: 30, height: 30)
+                        .frame(width: 28, height: 28)
                         .background(ready ? Palette.Chat.ink : Palette.Chat.faint, in: Circle())
                 }
                 .buttonStyle(.plain)
                 .help(chat.busy ? Localized("Stop") : Localized("Send   ⏎"))
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(Palette.Chat.raised, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .padding(.leading, 14)
+        .padding(.trailing, 10)
+        .padding(.top, 12)
+        .padding(.bottom, 8)
+        .background(Palette.Chat.raised, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .strokeBorder(Palette.Chat.edge, lineWidth: 0.5)
         }
-        .shadow(color: .black.opacity(0.08), radius: 10, y: 3)
+        .shadow(color: .black.opacity(0.09), radius: 12, y: 3)
     }
 
-    /// The page that goes with the next question, said plainly: Dia's
-    /// current-webpage attachment, as a chip rather than a switch.
-    private func pageChip(_ page: Tab) -> some View {
-        HStack(spacing: 10) {
-            Mark(icon: Favicons.shared.cached(for: page.pageAddress),
-                 letter: String(((page.pageAddress?.host() ?? "•").prefix(1))).uppercased(), size: 22)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(page.title.isEmpty ? (page.pageAddress?.host() ?? "") : page.title)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(Palette.Chat.ink)
-                    .lineLimit(1)
-                Text(page.pageAddress?.host() ?? "")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Palette.Chat.muted)
-                    .lineLimit(1)
+    /// Dia's field says what it is about: with a page on it, a question about
+    /// that page; without one, another question.
+    private var placeholder: String {
+        if chat.attachPage, chipPage != nil { return Localized("Ask a question about this page…") }
+        return Localized("Ask another question…")
+    }
+
+    private func door(_ icon: String, help: String, act: @escaping () -> Void) -> some View {
+        Button(action: act) {
+            Image(systemName: icon)
+                .font(.system(size: 13))
+                .foregroundStyle(Palette.Chat.muted)
+                .frame(width: 22, height: 22)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(help)
+    }
+
+    // MARK: - what goes with the question
+
+    /// The page on screen, then what the plus added: each a chip whose cross
+    /// takes it off this question.
+    private var chips: [AIPage.Attachment] {
+        var out: [AIPage.Attachment] = []
+        if chat.attachPage, let page = chipPage {
+            out.append(AIPage.Attachment(kind: .page,
+                                         title: page.title.isEmpty ? (page.pageAddress?.host() ?? "") : page.title,
+                                         detail: page.pageAddress?.host() ?? ""))
+        }
+        return out + chat.extras
+    }
+
+    /// A row that scrolls sideways once there are more chips than fit: three
+    /// of them in a 380-point column would otherwise be squeezed to nothing.
+    @ViewBuilder private var chipRow: some View {
+        if drawn {
+            row
+        } else {
+            ScrollView(.horizontal, showsIndicators: false) { row }
+        }
+    }
+
+    private var row: some View {
+        HStack(spacing: 8) {
+            ForEach(chips) { chip in
+                chipView(chip)
             }
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
+    }
+
+    private func chipView(_ attachment: AIPage.Attachment) -> some View {
+        HStack(spacing: 8) {
+            Group {
+                if attachment.kind == .page || attachment.kind == .tab,
+                   let icon = attachment.read?.url.flatMap({ Favicons.shared.cached(for: $0) }) {
+                    Image(nsImage: icon).resizable().interpolation(.high).frame(width: 16, height: 16)
+                } else {
+                    Image(systemName: attachment.kind.symbol)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Palette.Chat.muted)
+                        .frame(width: 16, height: 16)
+                }
+            }
+            VStack(alignment: .leading, spacing: 1) {
+                Text(verbatim: attachment.title)
+                    .font(.system(size: 12.5, weight: .medium))
+                    .foregroundStyle(Palette.Chat.ink)
+                    .lineLimit(1)
+                Text(verbatim: attachment.detail)
+                    .font(.system(size: 11))
+                    .foregroundStyle(Palette.Chat.muted)
+                    .lineLimit(1)
+            }
+            Button {
+                take(attachment)
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Palette.Chat.faint)
+                    .frame(width: 16, height: 16)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help(Localized("Take This Off"))
+        }
+        .padding(.leading, 8)
+        .padding(.trailing, 6)
+        .padding(.vertical, 6)
+        .frame(maxWidth: 230)
         .background(Palette.Chat.ink.opacity(0.05),
-                    in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    /// The cross on a chip: the page comes off this question, an added tab, a
+    /// file or a picture is dropped.
+    private func take(_ attachment: AIPage.Attachment) {
+        if attachment.kind == .page {
+            chat.attachPage = false
+        } else {
+            chat.extras.removeAll { $0.id == attachment.id }
+        }
+    }
+
+    @ViewBuilder private var addItems: some View {
+        if !chat.attachPage, let page = chipPage {
+            Button(Localized("This Page")) {
+                chat.attachPage = true
+                _ = page
+            }
+        }
+        if !otherTabs.isEmpty {
+            Section(Localized("Tabs")) {
+                ForEach(otherTabs) { tab in
+                    Button(tab.title.isEmpty ? (tab.pageAddress?.host() ?? Localized("Tab")) : tab.title) {
+                        attach(tab)
+                    }
+                }
+            }
+        }
+        Button(Localized("Choose a File…")) { chooseFile() }
+        Button(Localized("Screenshot This Page")) { shot() }
+    }
+
+    /// The tabs that can be added: web pages, this one aside, a handful.
+    private var otherTabs: [Tab] {
+        let here = chipPage?.id
+        return Array(browser.tabs.filter { $0.isWeb && $0.id != here }.prefix(8))
+    }
+
+    private func attach(_ tab: Tab) {
+        Task { @MainActor in
+            guard let read = await AIPage.read(tab, source: "tab") else {
+                browser.announce(Localized("There's nothing on that page to read."))
+                return
+            }
+            chat.extras.append(AIPage.Attachment(kind: .tab,
+                                                 title: read.title.isEmpty ? (tab.pageAddress?.host() ?? Localized("Tab")) : read.title,
+                                                 detail: tab.pageAddress?.host() ?? "",
+                                                 read: read))
+        }
+    }
+
+    private func chooseFile() {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.message = Localized("A file to ask about: text, or a PDF")
+        guard panel.runModal() == .OK else { return }
+        for url in panel.urls {
+            guard let read = AIPage.readFile(url) else {
+                browser.announce(Localized("\(url.lastPathComponent) can't be read as text"))
+                continue
+            }
+            chat.extras.append(AIPage.Attachment(kind: .file,
+                                                 title: url.lastPathComponent,
+                                                 detail: url.deletingLastPathComponent().lastPathComponent,
+                                                 read: read))
+        }
+    }
+
+    /// A picture of the page, for a model that can look at one.
+    private func shot() {
+        guard let tab = chipPage else {
+            browser.announce(Localized("Open a page to take a picture of it"))
+            return
+        }
+        Task { @MainActor in
+            guard let image = await AIPage.shot(tab) else {
+                browser.announce(Localized("That page can't be pictured"))
+                return
+            }
+            chat.extras.append(AIPage.Attachment(kind: .shot,
+                                                 title: Localized("Screenshot"),
+                                                 detail: tab.pageAddress?.host() ?? "",
+                                                 image: image))
+        }
     }
 
     private var chipPage: Tab? {
@@ -426,7 +596,7 @@ struct ChatPane: View {
             head
             ZStack(alignment: .bottom) {
                 ChatThread(chat: chat, seed: seed, pageOpen: browser.active?.isWeb == true,
-                           drawn: drawn, column: column, foot: 132)
+                           drawn: drawn, column: column, foot: 150)
                 ChatComposer(browser: browser, chat: chat, column: column, drawn: drawn)
                     .padding(.horizontal, 12)
                     .padding(.bottom, 14)

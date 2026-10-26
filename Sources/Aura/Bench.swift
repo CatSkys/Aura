@@ -1994,6 +1994,39 @@ final class Bench {
                     browser.chats.clear()
                     browser.chat = nil
                     answer(["left": browser.chats.list.count])
+                case "attach":
+                    // A file from this Mac, as the plus takes one.
+                    guard let path = request["text"] as? String else { answer(["error": "chat attach PATH"]); return }
+                    let url = URL(fileURLWithPath: (path as NSString).expandingTildeInPath)
+                    guard let read = AIPage.readFile(url) else { answer(["error": "can't read \(path)"]); return }
+                    browser.chat?.extras.append(AIPage.Attachment(kind: .file, title: url.lastPathComponent,
+                                                                  detail: "", read: read))
+                    answer(["attached": browser.chat?.extras.count ?? 0, "chars": read.text.count])
+                case "attach-tab":
+                    // Another tab, by its short id.
+                    let wanted = (request["text"] as? String ?? "").lowercased()
+                    guard let tab = browser.tabs.first(where: { $0.id.uuidString.lowercased().hasPrefix(wanted) }) else {
+                        answer(["error": "no tab \(wanted)"]); return
+                    }
+                    Task { @MainActor in
+                        guard let read = await AIPage.read(tab, source: "tab") else { answer(["error": "nothing to read"]); return }
+                        browser.chat?.extras.append(AIPage.Attachment(kind: .tab, title: read.title,
+                                                                      detail: "", read: read))
+                        answer(["attached": browser.chat?.extras.count ?? 0, "chars": read.text.count])
+                    }
+                case "attach-shot":
+                    // A picture of the page in front, as the camera takes one.
+                    guard let tab = browser.active else { answer(["error": "no page"]); return }
+                    Task { @MainActor in
+                        guard let image = await AIPage.shot(tab) else { answer(["error": "can't be pictured"]); return }
+                        browser.chat?.extras.append(AIPage.Attachment(kind: .shot, title: "Screenshot",
+                                                                      detail: "", image: image))
+                        answer(["attached": browser.chat?.extras.count ?? 0, "bytes": image.count])
+                    }
+                case "detach":
+                    // The cross on the page's chip.
+                    browser.chat?.attachPage = false
+                    answer(["page": browser.chat?.attachPage ?? false])
                 case "keep":
                     let said = (request["text"] as? String ?? "on").lowercased()
                     browser.prefs.keepsChats = !(said == "off" || said == "false" || said == "0")
@@ -2016,7 +2049,14 @@ final class Bench {
                         "open": true, "panel": browser.chatUp, "id": chat.id.uuidString, "title": chat.title,
                         "busy": chat.busy, "reading": chat.reading,
                         "notice": chat.notice ?? "", "trouble": chat.trouble ?? "",
-                        "place": chat.place, "kept": Chats.keeps, "stored": browser.chats.list.count,
+                        "provider": chat.provider.rawValue, "model": chat.model,
+                        "kept": Chats.keeps, "stored": browser.chats.list.count,
+                        "attachPage": chat.attachPage,
+                        "extras": chat.extras.map { extra in
+                            ["kind": "\(extra.kind)", "title": extra.title,
+                             "chars": extra.read?.text.count ?? 0,
+                             "bytes": extra.image?.count ?? 0] as [String: Any]
+                        },
                         "lines": chat.lines.map { ["mine": $0.mine, "text": $0.text, "done": $0.done,
                                                    "failed": $0.failed ?? "", "page": $0.page ?? "",
                                                    "strays": $0.strays] as [String: Any] },
@@ -2028,7 +2068,8 @@ final class Bench {
                 answer([
                     "open": true, "panel": browser.chatUp, "title": chat.title,
                     "busy": chat.busy, "reading": chat.reading,
-                    "notice": chat.notice ?? "", "trouble": chat.trouble ?? "", "place": chat.place,
+                    "notice": chat.notice ?? "", "trouble": chat.trouble ?? "",
+                    "provider": chat.provider.rawValue, "model": chat.model,
                     "lines": chat.lines.map { ["mine": $0.mine, "text": $0.text, "done": $0.done,
                                                "failed": $0.failed ?? "", "page": $0.page ?? "",
                                                "strays": $0.strays] as [String: Any] },
@@ -2046,7 +2087,7 @@ final class Bench {
                     let url = URL(fileURLWithPath: path).appendingPathComponent(file)
                     if (try? png.write(to: url)) != nil { made.append(url.path) }
                 }
-                draw(ChatPane(browser: browser, chat: .picture(), drawn: true).frame(width: 420, height: 640), "chat-panel.png")
+                draw(ChatPane(browser: browser, chat: .picture(), drawn: true).frame(width: 380, height: 560), "chat-panel.png")
                 // The page of them all, with the conversation in front of it
                 // when there is one.
                 if browser.chat != nil {
