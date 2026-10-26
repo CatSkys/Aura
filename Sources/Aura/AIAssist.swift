@@ -231,20 +231,18 @@ struct AISettings: View {
         }
         return provider.isLocal
             ? "Nothing leaves this Mac. Also in private tabs"
-            : "Your key, kept in this Mac's keychain, sent only to \(provider.host). Never from a private tab"
+            : Localized("Your key, kept in \(AIKeys.vault.described), sent only to \(provider.host). Never from a private tab")
     }
 
     @ViewBuilder
     private func key(_ provider: AIProvider) -> some View {
         if let hint {
-            Line("Key", Localized("\(hint), in this Mac's keychain")) {
+            Line("Key", Localized("\(hint), in \(AIKeys.vault.described)")) {
                 Pill("Forget") {
                     AIKeys.forget(provider)
                     refresh()
                 }
             }
-        } else if !AIKeys.available {
-            Line("Key", "This copy of Aura can't keep keys safely — it isn't the signed release. An app on this Mac still works") { EmptyView() }
         } else {
             Line("Key", "Paste your API key") {
                 HStack(spacing: 6) {

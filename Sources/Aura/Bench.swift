@@ -1874,6 +1874,10 @@ final class Bench {
                 else { answer(["error": "ai mock needs an address on this Mac"]); return }
                 AIProvider.mock = url
                 answer(["mock": url.absoluteString])
+            case "vault":
+                // Which keychain this copy keeps keys in, asked of the
+                // keychain itself: put, read back, taken away again.
+                answer(AIKeys.selftest())
             case "key":
                 guard let provider = (request["provider"] as? String).flatMap(AIProvider.init(rawValue:)),
                       let key = request["key"] as? String
@@ -2066,7 +2070,7 @@ final class Bench {
                 }
                 answer(["strays": AIPage.strays(in: text, from: read)])
             default:
-                answer(["error": "ai mock URL | key PROVIDER KEY | ask PROVIDER MODEL TEXT | read ID | check TEXT"])
+                answer(["error": "ai mock URL | vault | key PROVIDER KEY | ask PROVIDER MODEL TEXT | read ID | check TEXT"])
             }
 
         case "notifications":
