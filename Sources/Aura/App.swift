@@ -192,17 +192,22 @@ struct SearchApp: App {
                     ))
                     .shortcut("view.duskPause")
                 }
-                // The AI add-on's, only once it is on (Settings › AI).
+                Divider()
+                // The conversation belongs to the window and is there whether
+                // or not an answer is configured yet: opened with nothing set
+                // up, it says what is missing and offers Settings › AI.
+                if AI.shipped {
+                    Button(browser.chat != nil ? "Close Chat" : "Chat…") { browser.toggleChat() }
+                        .shortcut("view.chat")
+                }
+                // The page's own, only once the add-on is on (Settings › AI).
                 if browser.prefs.ai {
-                    Divider()
                     Button("Summarize Page") { browser.summarizePage() }
                         .shortcut("view.summarize")
                         .disabled(!(browser.active?.isWeb ?? false))
                     Button("Ask About This Page…") { browser.askAboutPage() }
                         .shortcut("view.ask")
                         .disabled(!(browser.active?.isWeb ?? false))
-                    Button(browser.chat != nil ? "Close Chat" : "Chat…") { browser.toggleChat() }
-                        .shortcut("view.chat")
                 }
                 Divider()
                 Button("Hide Elements…") { browser.toggleHiding() }
@@ -1600,7 +1605,8 @@ struct ContentView: View {
             if let command = ShortcutStore.shared.customCommand(on: combo) {
                 if command.section == .spaces, !browser.prefs.usesSpaces { return false }
                 if Command.split.contains(command.id), !browser.prefs.splitView { return false }
-                if Command.ai.contains(command.id), !browser.prefs.ai { return false }
+                if Command.ai.contains(command.id), !browser.prefs.ai,
+                   command.id != "view.chat" { return false }
                 if Command.dusk.contains(command.id), !browser.prefs.darkensPages { return false }
                 command.run(browser)
                 return true

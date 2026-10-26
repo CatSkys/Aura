@@ -701,8 +701,10 @@ final class Tab: ObservableObject, Identifiable {
     /// the session or the history, and gone when the script is done.
     let bench: Bool
 
-    /// The tab whose page opened this one, when a script did. Sign-in flows
-    /// hand you back to it when they are done.
+    /// The tab whose page opened this one: a link clicked open in a tab of its
+    /// own, or a window a script asked for. Closing this one lands back on it
+    /// (see Landing.swift), and a sign-in flow hands you back to it when it is
+    /// done.
     var opener: Tab.ID?
 
     /// A window a page opened at a size of its own, or without a toolbar:

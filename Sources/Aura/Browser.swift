@@ -3639,8 +3639,14 @@ final class Browser: NSObject, ObservableObject {
         }
 
         remember(tab, at: index, partner: partner?.id, onLeft: pair?.left == tab.id)
+        // Asked while the row is whole: the tabs this one opened are handed on
+        // below, and they are the first thing closing it hands you back to.
+        let landing = partner ?? Browser.landing(after: tab, at: index, in: tabs)
         tab.close()
         tabs.remove(at: index)
+        // What it opened goes back to what opened it, so a chain of links walks
+        // back one close at a time (see Landing.swift).
+        for page in tabs where page.opener == tab.id { page.opener = tab.opener }
         removeEmptyGroup(tab.groupID)
         if activeID == tab.id {
             // A tab that is already open comes before the neighbour: landing
@@ -3648,7 +3654,7 @@ final class Browser: NSObject, ObservableObject {
             // asked for. Through select(), same as everywhere else you land
             // on a tab, so a neighbour that was never built yet actually
             // wakes up instead of sitting there blank until a manual reload.
-            select(partner ?? Browser.awake(nearest: index, in: tabs) ?? tabs[min(index, tabs.count - 1)])
+            select(landing ?? Browser.awake(nearest: index, in: tabs) ?? tabs[min(index, tabs.count - 1)])
         }
         rememberSession()
     }
@@ -5314,7 +5320,8 @@ final class Browser: NSObject, ObservableObject {
             self.close(tab)
         }
         tab.onFileLink = { [weak self] tab, url, blank in
-            if blank { self?.open(url, foreground: true, from: tab) } else { tab.go(to: url) }
+            guard blank else { tab.go(to: url); return }
+            self?.open(url, foreground: true, from: tab).opener = tab.id
         }
 
         // The caret in a sign-in box: the accounts kept for this site hang
@@ -6305,7 +6312,9 @@ extension Browser: WKNavigationDelegate, WKUIDelegate {
             }
             return
         }
-        open(url, foreground: foreground, from: source, mayWait: true)
+        // A link hands you back to the page it was clicked on when this tab
+        // closes (see Landing.swift).
+        open(url, foreground: foreground, from: source, mayWait: true).opener = source?.id
     }
 
     /// Anything the window can't show is something to keep instead.
