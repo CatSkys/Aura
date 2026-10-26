@@ -44,6 +44,53 @@ struct AIToolResult: Equatable {
     let isError: Bool
 }
 
+extension AIMessage {
+    /// The history as a provider will read it: every call an assistant made
+    /// followed by a message answering all of it, and no answer to a call
+    /// that is not there.
+    ///
+    /// Each of the three wires says this in its own words when it is broken —
+    /// OpenAI's is "An assistant message with 'tool_calls' must be followed by
+    /// tool messages responding to each 'tool_call_id'" — and every request
+    /// after that one is refused too, so one half-finished turn used to leave
+    /// a conversation that could never be talked in again. A turn that ends
+    /// without an answer is taken back out whole now (Chat.swift), and what an
+    /// older build left behind is put back together here, on the way to the
+    /// model, so the conversation carries on.
+    static func paired(_ messages: [AIMessage]) -> [AIMessage] {
+        var out: [AIMessage] = []
+        var index = messages.startIndex
+        while index < messages.endIndex {
+            let message = messages[index]
+            let next = messages.index(after: index)
+            // A call is answered by the message right after it, once for
+            // every id in it: anything else is a call that came to nothing,
+            // and it goes, with its ask.
+            if message.role == .assistant, !message.calls.isEmpty {
+                let answered = next < messages.endIndex
+                    && messages[next].role == .user
+                    && Set(messages[next].results.map(\.id)) == Set(message.calls.map(\.id))
+                if answered {
+                    out.append(message)
+                    out.append(messages[next])
+                    index = messages.index(after: next)
+                } else {
+                    index = next
+                }
+                continue
+            }
+            // Results answering no call are no use to anybody either.
+            if message.role == .user, !message.results.isEmpty {
+                index = next
+                continue
+            }
+            out.append(message)
+            index = next
+        }
+        return out
+    }
+}
+
 enum AIError: LocalizedError, Equatable {
     case noKey
     case refusedHost

@@ -147,4 +147,63 @@ final class AIToolWiresTests: XCTestCase {
         XCTAssertTrue(AIToolWires.resultsAreTheirOwnMessage(.openAI))
         XCTAssertTrue(AIToolWires.resultsAreTheirOwnMessage(.gemini))
     }
+
+    // MARK: - a history a provider will read
+
+    private func call(_ id: String) -> AIToolWires.Call {
+        AIToolWires.Call(id: id, name: "snapshot", arguments: #"{"say": "Reading"}"#)
+    }
+
+    private func answered(_ id: String) -> AIToolResult {
+        AIToolResult(id: id, name: "snapshot", content: "read", isError: false)
+    }
+
+    func testACallAndItsAnswerAreKeptTogether() {
+        let history = [
+            AIMessage(role: .user, text: "What is this?"),
+            AIMessage(role: .assistant, text: "", calls: [call("c1")]),
+            AIMessage(role: .user, text: "", results: [answered("c1")]),
+            AIMessage(role: .assistant, text: "A page about trains."),
+        ]
+        XCTAssertEqual(AIMessage.paired(history), history)
+    }
+
+    func testACallNothingAnsweredIsTakenOutWithItsAsk() {
+        // What a turn that ended mid-way used to leave behind: the provider
+        // refuses every request after it ("must be followed by tool
+        // messages"), so the conversation is put back together rather than
+        // left broken.
+        let history = [
+            AIMessage(role: .user, text: "What is this?"),
+            AIMessage(role: .assistant, text: "", calls: [call("c1")]),
+            AIMessage(role: .user, text: "", results: [answered("c1")]),
+            AIMessage(role: .assistant, text: "Half an answ"),
+            AIMessage(role: .assistant, text: "", calls: [call("c2")]),
+        ]
+        XCTAssertEqual(AIMessage.paired(history), [
+            AIMessage(role: .user, text: "What is this?"),
+            AIMessage(role: .assistant, text: "", calls: [call("c1")]),
+            AIMessage(role: .user, text: "", results: [answered("c1")]),
+            AIMessage(role: .assistant, text: "Half an answ"),
+        ])
+    }
+
+    func testABatchIsAnsweredOnceForEveryCallInIt() {
+        let history = [
+            AIMessage(role: .assistant, text: "", calls: [call("c1"), call("c2")]),
+            AIMessage(role: .user, text: "", results: [answered("c1")]),
+            AIMessage(role: .assistant, text: "Done."),
+        ]
+        // One result for two calls leaves the second one refused by every
+        // provider: the call goes, and what came of it goes with it.
+        XCTAssertEqual(AIMessage.paired(history), [AIMessage(role: .assistant, text: "Done.")])
+    }
+
+    func testAnAnswerToACallThatIsNotThereGoes() {
+        let history = [
+            AIMessage(role: .user, text: "", results: [answered("gone")]),
+            AIMessage(role: .user, text: "Why is the sky blue?"),
+        ]
+        XCTAssertEqual(AIMessage.paired(history), [AIMessage(role: .user, text: "Why is the sky blue?")])
+    }
 }

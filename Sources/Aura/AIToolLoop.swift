@@ -113,10 +113,20 @@ enum AIToolLoop {
             var results: [AIToolResult] = []
             var personSaidNo = false
             for call in calls {
-                if personSaidNo || stopped() { break }
-                let outcome = cut
-                    ? AITool.Outcome(one: .failed("The answer was cut off before this call finished, so it was not run. If there were many calls at once, ask for fewer."))
-                    : await one(call, tools: tools, browser: browser, tab: tab, stopped: stopped, check: check, event: event)
+                // Every call in the message is answered, including the ones
+                // the batch never got to: a history holding a call nothing
+                // answered is one no provider will read, and it would refuse
+                // every question after it too (AIMessage.paired).
+                let outcome: AITool.Outcome
+                if personSaidNo {
+                    outcome = AITool.Outcome(one: .failed("The person did not allow this, so the rest of the batch was not run."))
+                } else if stopped() {
+                    outcome = AITool.Outcome(one: .failed("The person stopped this before it ran."))
+                } else if cut {
+                    outcome = AITool.Outcome(one: .failed("The answer was cut off before this call finished, so it was not run. If there were many calls at once, ask for fewer."))
+                } else {
+                    outcome = await one(call, tools: tools, browser: browser, tab: tab, stopped: stopped, check: check, event: event)
+                }
                 if outcome.refused { personSaidNo = true; event(.refused) }
                 results.append(AIToolResult(id: call.id, name: call.name,
                                             content: outcome.result.content, isError: outcome.result.isError))
