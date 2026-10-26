@@ -5314,7 +5314,7 @@ final class Browser: NSObject, ObservableObject {
         tab.onMiddleClick = { [weak self] tab, url in self?.openClicked(url, foreground: false, from: tab, view: tab.built?.webKit) }
         tab.onCross = { [weak self] tab, url in self?.replace(tab, going: url) }
         // A swipe back at this tab's first page closes it, as ⌘W closes it:
-        // the neighbour on the right comes forward (see PageView.leaves).
+        // back to the page that opened it, or the neighbour (see Landing.swift).
         tab.onSwipeClose = { [weak self, weak tab] in
             guard let self, let tab else { return }
             self.close(tab)
