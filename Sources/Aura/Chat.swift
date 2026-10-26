@@ -29,8 +29,11 @@ final class Chat: ObservableObject, Identifiable {
         var done = true
         var failed: String?
         var at = Date()
-        /// The page this question was asked from, when one went with it.
-        var page: String?
+        /// What went with this question, drawn on it rather than left in the
+        /// field: the page it was asked from, a tab, a file, a picture. The
+        /// names and the sites only — the words went to the model once and
+        /// are not written down (Chats.swift).
+        var carried: [Carried] = []
         /// What the answer says that the page never did — an address, a
         /// phone number, an email (see AIPage.strays). Empty for an answer
         /// with no page behind it.
@@ -48,6 +51,29 @@ final class Chat: ObservableObject, Identifiable {
         /// Kept with the answer rather than thrown away, because "what did it
         /// do" is a question people ask after the fact.
         var steps: [AIToolStep] = []
+
+        enum CodingKeys: String, CodingKey {
+            case id, mine, text, done, failed, at, carried, strays, addressed, shots, steps
+        }
+    }
+
+    /// One thing that went with a question, as it is kept and drawn: a page's
+    /// name and site, a file's name and folder. Never its words.
+    struct Carried: Codable, Equatable, Identifiable {
+        var id = UUID()
+        var kind: AIPage.Attachment.Kind
+        var title: String
+        /// The site, or the folder, under the name.
+        var detail: String
+        /// Where it is, for its favicon.
+        var address: String?
+
+        init(kind: AIPage.Attachment.Kind, title: String, detail: String, address: String? = nil) {
+            self.kind = kind
+            self.title = title
+            self.detail = detail
+            self.address = address
+        }
     }
 
     /// A conversation as it is kept (Chats.swift): everything the page and
@@ -201,7 +227,8 @@ final class Chat: ObservableObject, Identifiable {
         // together before anything is asked (AIMessage.paired).
         messages = AIMessage.paired(messages)
         mark = messages.count
-        lines.append(Line(mine: true, text: shown, page: tab?.title))
+        lines.append(Line(mine: true, text: shown,
+                          carried: Chat.carried(page: pageOn ? tab : nil, extras: extras)))
         lines.append(Line(mine: false, text: "", done: false))
         if title.isEmpty { title = Chat.name(for: ask, shown: shown, page: tab?.title) }
         busy = true
@@ -417,7 +444,8 @@ final class Chat: ObservableObject, Identifiable {
         chat.title = "Which file holds the theme colours?"
         chat.lines = [
             Line(mine: true, text: "Of these three files, which one holds the theme colours? And why split it out?",
-                 page: "Aura"),
+                 carried: [Carried(kind: .page, title: "Aura", detail: "github.com",
+                                   address: "https://github.com/driceroland/Search")]),
             Line(mine: false, text: "Design.swift does. Palette and Metrics both live in it — one for colour, one for size — and other files only refer to the names, never write a colour of their own.",
                  steps: [
                     .note("先看一下设计文件都写了什么。"),
@@ -438,6 +466,25 @@ final class Chat: ObservableObject, Identifiable {
         return chat
     }
 
+    /// What went with a question, in the little it takes to draw it after the
+    /// fact: the page unless its cross took it off, then whatever the plus
+    /// added. A name and a site each, and none of their words.
+    private static func carried(page: Tab?, extras: [AIPage.Attachment]) -> [Carried] {
+        var out: [Carried] = []
+        if let page {
+            let host = page.pageAddress?.host() ?? ""
+            out.append(Carried(kind: .page,
+                               title: page.title.isEmpty ? host : page.title,
+                               detail: host,
+                               address: page.pageAddress?.absoluteString))
+        }
+        out += extras.map { extra in
+            Carried(kind: extra.kind, title: extra.title, detail: extra.detail,
+                    address: extra.read?.url?.absoluteString)
+        }
+        return out
+    }
+
     /// The name a conversation goes by until it is renamed: what was asked,
     /// or what a summary was of.
     private static func name(for ask: AIPage.Ask, shown: String, page: String?) -> String {
@@ -448,6 +495,28 @@ final class Chat: ObservableObject, Identifiable {
         case .question:
             return String(shown.replacingOccurrences(of: "\n", with: " ").prefix(60))
         }
+    }
+}
+
+/// A line is read back from a file written by whatever build was here
+/// before, so anything this one doesn't know is what that line was without,
+/// never a reason to lose the conversation: a record with a field this build
+/// has not heard of reads as one that never had it. Declared out here so a
+/// line's own initialiser is still the one made of its fields.
+extension Chat.Line {
+    init(from decoder: Decoder) throws {
+        let box = try decoder.container(keyedBy: Chat.Line.CodingKeys.self)
+        id = (try? box.decodeIfPresent(UUID.self, forKey: .id)) ?? UUID()
+        mine = (try? box.decodeIfPresent(Bool.self, forKey: .mine)) ?? false
+        text = (try? box.decodeIfPresent(String.self, forKey: .text)) ?? ""
+        done = (try? box.decodeIfPresent(Bool.self, forKey: .done)) ?? true
+        failed = try? box.decodeIfPresent(String.self, forKey: .failed)
+        at = (try? box.decodeIfPresent(Date.self, forKey: .at)) ?? Date()
+        carried = (try? box.decodeIfPresent([Chat.Carried].self, forKey: .carried)) ?? []
+        strays = (try? box.decodeIfPresent([String].self, forKey: .strays)) ?? []
+        addressed = (try? box.decodeIfPresent(Bool.self, forKey: .addressed)) ?? false
+        shots = (try? box.decodeIfPresent(Int.self, forKey: .shots)) ?? 0
+        steps = (try? box.decodeIfPresent([AIToolStep].self, forKey: .steps)) ?? []
     }
 }
 

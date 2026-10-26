@@ -1353,6 +1353,8 @@
 "Add a Tab, a File or a Picture" = "添加标签页、文件或截图";
 "Take This Off" = "从这一问里去掉";
 "Choose a File…" = "选择文件…";
+"Send This Page" = "带上这一页";
+"Don't Send This Page" = "这一页不带上";
 "Screenshot This Page" = "截这张页面";
 "Screenshot" = "截图";
 "A file to ask about: text, or a PDF" = "要问的文件：文本，或 PDF";

@@ -79,21 +79,34 @@ struct ChatThread: View {
 
     @ViewBuilder private func row(_ line: Chat.Line) -> some View {
         if line.mine {
-            HStack(spacing: 0) {
-                Spacer(minLength: 60)
-                Text(verbatim: line.text)
-                    .font(.system(size: 14))
-                    .foregroundStyle(Palette.Chat.ink)
-                    .multilineTextAlignment(.leading)
-                    .textSelection(.enabled)
-                    .padding(.horizontal, 22)
-                    .padding(.vertical, 15)
-                    .background {
-                        RoundedRectangle(cornerRadius: 17, style: .continuous)
-                            .fill(LinearGradient(colors: [seed.opacity(0.12), seed.opacity(0.09)],
-                                                 startPoint: .top, endPoint: .bottom))
+            VStack(alignment: .trailing, spacing: 8) {
+                // What went with this question, on the question: the page it
+                // was asked from, a tab, a file, a picture — a chip in the
+                // field would only ever be the next one's.
+                if !line.carried.isEmpty {
+                    VStack(alignment: .trailing, spacing: 6) {
+                        ForEach(line.carried) { thing in
+                            CarriedCard(thing: thing)
+                        }
                     }
+                }
+                HStack(spacing: 0) {
+                    Spacer(minLength: 60)
+                    Text(verbatim: line.text)
+                        .font(.system(size: 14))
+                        .foregroundStyle(Palette.Chat.ink)
+                        .multilineTextAlignment(.leading)
+                        .textSelection(.enabled)
+                        .padding(.horizontal, 22)
+                        .padding(.vertical, 15)
+                        .background {
+                            RoundedRectangle(cornerRadius: 17, style: .continuous)
+                                .fill(LinearGradient(colors: [seed.opacity(0.12), seed.opacity(0.09)],
+                                                     startPoint: .top, endPoint: .bottom))
+                        }
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .trailing)
         } else if line.text.isEmpty, !line.done {
             // The turn as it happens: the same rail the answer keeps, growing a
             // row at a time — the model's own lines and what the browser did in
@@ -208,6 +221,46 @@ struct ChatThread: View {
 
     private func scroll(_ scroller: ScrollViewProxy) {
         withAnimation(Motion.quick) { scroller.scrollTo("foot", anchor: .bottom) }
+    }
+}
+
+// MARK: - what went with a question
+
+/// One thing a question was asked with, under the question itself: the
+/// page's own favicon, its name, and the site. Dia draws what a message
+/// carried on the message; a chip left standing in the field would be about
+/// the next question instead of the one that was asked.
+struct CarriedCard: View {
+    let thing: Chat.Carried
+
+    var body: some View {
+        HStack(spacing: 7) {
+            Group {
+                if let icon = thing.address.flatMap({ URL(string: $0) }).flatMap({ Favicons.shared.cached(for: $0) }) {
+                    Image(nsImage: icon).resizable().interpolation(.high).frame(width: 14, height: 14)
+                } else {
+                    Image(systemName: thing.kind.symbol)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(Palette.Chat.muted)
+                        .frame(width: 14, height: 14)
+                }
+            }
+            Text(verbatim: thing.title)
+                .font(.system(size: 11.5, weight: .medium))
+                .foregroundStyle(Palette.Chat.muted)
+                .lineLimit(1)
+            if !thing.detail.isEmpty {
+                Text(verbatim: thing.detail)
+                    .font(.system(size: 11))
+                    .foregroundStyle(Palette.Chat.faint)
+                    .lineLimit(1)
+            }
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 5)
+        .background(Palette.Chat.ink.opacity(0.05),
+                    in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -384,16 +437,16 @@ struct ChatComposer: View {
 
     // MARK: - what goes with the question
 
-    /// The page on screen, then what the plus added: each a chip whose cross
-    /// takes it off this question.
+    /// What is added to this question by hand — another tab, a file, a
+    /// picture — each a chip whose cross takes it off again.
+    ///
+    /// The page on screen is not here: it goes with every question while the
+    /// field says "Ask a question about this page…", and it is drawn on the
+    /// question it went with instead of standing in the field for ever
+    /// (ChatThread's CarriedCard). The plus still takes it off for one
+    /// question, and puts it back.
     private var chips: [AIPage.Attachment] {
-        var out: [AIPage.Attachment] = []
-        if chat.attachPage, let page = chipPage {
-            out.append(AIPage.Attachment(kind: .page,
-                                         title: page.title.isEmpty ? (page.pageAddress?.host() ?? "") : page.title,
-                                         detail: page.pageAddress?.host() ?? ""))
-        }
-        return out + chat.extras
+        chat.extras
     }
 
     /// A row that scrolls sideways once there are more chips than fit: three
@@ -458,20 +511,19 @@ struct ChatComposer: View {
                     in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
-    /// The cross on a chip: the page comes off this question, an added tab, a
-    /// file or a picture is dropped.
+    /// The cross on a chip: an added tab, a file or a picture is dropped. The
+    /// page has no chip to cross — the plus takes it off (addItems).
     private func take(_ attachment: AIPage.Attachment) {
-        if attachment.kind == .page {
-            chat.attachPage = false
-        } else {
-            chat.extras.removeAll { $0.id == attachment.id }
-        }
+        chat.extras.removeAll { $0.id == attachment.id }
     }
 
     @ViewBuilder private var addItems: some View {
-        if !chat.attachPage, let page = chipPage {
-            Button(Localized("This Page")) {
-                chat.attachPage = true
+        // The page goes with the question unless it is taken off here: the
+        // field says which it is, and the question that went without it says
+        // so afterwards by carrying nothing.
+        if let page = chipPage {
+            Button(chat.attachPage ? Localized("Don't Send This Page") : Localized("Send This Page")) {
+                chat.attachPage.toggle()
                 _ = page
             }
         }
