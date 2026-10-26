@@ -334,16 +334,19 @@ final class Chat: ObservableObject, Identifiable {
             guard !lines.isEmpty else { return }
             lines[lines.count - 1].text += piece
         case .saying(let said):
-            // The model's line goes on the rail as it is written, so what you
-            // watch while it works is what stays with the answer afterwards.
+            // The model's line for this call, on the rail as it is written, so
+            // what you watch while it works is what stays with the answer:
+            // the row that follows is this same sentence (AIToolStep.done).
             saying = said
             if let last = lines.indices.last {
                 lines[last].steps.append(.note(said))
             }
         case .did(let step):
-            // A row of its own, kept with the answer: the rail is what "what
-            // did it do" is answered with after the turn has ended.
+            // The line that announced this call becomes the call's own row —
+            // same words, with the glyph of what it went and did — so the
+            // rail does not say everything twice.
             if let last = lines.indices.last {
+                if lines[last].steps.last?.kind == .note { _ = lines[last].steps.popLast() }
                 lines[last].steps.append(step)
             }
             saying = nil
@@ -448,27 +451,31 @@ final class Chat: ObservableObject, Identifiable {
                                    address: "https://github.com/driceroland/Search")]),
             Line(mine: false, text: "Design.swift does. Palette and Metrics both live in it — one for colour, one for size — and other files only refer to the names, never write a colour of their own.",
                  steps: [
-                    .note("先看一下设计文件都写了什么。"),
-                    AIToolStep.named("snapshot"),
+                    .note("先看看这几个文件都写了什么。"),
+                    AIToolStep.done("snapshot", arguments: AIToolArguments(text: "{}"),
+                                    did: "Took a snapshot of the page: 71 elements.", failed: false,
+                                    line: "先看一眼这页上都有什么"),
                     AIToolStep.done("navigate", arguments: AIToolArguments(text: #"{"url":"https://www.bilibili.com"}"#),
-                                    did: "Opened https://www.bilibili.com/.", failed: false),
+                                    did: "Opened https://www.bilibili.com/.", failed: false,
+                                    line: "打开 B 站的设计规范看看"),
                     .note("页面已经打开，在读它的内容。"),
                  ]),
             // And one still being written, so a picture shows what stands
-            // where an answer is coming — the rail as it grows, the thing each
-            // row was about under its title, and the dots under them.
+            // where an answer is coming — the rail as it grows, each row in
+            // the model's own words, and the dots under them.
             Line(mine: false, text: "", done: false, steps: [
                 .note("我在查浙江传媒学院的官方信息。"),
                 AIToolStep.done("navigate", arguments: AIToolArguments(text: #"{"url":"https://www.cuz.edu.cn"}"#),
-                                did: "Opened https://www.cuz.edu.cn/.", failed: false),
+                                did: "Opened https://www.cuz.edu.cn/.", failed: false,
+                                line: "打开浙传的官网"),
                 AIToolStep.done("read", arguments: AIToolArguments(text: "{}"),
-                                did: "Read the page “浙江传媒学院”.",
-                                failed: false, summary: "浙江传媒学院-哔哩哔哩"),
+                                did: "Read the page “浙江传媒学院”.", failed: false,
+                                line: "读一下这页都写了什么"),
                 AIToolStep.done("scroll", arguments: AIToolArguments(text: #"{"direction":"down","pages":2}"#),
                                 did: "Scrolled 2 screens down.", failed: false,
-                                summary: Localized("\(2) screens down")),
+                                line: "往下翻两屏看评论"),
                 AIToolStep.done("press", arguments: AIToolArguments(text: #"{"key":"Enter"}"#),
-                                did: "Pressed Enter.", failed: false, summary: "Enter"),
+                                did: "Pressed Enter.", failed: false, line: "按回车搜一下"),
             ]),
         ]
         return chat

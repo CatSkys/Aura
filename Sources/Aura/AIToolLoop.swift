@@ -133,7 +133,7 @@ enum AIToolLoop {
                 if !outcome.result.did.isEmpty {
                     event(.did(AIToolStep.done(call.name, arguments: AIToolArguments(text: call.arguments),
                                                did: outcome.result.did, failed: outcome.result.isError,
-                                               summary: outcome.result.summary)))
+                                               line: (AIToolArguments(text: call.arguments)).string("say"))))
                 }
             }
             keep(AIMessage(role: .user, text: "", results: results), in: &history, &added)
@@ -186,14 +186,13 @@ enum AIToolLoop {
         if let wrong = arguments.checked(against: tool.schema) {
             return AITool.Outcome(one: .failed("\(tool.name): \(wrong)"))
         }
-        // 3.5 the model's own line for you
-        let say = arguments.string("say") ?? ""
-        if tool.says {
-            guard !say.isEmpty else {
-                return AITool.Outcome(one: .failed("\(tool.name): the argument “say” is required — one short line for the person watching, in the present tense, saying what this call does."))
-            }
-            event(.saying(say))
+        // 3.5 the model's own line for you, and the row the rail keeps for
+        // this call: what it is doing, in its words, never ours.
+        let say = (arguments.string("say") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !say.isEmpty else {
+            return AITool.Outcome(one: .failed("\(tool.name): the argument “say” is required — one short line for the person watching, in the present tense, saying what this call does."))
         }
+        event(.saying(say))
         // 4. whether it may happen
         if case .refused(let why) = await check(tool, arguments) {
             return AITool.Outcome(one: .failed(why), refused: true)

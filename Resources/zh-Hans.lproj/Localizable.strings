@@ -1394,8 +1394,6 @@
 "Pressed a key" = "按了键";
 "Scrolling" = "正在滚动";
 "Scrolled" = "滚动了";
-"{1} screens down" = "向下 {1} 屏";
-"{1} screens up" = "向上 {1} 屏";
 "Waiting" = "正在等待";
 "Waited" = "等了一下";
 "Gathered context" = "收集了资料";

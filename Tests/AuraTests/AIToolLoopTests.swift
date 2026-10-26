@@ -53,7 +53,7 @@ final class AIToolLoopTests: XCTestCase {
         return [AITool.Definition(
             name: "pretend", description: "A tool that does nothing but answer.",
             schema: AITool.Schema(properties: ["say": AITool.sayProperty], required: ["say"]),
-            says: true, risk: .reading,
+            risk: .reading,
             run: { _, _ in
                 let said = left.isEmpty ? "nothing left" : left.removeFirst()
                 return .ok("pretended: " + said, detail: said)

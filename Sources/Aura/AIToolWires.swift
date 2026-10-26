@@ -34,8 +34,16 @@ enum AIToolWires {
             if !property.choices.isEmpty { one["enum"] = property.choices }
             properties[name] = one
         }
+        // `say` is on every tool, not only the ones that change something:
+        // it is the line the rail keeps for the call, in the model's own
+        // words, so a row says what it went and did rather than the name of
+        // a kind of action (AIToolStep). Injected here so one declaration
+        // serves all three wires and no tool can forget it.
+        properties["say"] = ["type": "string", "description": AITool.sayProperty.description]
         var schema: [String: Any] = ["type": "object", "properties": properties]
-        if !tool.schema.required.isEmpty { schema["required"] = tool.schema.required }
+        var required = tool.schema.required
+        if !required.contains("say") { required.append("say") }
+        schema["required"] = required
         return schema
     }
 

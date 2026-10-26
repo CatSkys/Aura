@@ -46,16 +46,9 @@ enum AITool {
         var content: String
         var isError = false
         var did = ""
-        /// What the call was about, short enough for the rail to say under
-        /// the row's title: the page it read, the key it pressed, the field
-        /// it filled in. The page's own words where the page has them, so
-        /// there is nothing to translate; the title says the verb and this
-        /// says the object, which is the half a rail of "Read the page" was
-        /// missing.
-        var summary: String?
 
-        static func ok(_ did: String, detail: String = "", summary: String? = nil) -> Result {
-            Result(content: detail.isEmpty ? did : did + "\n\n" + detail, did: did, summary: summary)
+        static func ok(_ did: String, detail: String = "") -> Result {
+            Result(content: detail.isEmpty ? did : did + "\n\n" + detail, did: did)
         }
 
         static func failed(_ why: String) -> Result {
@@ -119,7 +112,6 @@ enum AITool {
         let schema: Schema
         /// Whether the model must write a `say` for it: every tool that
         /// changes anything does, and one that only looks does not.
-        let says: Bool
         let risk: AIToolRisk.Kind
         let run: (AIToolArguments, Context) async -> Result
     }
@@ -146,14 +138,14 @@ enum AITool {
                     "scope": .init(.string, "Only what is inside this element, by its number from an earlier snapshot."),
                     "full": .init(.boolean, "Every element in the document, not only those near the screen."),
                 ]),
-                says: false, risk: .reading,
+                risk: .reading,
                 run: { arguments, context in await snapshot(arguments, context) }
             ),
             Definition(
                 name: "read",
                 description: "The words of the page as a person reading it would see them: its article, or the whole page when there is no article.",
                 schema: Schema(properties: [:]),
-                says: false, risk: .reading,
+                risk: .reading,
                 run: { _, context in await read(context) }
             ),
             Definition(
@@ -164,18 +156,17 @@ enum AITool {
                         "action": .init(.string, "What to do with the tabs.", choices: ["list", "open", "select", "close"]),
                         "url": .init(.string, "For open: the http or https address to open."),
                         "id": .init(.string, "For select and close: the tab's id, as the list gives it."),
-                        "say": sayProperty,
                     ],
                     required: ["action", "say"]
                 ),
-                says: true, risk: .acting,
+                risk: .acting,
                 run: { arguments, context in await tabs(arguments, context) }
             ),
             Definition(
                 name: "screenshot",
                 description: "A picture of the page as it is on screen, for a model that can look at one.",
                 schema: Schema(properties: [:]),
-                says: false, risk: .reading,
+                risk: .reading,
                 run: { _, context in await screenshot(context) }
             ),
         ]
@@ -191,32 +182,31 @@ enum AITool {
                 schema: Schema(
                     properties: [
                         "url": .init(.string, "The whole address, beginning https:// or http://. Take it from the page or from what you were asked — never make one up."),
-                        "say": sayProperty,
                     ],
                     required: ["url", "say"]
                 ),
-                says: true, risk: .going,
+                risk: .going,
                 run: { arguments, context in await navigate(arguments, context) }
             ),
             Definition(
                 name: "back",
                 description: "Back to the page before this one.",
-                schema: Schema(properties: ["say": sayProperty], required: ["say"]),
-                says: true, risk: .going,
+                schema: Schema(properties: [:]),
+                risk: .going,
                 run: { _, context in history(back: true, context) }
             ),
             Definition(
                 name: "forward",
                 description: "Forward to the page this one came back from.",
-                schema: Schema(properties: ["say": sayProperty], required: ["say"]),
-                says: true, risk: .going,
+                schema: Schema(properties: [:]),
+                risk: .going,
                 run: { _, context in history(back: false, context) }
             ),
             Definition(
                 name: "reload",
                 description: "Load the page again.",
-                schema: Schema(properties: ["say": sayProperty], required: ["say"]),
-                says: true, risk: .going,
+                schema: Schema(properties: [:]),
+                risk: .going,
                 run: { _, context in reload(context) }
             ),
         ]
@@ -232,11 +222,10 @@ enum AITool {
                 schema: Schema(
                     properties: [
                         "ref": .init(.string, "The element's number from a snapshot."),
-                        "say": sayProperty,
                     ],
                     required: ["ref", "say"]
                 ),
-                says: true, risk: .acting,
+                risk: .acting,
                 run: { arguments, context in await click(arguments, context) }
             ),
             Definition(
@@ -247,11 +236,10 @@ enum AITool {
                         "ref": .init(.string, "The field's number from a snapshot."),
                         "value": .init(.string, "What to put in it."),
                         "submit": .init(.boolean, "Send the form around it afterwards."),
-                        "say": sayProperty,
                     ],
                     required: ["ref", "value", "say"]
                 ),
-                says: true, risk: .acting,
+                risk: .acting,
                 run: { arguments, context in await setValue(arguments, context) }
             ),
             Definition(
@@ -261,11 +249,10 @@ enum AITool {
                     properties: [
                         "key": .init(.string, "The key's name: Enter, Tab, Escape, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, PageUp, PageDown, Home, End, Space, Backspace, Delete."),
                         "ref": .init(.string, "Press it in this element, after putting the focus there."),
-                        "say": sayProperty,
                     ],
                     required: ["key", "say"]
                 ),
-                says: true, risk: .acting,
+                risk: .acting,
                 run: { arguments, context in await press(arguments, context) }
             ),
             Definition(
@@ -276,11 +263,10 @@ enum AITool {
                         "direction": .init(.string, "Which way to scroll.", choices: ["up", "down"]),
                         "pages": .init(.number, "How many screens, one by default."),
                         "ref": .init(.string, "Scroll this element into view instead."),
-                        "say": sayProperty,
                     ],
                     required: ["say"]
                 ),
-                says: true, risk: .acting,
+                risk: .acting,
                 run: { arguments, context in await scroll(arguments, context) }
             ),
         ]
@@ -299,7 +285,7 @@ enum AITool {
                     "state": .init(.string, "What to wait for.", choices: ["loaded", "navigation"]),
                     "timeoutMs": .init(.number, "How long to wait, in milliseconds. Ten seconds by default, one minute at most."),
                 ]),
-                says: false, risk: .reading,
+                risk: .reading,
                 run: { arguments, context in await waitFor(arguments, context) }
             ),
             Definition(
@@ -312,7 +298,7 @@ enum AITool {
                     ],
                     required: ["reason", "title"]
                 ),
-                says: false, risk: .reading,
+                risk: .reading,
                 run: { arguments, context in await askUser(arguments, context) }
             ),
         ]
@@ -330,7 +316,7 @@ enum AITool {
             return .failed("This page can't be read right now: it has no document, or it is still on its way.")
         }
         return .ok("Took a snapshot of the page: \(snap.count) element\(snap.count == 1 ? "" : "s").",
-                   detail: snap.text, summary: named(context.tab))
+                   detail: snap.text)
     }
 
     private static func read(_ context: Context) async -> Result {
@@ -338,7 +324,7 @@ enum AITool {
             return .failed("There's nothing readable on this page.")
         }
         let head = "\(read.title)\n\(read.url?.absoluteString ?? "")\n\n"
-        return .ok("Read the page “\(read.title)”.", detail: head + read.text, summary: read.title)
+        return .ok("Read the page “\(read.title)”.", detail: head + read.text)
     }
 
     private static func tabs(_ arguments: AIToolArguments, _ context: Context) async -> Result {
@@ -398,7 +384,7 @@ enum AITool {
         // A picture can't ride in a tool result on any of the three wires, so
         // it leaves here and the loop carries it on the next turn.
         AIToolLoop.keep(shot)
-        return .ok("Took a picture of the page, as it is now.", summary: named(context.tab))
+        return .ok("Took a picture of the page, as it is now.")
     }
 
     // MARK: - going places, done
@@ -450,7 +436,7 @@ enum AITool {
         let opened = context.browser.tabs.count > before
         let did = "Clicked \(element.described)" + (opened ? " (" + Localized("opened in a new tab") + ")" : "") + "."
         let landed = await settle(context.tab, upTo: 8)
-        return .ok(did, detail: "The page is now \(landed).", summary: element.name)
+        return .ok(did, detail: "The page is now \(landed).")
     }
 
     private static func setValue(_ arguments: AIToolArguments, _ context: Context) async -> Result {
@@ -476,9 +462,9 @@ enum AITool {
                 return .ok(did, detail: "There's no form around it to send.")
             }
             let landed = await settle(context.tab, upTo: 8)
-            return .ok(did + " Sent the form around it.", detail: "The page is now \(landed).", summary: element.name)
+            return .ok(did + " Sent the form around it.", detail: "The page is now \(landed).")
         }
-        return .ok(did, summary: element.name)
+        return .ok(did)
     }
 
     private static func press(_ arguments: AIToolArguments, _ context: Context) async -> Result {
@@ -498,9 +484,9 @@ enum AITool {
         }
         if key.submits {
             let landed = await settle(context.tab, upTo: 5)
-            return .ok("Pressed \(key.name). The page is now \(landed).", summary: key.name)
+            return .ok("Pressed \(key.name). The page is now \(landed).")
         }
-        return .ok("Pressed \(key.name).", summary: key.name)
+        return .ok("Pressed \(key.name).")
     }
 
     private static func scroll(_ arguments: AIToolArguments, _ context: Context) async -> Result {
@@ -509,7 +495,7 @@ enum AITool {
                 return .failed(missing(id, context))
             }
             await AIToolSnap.intoView(element, in: context.tab)
-            return .ok("Scrolled \(element.described) into view.", summary: element.name)
+            return .ok("Scrolled \(element.described) into view.")
         }
         let up = arguments.string("direction") == "up"
         let pages = min(max(arguments.number("pages") ?? 1, 0.25), 20)
@@ -517,8 +503,7 @@ enum AITool {
         let amount = up ? -pages : pages
         web.webKit.evaluateJavaScript("window.scrollBy(0, \(amount) * window.innerHeight); true",
                                       in: nil, in: Web.world) { _ in }
-        return .ok("Scrolled \(Short.number(pages)) screen\(pages == 1 ? "" : "s") \(up ? "up" : "down").",
-                   summary: Localized(up ? "\(Short.number(pages)) screens up" : "\(Short.number(pages)) screens down"))
+        return .ok("Scrolled \(Short.number(pages)) screen\(pages == 1 ? "" : "s") \(up ? "up" : "down").")
     }
 
     // MARK: - waiting and asking
