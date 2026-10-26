@@ -78,7 +78,7 @@
                                        each timed until the window has caught up; go: then Return, timed
                                        until the page is loading
     ./bench visible ID                 switched off: it made a window (off screen), and no verb makes one for now
-    ./bench ai mock URL | key PROVIDER KEY | ask PROVIDER MODEL TEXT | read ID | check TEXT | signin | engine [PATH MODELS] | use PROVIDER [MODEL] [--base URL] [--name NAME] [--wire openai|anthropic] | summarize ID | question ID TEXT | agree | state | picture DIR | chat [open|close|ask TEXT|new|page|pick ID|rename NAME|forget|clear|keep ON|save|list|state]
+    ./bench ai mock URL | vault | key PROVIDER KEY | ask PROVIDER MODEL TEXT | read ID | check TEXT | signin | engine [PATH MODELS] | use PROVIDER [MODEL] [--base URL] [--name NAME] [--wire openai|anthropic] | summarize ID | question ID TEXT | agree | state | picture DIR | chat [open|close|ask TEXT|new|page|pick ID|rename NAME|forget|clear|keep ON|save|list|state]
                                        the conversation that belongs to the window: open or close it, one
                                        question into it, or what it holds now
                                        test run: the AI add-on's requests, against a stand-in on this Mac;
@@ -564,10 +564,11 @@ def main(argv):
             elif word == "words": request["words"] = True
             else: sys.exit("usage: bench find TEXT [next N] [back N] [case] [words]")
     elif verb == "ai":
-        usage = "usage: bench ai mock URL | key PROVIDER KEY | ask PROVIDER MODEL TEXT | read ID | check TEXT | signin | engine [PATH MODELS] | use PROVIDER [MODEL] [--base URL] [--name NAME] [--wire openai|anthropic] | summarize ID | question ID TEXT | agree | state | picture DIR | chat [open|close|ask TEXT|new|page|pick ID|rename NAME|forget|clear|keep ON|save|list|state]"
+        usage = "usage: bench ai mock URL | vault | key PROVIDER KEY | ask PROVIDER MODEL TEXT | read ID | check TEXT | signin | engine [PATH MODELS] | use PROVIDER [MODEL] [--base URL] [--name NAME] [--wire openai|anthropic] | summarize ID | question ID TEXT | agree | state | picture DIR | chat [open|close|ask TEXT|new|page|pick ID|rename NAME|forget|clear|keep ON|save|list|state]"
         if not args: sys.exit(usage)
         request["action"] = args[0]
         if args[0] == "mock" and len(args) == 2: request["url"] = args[1]
+        elif args[0] == "vault" and len(args) == 1: pass
         elif args[0] == "key" and len(args) == 3: request["provider"], request["key"] = args[1], args[2]
         elif args[0] == "ask" and len(args) == 4: request["provider"], request["model"], request["text"] = args[1], args[2], args[3]
         elif args[0] == "read" and len(args) == 2: request["id"] = args[1]

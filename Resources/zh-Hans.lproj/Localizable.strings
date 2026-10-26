@@ -1331,3 +1331,7 @@
 "Asking {1}…" = "正在问 {1}…";
 "{1} isn't running, or has no model yet" = "{1} 没在运行，或还没有模型";
 "Custom…" = "自定义…";
+"this Mac's keychain" = "这台 Mac 的钥匙串";
+"this Mac's login keychain" = "这台 Mac 的登录钥匙串";
+"Your key, kept in {1}, sent only to {2}. Never from a private tab" = "你的密钥存在{1}，只发送给 {2}。无痕浏览里从不发送";
+"{1}, in {2}" = "{1}，存在{2}";

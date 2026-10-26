@@ -136,39 +136,81 @@ enum AIProvider: String, CaseIterable, Identifiable {
 
 /// The keys, in the keychain and nowhere else.
 ///
-/// The data protection keychain, under Aura's own access group: only apps
-/// signed as Aura, with its provisioning profile, can read or write them.
-/// This Mac only, readable while it is unlocked, never synced, and each kept
-/// for its provider's host (account "provider@host"). A copy of Aura built
-/// without that profile — from source, or for testing — has no access group,
-/// and keeps no key at all rather than one somewhere weaker. Test runs keep
-/// theirs in memory, for the run.
+/// Two keychains, one answer. Aura prefers the data protection keychain, under
+/// its own access group: only apps signed as Aura, with the provisioning
+/// profile that names it, can read or write there, this Mac only, readable
+/// while it is unlocked, never synced, and each key kept for its provider's
+/// host (account "provider@host").
+///
+/// That keychain only exists where macOS knows which app is asking —
+/// `com.apple.application-identifier` in the signature, which comes from that
+/// profile. A copy built from source, or signed by hand, is refused there with
+/// errSecMissingEntitlement, and used to be left unable to keep a key at all.
+/// It keeps them in this Mac's login keychain instead: the same promises
+/// except the app's own group, an item any other app has to be let in to read,
+/// this Mac only and never synced. Which one it is, is asked once and
+/// remembered, and written down in Settings rather than guessed at.
 ///
 /// A key is read the moment a request needs it and let go with the request:
 /// never in the settings file, a published value, a log line or an error.
+
 @MainActor
 enum AIKeys {
     enum Saved { case kept, unavailable, failed }
 
+    /// Which keychain keeps them.
+    enum Vault: String {
+        /// The data protection keychain, under Aura's own access group: the
+        /// one a signed release with its profile uses.
+        case protected
+        /// This Mac's login keychain: what a copy without that profile has,
+        /// so that no copy of Aura is left unable to hold a key.
+        case login
+
+        var described: String {
+            self == .protected ? Localized("this Mac's keychain") : Localized("this Mac's login keychain")
+        }
+    }
+
     private static let service = "com.catskys.aura.ai"
     /// A test run's, by account, gone when it quits.
     private static var rehearsal: [String: String] = [:]
+    /// Asked once, on the first key.
+    private static var probed: Vault?
+
+    /// Where a key is kept by this copy of Aura.
+    static var vault: Vault {
+        if let probed { return probed }
+        let picked: Vault = takesProtected() ? .protected : .login
+        probed = picked
+        return picked
+    }
+
+    /// Whether the data protection keychain takes an item here: one put and
+    /// taken away again, which says more than a search does — a search in a
+    /// copy with no access group answers "not found", not "not allowed".
+    private static func takesProtected() -> Bool {
+        if Store.testing { return false }
+        var probe = query(.anthropic, in: .protected, withAccount: "probe")
+        probe[kSecValueData as String] = Data("probe".utf8)
+        let put = SecItemAdd(probe as CFDictionary, nil)
+        if put == errSecDuplicateItem { return true }
+        guard put == errSecSuccess else { return false }
+        SecItemDelete(probe as CFDictionary)
+        return true
+    }
 
     private static func account(_ provider: AIProvider) -> String { "\(provider.rawValue)@\(provider.host)" }
 
-    private static func query(_ provider: AIProvider) -> [String: Any] {
-        [kSecClass as String: kSecClassGenericPassword,
-         kSecUseDataProtectionKeychain as String: true,
-         kSecAttrService as String: service,
-         kSecAttrAccount as String: account(provider)]
-    }
-
-    /// Whether a key can be kept at all by this copy of Aura.
-    static var available: Bool {
-        if Store.testing { return true }
-        var asked = query(.anthropic)
-        asked[kSecReturnAttributes as String] = true
-        return SecItemCopyMatching(asked as CFDictionary, nil) != errSecMissingEntitlement
+    /// A key's place in one keychain, by account. `withAccount` is for the
+    /// probe alone, which is about the keychain and not about a provider.
+    private static func query(_ provider: AIProvider, in vault: Vault? = nil,
+                              withAccount: String? = nil) -> [String: Any] {
+        var asked: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
+                                    kSecAttrService as String: service,
+                                    kSecAttrAccount as String: withAccount ?? account(provider)]
+        if (vault ?? AIKeys.vault) == .protected { asked[kSecUseDataProtectionKeychain as String] = true }
+        return asked
     }
 
     static func save(_ key: String, for provider: AIProvider) -> Saved {
@@ -178,19 +220,30 @@ enum AIKeys {
             rehearsal[account(provider)] = key
             return .kept
         }
-        SecItemDelete(query(provider) as CFDictionary)
-        var item = query(provider)
+        switch put(key, for: provider, in: vault) {
+        case errSecSuccess: return .kept
+        case errSecMissingEntitlement:
+            // Chosen wrongly, or the profile under this copy changed under
+            // it: the login keychain takes it, and the choice is not asked
+            // again this run.
+            probed = .login
+            return put(key, for: provider, in: .login) == errSecSuccess ? .kept : .unavailable
+        default: return .failed
+        }
+    }
+
+    private static func put(_ key: String, for provider: AIProvider, in vault: Vault) -> OSStatus {
+        SecItemDelete(query(provider, in: vault) as CFDictionary)
+        var item = query(provider, in: vault)
         item[kSecValueData as String] = Data(key.utf8)
-        item[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+        // The data protection keychain can say how it is protected; the login
+        // keychain is already what its name says, this Mac and nobody else's.
+        if vault == .protected { item[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly }
         item[kSecAttrSynchronizable as String] = false
         item[kSecAttrLabel as String] = "Aura — \(provider.name) key"
         // The last four, to tell keys apart in Settings without reading one.
         item[kSecAttrComment as String] = String(key.suffix(4))
-        switch SecItemAdd(item as CFDictionary, nil) {
-        case errSecSuccess: return .kept
-        case errSecMissingEntitlement: return .unavailable
-        default: return .failed
-        }
+        return SecItemAdd(item as CFDictionary, nil)
     }
 
     /// The key, for the request about to go out. Nil when there is none.
@@ -200,7 +253,8 @@ enum AIKeys {
         asked[kSecReturnData as String] = true
         asked[kSecMatchLimit as String] = kSecMatchLimitOne
         var found: CFTypeRef?
-        guard SecItemCopyMatching(asked as CFDictionary, &found) == errSecSuccess, let data = found as? Data else { return nil }
+        guard SecItemCopyMatching(asked as CFDictionary, &found) == errSecSuccess,
+              let data = found as? Data else { return nil }
         return String(data: data, encoding: .utf8)
     }
 
@@ -219,9 +273,49 @@ enum AIKeys {
     static func forget(_ provider: AIProvider) {
         if Store.testing { rehearsal[account(provider)] = nil; return }
         SecItemDelete(query(provider) as CFDictionary)
+        // A key kept before this copy settled on a keychain is in the other
+        // one: it goes too.
+        SecItemDelete(query(provider, in: vault == .protected ? .login : .protected) as CFDictionary)
     }
 
     static func forgetAll() {
         AIProvider.allCases.forEach(forget)
+    }
+
+    /// What a probe asks: which keychain this copy has, and whether it really
+    /// takes an item — put, read back, taken away again, under a name of its
+    /// own so no real key is touched. A test run only, and it leaves nothing.
+    static func selftest() -> [String: String] {
+        var out = ["vault": vault.rawValue]
+        var item: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
+                                   kSecAttrService as String: service + ".selftest",
+                                   kSecAttrAccount as String: "probe"]
+        if vault == .protected { item[kSecUseDataProtectionKeychain as String] = true }
+        // The same three things a real key is given, so what this proves is
+        // what a key goes through (see put).
+        item[kSecAttrSynchronizable as String] = false
+        item[kSecAttrLabel as String] = "Aura — probe"
+        item[kSecAttrComment as String] = "robe"
+        SecItemDelete(item as CFDictionary)
+        var put = item
+        put[kSecValueData as String] = Data("probe".utf8)
+        out["add"] = "\(SecItemAdd(put as CFDictionary, nil))"
+        var read = item
+        read[kSecReturnData as String] = true
+        read[kSecMatchLimit as String] = kSecMatchLimitOne
+        var found: CFTypeRef?
+        out["read"] = "\(SecItemCopyMatching(read as CFDictionary, &found))"
+        if let data = found as? Data { out["value"] = String(data: data, encoding: .utf8) ?? "" }
+        out["delete"] = "\(SecItemDelete(item as CFDictionary))"
+        // The data protection keychain, tried whatever this copy settled on:
+        // its answer is what a copy with no provisioning profile gets.
+        if vault != .protected {
+            var refused = item
+            refused[kSecUseDataProtectionKeychain as String] = true
+            refused[kSecValueData as String] = Data("probe".utf8)
+            out["protected"] = "\(SecItemAdd(refused as CFDictionary, nil))"
+            SecItemDelete(refused as CFDictionary)
+        }
+        return out
     }
 }
