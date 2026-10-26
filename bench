@@ -32,6 +32,7 @@
     ./bench extensions                 installed extensions, loaded or not, with their warnings
     ./bench little URL|keep|close      a small window for a link (made unseen), kept into the row, or closed
     ./bench site PATH [security]       the site card for the tab on screen, drawn to a PNG
+    ./bench tabcard PATH [TAB]         test run: the card a tab shows under the pointer, drawn to a PNG
     ./bench ext-add ID|LINK [--yes]    install from the Chrome Web Store (--yes only in a --test run)
     ./bench ext-folder PATH [--yes]    install an unpacked extension
     ./bench ext-press ID               press its button
@@ -119,6 +120,7 @@
                                        PNG; on: the card in the window
     ./bench quit                       test run: quit the app as ⌘Q does
     ./bench middle ID X Y              test run: the middle button clicked at X Y of a tab's page
+    ./bench hover ID [on|off]          test run: the pointer come to a tab's row or gone from it → whether its card came up
     ./bench pin ID [off|home]          test run: pin a tab, unpin it, or double-click it (home)
     ./bench fill [STEPS]               test run: the page reporting its scroll STEPS times, each timed until the window rests
     ./bench peek URL|close             test run: the peek panel over the tab in front, as a shift-click opens it
@@ -337,6 +339,10 @@ def main(argv):
         if not 1 <= len(args) <= 2: sys.exit("usage: bench site PATH [security]")
         request["path"] = os.path.abspath(args[0])
         if len(args) == 2: request["security"] = args[1] == "security"
+    elif verb == "tabcard":
+        if not 1 <= len(args) <= 2: sys.exit("usage: bench tabcard PATH [TAB]")
+        request["path"] = os.path.abspath(args[0])
+        if len(args) == 2: request["tab"] = args[1]
     elif verb == "column":
         if not 1 <= len(args) <= 2: sys.exit("usage: bench column PATH [HEIGHT]")
         request["path"] = os.path.abspath(args[0])
@@ -498,6 +504,10 @@ def main(argv):
         if args[0] == "link": request["url"] = args[1]
         elif len(args) > 1: request["n"] = int(args[1])
         if args[0] == "frame": request["frame"] = [float(v) for v in args[2:6]]
+    elif verb == "hover":
+        if len(args) not in (1, 2) or args[1:] not in ([], ["on"], ["off"]): sys.exit("usage: bench hover ID [on|off]")
+        request["id"] = args[0]
+        request["on"] = args[1:] != ["off"]
     elif verb == "middle":
         if len(args) != 3: sys.exit("usage: bench middle ID X Y")
         request["id"], request["x"], request["y"] = args[0], float(args[1]), float(args[2])
