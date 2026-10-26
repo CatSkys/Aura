@@ -36,7 +36,15 @@ struct ChatThread: View {
     var foot: CGFloat = 140
 
     var body: some View {
-        if drawn {
+        if chat.empty {
+            // Nothing asked yet: the words sit in the middle of the column,
+            // where the eye lands when the panel opens, rather than up under
+            // the title in the corner. The room the field floats over is not
+            // part of the middle.
+            empty
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.bottom, foot)
+        } else if drawn {
             writing.padding(.horizontal, 24).padding(.top, 20).padding(.bottom, foot)
         } else {
             ScrollViewReader { scroller in
@@ -51,28 +59,28 @@ struct ChatThread: View {
                 }
                 .onChange(of: chat.lines.count) { _, _ in scroll(scroller) }
                 .onChange(of: chat.lines.last?.text) { _, _ in scroll(scroller) }
+                // A turn made of the rail alone — read the page, read it
+                // again, clicked — grows without writing a word, so watching
+                // the words left it growing on under the field, out of sight.
+                .onChange(of: chat.lines.last?.steps.count) { _, _ in scroll(scroller) }
             }
         }
     }
 
     @ViewBuilder private var writing: some View {
         VStack(alignment: .leading, spacing: 18) {
-            if chat.empty {
-                empty
-            } else {
-                LazyVStack(alignment: .leading, spacing: 22) {
-                    ForEach(chat.lines) { line in row(line) }
-                    // The assistant's own question, in the column and not as a
-                    // sheet: it is about this conversation, and the page it is
-                    // about has to stay visible behind it.
-                    if let card = chat.asking.card {
-                        AIToolAskCard(asking: chat.asking, card: card)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
+            LazyVStack(alignment: .leading, spacing: 22) {
+                ForEach(chat.lines) { line in row(line) }
+                // The assistant's own question, in the column and not as a
+                // sheet: it is about this conversation, and the page it is
+                // about has to stay visible behind it.
+                if let card = chat.asking.card {
+                    AIToolAskCard(asking: chat.asking, card: card)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .animation(.easeOut(duration: 0.2), value: chat.asking.card?.id)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .animation(.easeOut(duration: 0.2), value: chat.asking.card?.id)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -107,19 +115,24 @@ struct ChatThread: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
-        } else if line.text.isEmpty, !line.done {
-            // The turn as it happens: the same rail the answer keeps, growing a
-            // row at a time — the model's own lines and what the browser did in
-            // between — and the dots under them while it works.
+        } else if !line.done {
+            // The turn as it happens, from the first breath to the last word:
+            // the rail the answer keeps, growing a row at a time — the model's
+            // own lines and what the browser did in between — with the dots
+            // under it while it works, and whatever has been written so far
+            // under that. The pulse belongs to the turn and to nothing else:
+            // it used to go out with the first word, and the rail folded
+            // itself mid-answer as though the work were over.
             VStack(alignment: .leading, spacing: 12) {
-                if line.steps.isEmpty {
+                if !line.steps.isEmpty {
+                    AIToolRail(steps: line.steps, running: true)
+                } else if line.text.isEmpty {
                     HStack(spacing: 0) {
                         Pulsing(chat.reading ? Localized("Reading this page…") : "")
                         Spacer(minLength: 0)
                     }
-                } else {
-                    AIToolRail(steps: line.steps, running: true)
                 }
+                if !line.text.isEmpty { Wrote(line.text) }
             }
         } else {
             VStack(alignment: .leading, spacing: 10) {
@@ -215,8 +228,7 @@ struct ChatThread: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: 360)
-        .frame(maxWidth: .infinity)
-        .padding(.top, 48)
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 
     private func scroll(_ scroller: ScrollViewProxy) {

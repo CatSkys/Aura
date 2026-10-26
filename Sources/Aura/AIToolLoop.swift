@@ -132,7 +132,8 @@ enum AIToolLoop {
                                             content: outcome.result.content, isError: outcome.result.isError))
                 if !outcome.result.did.isEmpty {
                     event(.did(AIToolStep.done(call.name, arguments: AIToolArguments(text: call.arguments),
-                                               did: outcome.result.did, failed: outcome.result.isError)))
+                                               did: outcome.result.did, failed: outcome.result.isError,
+                                               summary: outcome.result.summary)))
                 }
             }
             keep(AIMessage(role: .user, text: "", results: results), in: &history, &added)

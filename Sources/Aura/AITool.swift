@@ -46,9 +46,16 @@ enum AITool {
         var content: String
         var isError = false
         var did = ""
+        /// What the call was about, short enough for the rail to say under
+        /// the row's title: the page it read, the key it pressed, the field
+        /// it filled in. The page's own words where the page has them, so
+        /// there is nothing to translate; the title says the verb and this
+        /// says the object, which is the half a rail of "Read the page" was
+        /// missing.
+        var summary: String?
 
-        static func ok(_ did: String, detail: String = "") -> Result {
-            Result(content: detail.isEmpty ? did : did + "\n\n" + detail, did: did)
+        static func ok(_ did: String, detail: String = "", summary: String? = nil) -> Result {
+            Result(content: detail.isEmpty ? did : did + "\n\n" + detail, did: did, summary: summary)
         }
 
         static func failed(_ why: String) -> Result {
@@ -322,7 +329,8 @@ enum AITool {
         guard let snap = await AIToolSnap.take(context.tab, scope: scope, full: full) else {
             return .failed("This page can't be read right now: it has no document, or it is still on its way.")
         }
-        return .ok("Took a snapshot of the page: \(snap.count) element\(snap.count == 1 ? "" : "s").", detail: snap.text)
+        return .ok("Took a snapshot of the page: \(snap.count) element\(snap.count == 1 ? "" : "s").",
+                   detail: snap.text, summary: named(context.tab))
     }
 
     private static func read(_ context: Context) async -> Result {
@@ -330,7 +338,7 @@ enum AITool {
             return .failed("There's nothing readable on this page.")
         }
         let head = "\(read.title)\n\(read.url?.absoluteString ?? "")\n\n"
-        return .ok("Read the page “\(read.title)”.", detail: head + read.text)
+        return .ok("Read the page “\(read.title)”.", detail: head + read.text, summary: read.title)
     }
 
     private static func tabs(_ arguments: AIToolArguments, _ context: Context) async -> Result {
@@ -371,6 +379,13 @@ enum AITool {
         }
     }
 
+/// How a page is named on the rail: its own title, or its site when it
+    /// has no title yet.
+    private static func named(_ tab: Tab) -> String {
+        let title = tab.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        return title.isEmpty ? (tab.pageAddress?.host() ?? "") : title
+    }
+
     private static func match(_ id: String?, in context: Context) -> Tab? {
         guard let id, !id.isEmpty else { return nil }
         return context.browser.tabs.first { Short.matches($0, id) }
@@ -383,7 +398,7 @@ enum AITool {
         // A picture can't ride in a tool result on any of the three wires, so
         // it leaves here and the loop carries it on the next turn.
         AIToolLoop.keep(shot)
-        return .ok("Took a picture of the page, as it is now.")
+        return .ok("Took a picture of the page, as it is now.", summary: named(context.tab))
     }
 
     // MARK: - going places, done
@@ -435,7 +450,7 @@ enum AITool {
         let opened = context.browser.tabs.count > before
         let did = "Clicked \(element.described)" + (opened ? " (" + Localized("opened in a new tab") + ")" : "") + "."
         let landed = await settle(context.tab, upTo: 8)
-        return .ok(did, detail: "The page is now \(landed).")
+        return .ok(did, detail: "The page is now \(landed).", summary: element.name)
     }
 
     private static func setValue(_ arguments: AIToolArguments, _ context: Context) async -> Result {
@@ -461,9 +476,9 @@ enum AITool {
                 return .ok(did, detail: "There's no form around it to send.")
             }
             let landed = await settle(context.tab, upTo: 8)
-            return .ok(did + " Sent the form around it.", detail: "The page is now \(landed).")
+            return .ok(did + " Sent the form around it.", detail: "The page is now \(landed).", summary: element.name)
         }
-        return .ok(did)
+        return .ok(did, summary: element.name)
     }
 
     private static func press(_ arguments: AIToolArguments, _ context: Context) async -> Result {
@@ -483,9 +498,9 @@ enum AITool {
         }
         if key.submits {
             let landed = await settle(context.tab, upTo: 5)
-            return .ok("Pressed \(key.name). The page is now \(landed).")
+            return .ok("Pressed \(key.name). The page is now \(landed).", summary: key.name)
         }
-        return .ok("Pressed \(key.name).")
+        return .ok("Pressed \(key.name).", summary: key.name)
     }
 
     private static func scroll(_ arguments: AIToolArguments, _ context: Context) async -> Result {
@@ -494,7 +509,7 @@ enum AITool {
                 return .failed(missing(id, context))
             }
             await AIToolSnap.intoView(element, in: context.tab)
-            return .ok("Scrolled \(element.described) into view.")
+            return .ok("Scrolled \(element.described) into view.", summary: element.name)
         }
         let up = arguments.string("direction") == "up"
         let pages = min(max(arguments.number("pages") ?? 1, 0.25), 20)
@@ -502,7 +517,8 @@ enum AITool {
         let amount = up ? -pages : pages
         web.webKit.evaluateJavaScript("window.scrollBy(0, \(amount) * window.innerHeight); true",
                                       in: nil, in: Web.world) { _ in }
-        return .ok("Scrolled \(Short.number(pages)) screen\(pages == 1 ? "" : "s") \(up ? "up" : "down").")
+        return .ok("Scrolled \(Short.number(pages)) screen\(pages == 1 ? "" : "s") \(up ? "up" : "down").",
+                   summary: Localized(up ? "\(Short.number(pages)) screens up" : "\(Short.number(pages)) screens down"))
     }
 
     // MARK: - waiting and asking

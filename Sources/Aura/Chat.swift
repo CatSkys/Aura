@@ -455,12 +455,20 @@ final class Chat: ObservableObject, Identifiable {
                     .note("页面已经打开，在读它的内容。"),
                  ]),
             // And one still being written, so a picture shows what stands
-            // where an answer is coming — the rail as it grows, and the dots
-            // under it.
+            // where an answer is coming — the rail as it grows, the thing each
+            // row was about under its title, and the dots under them.
             Line(mine: false, text: "", done: false, steps: [
                 .note("我在查浙江传媒学院的官方信息。"),
                 AIToolStep.done("navigate", arguments: AIToolArguments(text: #"{"url":"https://www.cuz.edu.cn"}"#),
                                 did: "Opened https://www.cuz.edu.cn/.", failed: false),
+                AIToolStep.done("read", arguments: AIToolArguments(text: "{}"),
+                                did: "Read the page “浙江传媒学院”.",
+                                failed: false, summary: "浙江传媒学院-哔哩哔哩"),
+                AIToolStep.done("scroll", arguments: AIToolArguments(text: #"{"direction":"down","pages":2}"#),
+                                did: "Scrolled 2 screens down.", failed: false,
+                                summary: Localized("\(2) screens down")),
+                AIToolStep.done("press", arguments: AIToolArguments(text: #"{"key":"Enter"}"#),
+                                did: "Pressed Enter.", failed: false, summary: "Enter"),
             ]),
         ]
         return chat

@@ -171,9 +171,16 @@ extension AIToolStep {
     /// The row of a call that has run: title from the table, and under it
     /// what the call carried and came to — Dia's `byline`, its `queries`, and
     /// its `links`.
-    static func done(_ tool: String, arguments: AIToolArguments, did: String, failed: Bool) -> AIToolStep {
+    static func done(_ tool: String, arguments: AIToolArguments, did: String, failed: Bool,
+                     summary: String? = nil) -> AIToolStep {
         var step = named(tool)
         step.failed = failed
+        // What it was about, under the title: the page it read, the key it
+        // pressed, the field it filled in. "Read the page" alone was a verb
+        // and nothing else — three of them in a row said nothing about what
+        // had been read.
+        let about = (summary ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        step.detail = about.isEmpty ? nil : about
         // The row is Dia's: a title, and under it what the call carried or
         // came to as chips. It never prints the tool's own account — "Took a
         // snapshot of the page: 71 elements" is the machine's receipt, and a
