@@ -522,8 +522,9 @@ final class Tab: ObservableObject, Identifiable {
         didSet { built?.leave = leave }
     }
 
-    /// Closing this tab the way ⌘W does it — the neighbour on the right comes
-    /// forward — for the swipe back that has nothing left to go back to.
+    /// Closing this tab the way ⌘W does it — back to the page that opened it,
+    /// else the neighbour on the right — for the swipe back that has nothing
+    /// left to go back to.
     /// Pointed at Browser.close by Browser.prepare; nil on a tab no window has
     /// taken yet.
     var onSwipeClose: (() -> Void)?
