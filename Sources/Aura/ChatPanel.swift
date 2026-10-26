@@ -87,8 +87,11 @@ struct ChatThread: View {
                     }
             }
         } else if line.text.isEmpty, !line.done {
+            // The model's own line while it acts (`say`), then what the
+            // browser is doing for it: one line, in one place, replaced as the
+            // next thing starts and gone when the turn ends.
             HStack(spacing: 0) {
-                Pulsing(chat.reading ? Localized("Reading this page…") : Localized("Thinking…"))
+                Pulsing(chat.saying ?? (chat.reading ? Localized("Reading this page…") : Localized("Thinking…")))
                 Spacer(minLength: 0)
             }
         } else {

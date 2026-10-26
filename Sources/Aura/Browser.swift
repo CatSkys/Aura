@@ -387,7 +387,11 @@ final class Browser: NSObject, ObservableObject {
     /// The conversation in front of this window, in the column beside the
     /// page or on its own page (see Chat.swift): nil until one is made. It
     /// stays in the profile's list when the column is put away (Chats.swift).
-    @Published var chat: Chat?
+    ///
+    /// Setting it is also what tells the conversation which window it acts in
+    /// — the assistant's tools click in this one (AITool) — so it is said here
+    /// once rather than at every door that opens a conversation.
+    @Published var chat: Chat? { didSet { chat?.browser = self } }
     /// The side panel, beside the page (see SidePanel.swift): up or
     /// not, and what is in it.
     @Published var sidePanelShown = false

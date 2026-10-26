@@ -188,6 +188,28 @@ struct AISettings: View {
                 .onChange(of: prefs.keepsChats) { _, _ in browser.chats.save() }
                 .onAppear(perform: refresh)
                 Card {
+                    Line("Act on pages", "Let the assistant click, type and open tabs while it answers. Off, it can only read. Not with the model on this Mac") {
+                        Switch(on: $prefs.aiTools)
+                    }
+                    if prefs.aiTools {
+                        Rule()
+                        Line("Show what it acts on", AIToolReveal.words) {
+                            Switch(on: $prefs.aiToolsReveal)
+                        }
+                        Rule()
+                        Line("Questions already answered", AIToolRisk.remembered == 0
+                             ? "Buying, deleting, sending and granting are always asked first"
+                             : Localized("\(AIToolRisk.remembered) site rules say yes without asking. Buying is asked every time")) {
+                            if AIToolRisk.remembered > 0 {
+                                Pill("Forget") {
+                                    AIToolRisk.forgetAll()
+                                    browser.announce("Site rules forgotten")
+                                }
+                            }
+                        }
+                    }
+                }
+                Card {
                     Line("Keep chats", "Every conversation saved in this profile, for the Chats page. Off, and it goes when the window closes") {
                         Switch(on: $prefs.keepsChats)
                     }

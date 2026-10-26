@@ -25,6 +25,23 @@ struct AIMessage: Equatable {
     /// that can see was asked (see AIPage.shot). Only ever on the question
     /// being asked — the history keeps the words.
     var images: [Data] = []
+    /// The tools this turn asked for (see AIToolLoop): only ever on an
+    /// assistant message, and only once the assistant has finished asking —
+    /// a half-streamed call is not a call.
+    var calls: [AIToolWires.Call] = []
+    /// What came back from those calls: only ever on a user message, and
+    /// paired with `calls` by id.
+    var results: [AIToolResult] = []
+}
+
+/// One tool's answer, as it goes back to the model: which call it answers,
+/// what the model reads, and whether it worked (see AIToolLoop's rules on
+/// failing without throwing).
+struct AIToolResult: Equatable {
+    let id: String
+    let name: String
+    let content: String
+    let isError: Bool
 }
 
 enum AIError: LocalizedError, Equatable {
@@ -89,12 +106,19 @@ final class AIClient: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
 
     /// The answer to `messages`, a piece at a time. `system` says what the
     /// model is for and how to treat the page (see AIPage.system).
+    ///
+    /// `tools` are the tools it may ask for (see AITool). `on` is told each
+    /// call as it is complete, and is what the caller's loop uses; the pieces
+    /// are the words, which the panel writes as they come.
     func stream(_ provider: AIProvider, model: String, system: String, messages: [AIMessage],
-                key: String?) -> AsyncThrowingStream<String, Error> {
+                key: String?, tools: [AITool.Definition] = [],
+                on heard: (@MainActor (AIToolWires.Call) -> Void)? = nil
+    ) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
                 do {
-                    let request = try Self.request(provider, model: model, system: system, messages: messages, key: key)
+                    let request = try Self.request(provider, model: model, system: system, messages: messages,
+                                                   key: key, tools: tools)
                     let (bytes, response) = try await session.bytes(for: request, delegate: self)
                     guard let http = response as? HTTPURLResponse else { throw AIError.unreadable }
                     guard (200..<300).contains(http.statusCode) else {
@@ -106,6 +130,7 @@ final class AIClient: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
                         throw AIError.http(http.statusCode, Self.said(body, hiding: key))
                     }
                     var event = ""
+                    var reader = AIToolWires.Reader(provider.wire)
                     for try await line in bytes.lines {
                         if line.hasPrefix("event:") {
                             event = line.dropFirst(6).trimmingCharacters(in: .whitespaces)
@@ -117,7 +142,10 @@ final class AIClient: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
                         guard let json = try? JSONSerialization.jsonObject(with: Data(data.utf8)) as? [String: Any] else { continue }
                         if let failure = Self.failure(json, event: event, hiding: key) { throw failure }
                         if let piece = Self.piece(provider.wire, json), !piece.isEmpty { continuation.yield(piece) }
+                        for call in reader.read(json) { await heard?(call) }
                     }
+                    // What a wire sends in pieces is whole only now.
+                    for call in reader.finished() { await heard?(call) }
                     continuation.finish()
                 } catch let error as AIError {
                     continuation.finish(throwing: error)
@@ -140,18 +168,25 @@ final class AIClient: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
     /// in the address, which ends up in errors and logs — and only once the
     /// address is known to be the provider's own.
     static func request(_ provider: AIProvider, model: String, system: String, messages: [AIMessage],
-                        key: String?) throws -> URLRequest {
+                        key: String?, tools: [AITool.Definition] = []) throws -> URLRequest {
         let url: URL
         var body: [String: Any]
+        // A tool's calls and their results are written differently by each
+        // wire, so a message is flattened into the turns each wants: a turn
+        // the model took (its words and its calls), then the answers to those
+        // calls as the messages or blocks that wire gives them.
+        let turns = Self.turns(provider.wire, messages)
         switch provider.wire {
         case .openAI:
             url = provider.base.appendingPathComponent("chat/completions")
             body = [
                 "model": model, "stream": true,
-                "messages": [["role": "system", "content": system]] + messages.map { message in
-                    ["role": message.role.rawValue, "content": openAIContent(message)]
-                },
+                "messages": [["role": "system", "content": system]] + turns,
             ]
+            if let declared = AIToolWires.openAI(tools) {
+                body["tools"] = declared
+                body["tool_choice"] = "auto"
+            }
             // Only providers that keep nothing of the request.
             if provider == .openRouter { body["provider"] = ["zdr": true] }
             // A limit on the answer, for every one: OpenAI's own models take
@@ -161,10 +196,12 @@ final class AIClient: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
             url = provider.base.appendingPathComponent("messages")
             body = [
                 "model": model, "stream": true, "max_tokens": 2048, "system": system,
-                "messages": messages.map { message in
-                    ["role": message.role.rawValue, "content": anthropicContent(message)]
-                },
+                "messages": turns,
             ]
+            if let declared = AIToolWires.anthropic(tools) {
+                body["tools"] = declared
+                body["tool_choice"] = ["type": "auto"]
+            }
         case .gemini:
             // The model's name is part of the path; nothing of the key is.
             let name = model.addingPercentEncoding(withAllowedCharacters: .alphanumerics.union(CharacterSet(charactersIn: "-._"))) ?? ""
@@ -174,11 +211,10 @@ final class AIClient: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
             url = made
             body = [
                 "systemInstruction": ["parts": [["text": system]]],
-                "contents": messages.map { message in
-                    ["role": message.role == .user ? "user" : "model", "parts": geminiParts(message)]
-                },
+                "contents": turns,
                 "generationConfig": ["maxOutputTokens": 2048],
             ]
+            if let declared = AIToolWires.gemini(tools) { body["tools"] = declared }
         }
         guard allowed(url, for: provider) else { throw AIError.refusedHost }
         var request = URLRequest(url: url)
@@ -199,6 +235,46 @@ final class AIClient: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
         }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         return request
+    }
+
+    /// The history as turns, for one wire: a message with pictures or with
+    /// calls is written out as that wire's own shape, and a message with
+    /// nothing in it but results becomes the block or message that wire
+    /// answers a call in.
+    private static func turns(_ wire: AIProvider.Wire, _ messages: [AIMessage]) -> [Any] {
+        var turns: [Any] = []
+        for message in messages {
+            if message.role == .assistant, !message.calls.isEmpty {
+                let said = AIToolWires.assistant(wire, text: message.text, calls: message.calls)
+                turns.append(said)
+                continue
+            }
+            if message.role == .user, !message.results.isEmpty {
+                let answers = message.results.map { result in
+                    AIToolWires.result(wire, id: result.id, name: result.name,
+                                       content: result.content, isError: result.isError)
+                }
+                if AIToolWires.resultsAreTheirOwnMessage(wire) {
+                    turns += answers
+                } else {
+                    // Anthropic: the results are blocks of a user's turn, and
+                    // any words with them come first.
+                    var blocks: [[String: Any]] = []
+                    if !message.text.isEmpty { blocks.append(["type": "text", "text": message.text]) }
+                    turns.append(["role": "user", "content": blocks + answers.compactMap { $0 as? [String: Any] }])
+                }
+                continue
+            }
+            switch wire {
+            case .openAI:
+                turns.append(["role": message.role.rawValue, "content": openAIContent(message)])
+            case .anthropic:
+                turns.append(["role": message.role.rawValue, "content": anthropicContent(message)])
+            case .gemini:
+                turns.append(["role": message.role == .user ? "user" : "model", "parts": geminiParts(message)])
+            }
+        }
+        return turns
     }
 
     /// A message as each way of writing wants it: the words alone, or the
