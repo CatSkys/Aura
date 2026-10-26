@@ -151,6 +151,68 @@ final class AIToolLoopTests: XCTestCase {
 
     /// A call that fails is a result, not an exception: the turn goes on and
     /// the model is told.
+    /// No round limit, which is pi's design: its loop is
+    /// `while (hasMoreToolCalls)` and counts nothing (`agent-loop.js`).
+    /// Fifteen rounds is past the twelve this used to stop at, and the turn
+    /// must still reach its answer.
+    func testATurnIsNotCutOffAtATwelveRounds() async throws {
+        var turns: [MockProvider.Turn] = (0..<15).map { round in
+            .calls([("call_\(round)", "pretend", #"{"say": "Round \#(round)"}"#)])
+        }
+        turns.append(.words("The answer after fifteen rounds."))
+        let provider = try MockProvider(turns: turns)
+        server = provider
+        AIProvider.mock = try XCTUnwrap(URL(string: "http://127.0.0.1:\(provider.port)"))
+
+        let browser = Browser(record: WindowRecord())
+        self.browser = browser
+        let tab = browser.benchOpen(try XCTUnwrap(URL(string: "about:blank")))
+        self.tab = tab
+
+        let added = try await AIToolLoop.run(
+            messages: [AIMessage(role: .user, text: "Keep going")],
+            provider: .openAI, model: "test-model", system: "You are a test.",
+            key: "sk-test-not-a-real-key", tools: tools([]),
+            browser: browser, tab: tab, stopped: { false },
+            check: { _, _ in .allowed },
+            event: { _ in })
+
+        XCTAssertEqual(provider.asks.count, 16, "a turn was cut off before the model answered")
+        XCTAssertEqual(added.last?.text, "The answer after fifteen rounds.",
+                       "the turn ended without an answer")
+    }
+
+    /// A refusal is not the end of the turn: pi reads a blocked call as an
+    /// ordinary error result and carries on, so the model answers from what it
+    /// has. This is the case that used to leave a column of steps with nothing
+    /// under them.
+    func testARefusalStillEndsWithAnAnswer() async throws {
+        let provider = try MockProvider(turns: [
+            .calls([("call_1", "pretend", #"{"say": "First"}"#)]),
+            .words("You did not allow that, so here is what I know."),
+        ])
+        server = provider
+        AIProvider.mock = try XCTUnwrap(URL(string: "http://127.0.0.1:\(provider.port)"))
+
+        let browser = Browser(record: WindowRecord())
+        self.browser = browser
+        let tab = browser.benchOpen(try XCTUnwrap(URL(string: "about:blank")))
+        self.tab = tab
+
+        let added = try await AIToolLoop.run(
+            messages: [AIMessage(role: .user, text: "Do the thing")],
+            provider: .openAI, model: "test-model", system: "You are a test.",
+            key: "sk-test-not-a-real-key", tools: tools(["one"]),
+            browser: browser, tab: tab, stopped: { false },
+            check: { _, _ in .refused("Not this time.") },
+            event: { _ in })
+
+        XCTAssertEqual(added.last?.text, "You did not allow that, so here is what I know.",
+                       "a refused turn ended on a tool result instead of an answer")
+        // The last ask still carried tools; only the system prompt said no.
+        XCTAssertEqual(provider.asks.count, 2)
+    }
+
     func testAFailedCallIsAResultTheModelReads() async throws {
         let provider = try MockProvider(turns: [
             .calls([("call_1", "nowhere", "{}")]),
@@ -181,7 +243,10 @@ final class AIToolLoopTests: XCTestCase {
     }
 
     /// A person who says no ends the batch: nothing else it asked for in the
-    /// same message happens.
+    /// same message happens. The turn itself does not end — pi treats a
+    /// blocked call as an ordinary error result, so the model is told and
+    /// answers from what it has. Ending the turn on a refusal is what left a
+    /// column of steps with no answer under them.
     func testARefusalEndsTheBatch() async throws {
         let provider = try MockProvider(turns: [
             .calls([("call_1", "pretend", #"{"say": "First"}"#),
@@ -208,9 +273,9 @@ final class AIToolLoopTests: XCTestCase {
             event: { if case .refused = $0 { refused = true } })
 
         XCTAssertTrue(refused)
-        // The first ran, the second did not, and the turn ended there — the
-        // model was never asked again.
-        XCTAssertEqual(provider.asks.count, 1)
+        // The first ran, the second did not, and the model was asked once
+        // more — without tools — to answer about it.
+        XCTAssertEqual(provider.asks.count, 2)
         // The first ran, the second is reported to the model as the refusal it
         // was: what a person says no to, the model is told about, and then the
         // turn is over.
@@ -218,7 +283,8 @@ final class AIToolLoopTests: XCTestCase {
         XCTAssertFalse(added[1].results[0].isError, "the allowed call was reported as a failure")
         XCTAssertTrue(added[1].results[1].isError)
         XCTAssertTrue(added[1].results[1].content.contains("no"), added[1].results[1].content)
-        XCTAssertEqual(added.count, 2, "the turn went on after the person said no")
+        XCTAssertEqual(added.count, 3, "the refusal ended the turn instead of being answered")
+        XCTAssertEqual(added.last?.text, "Understood.")
     }
 }
 

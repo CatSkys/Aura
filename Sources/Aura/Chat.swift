@@ -340,6 +340,12 @@ final class Chat: ObservableObject, Identifiable {
             // the provider refuse this conversation from then on — and the
             // question stays, so the next thing said is said after it.
             rollBack(keepingQuestion: failed == nil)
+            // The steps go too. A turn that produced no answer cannot leave
+            // its working behind: a column of "read the page, read the page,
+            // read the page" and then nothing reads as though the assistant
+            // did the work and decided not to say what it found, when the
+            // truth is that the answer never arrived.
+            lines[index].steps = []
             if failed == nil { lines[index].failed = Localized("Nothing came back. Ask again, or try another model.") }
             return
         }

@@ -73,7 +73,9 @@ enum AIToolRisk {
     /// Whether a call may run.
     enum Verdict: Equatable {
         case allowed
-        /// The person said no, and the turn ends.
+        /// The person said no. The call does not happen, and the rest of its
+        /// batch does not either; the turn still goes on, because they are
+        /// owed an answer about what they said no to (see AIToolLoop).
         case refused(String)
     }
 

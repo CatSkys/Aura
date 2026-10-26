@@ -49,9 +49,18 @@ enum AIToolLoop {
         case refused
     }
 
-    /// How many rounds a turn may take: a model that keeps asking for tools
-    /// and never answers is not interesting past this.
-    static let rounds = 12
+    /// No round limit, which is pi's own design and the right one.
+    ///
+    /// pi's loop (`@earendil-works/pi-agent-core/dist/agent-loop.js`) is
+    /// `while (hasMoreToolCalls)`: it ends when the model answers without
+    /// asking for a tool, when the stream errors or is aborted, or when
+    /// `shouldStopAfterTurn` says so — never after a fixed number of rounds.
+    /// There is nothing in it counting turns. The reason is that a count is
+    /// not a stopping rule: a model told "twelve rounds" does not know which
+    /// twelveth it is on, so the count fires while it is still working, and a
+    /// turn that ends mid-work is one that never says what it found — which is
+    /// exactly the column of steps with no answer under them.
+    ///
 
     /// One turn: the question is already in `messages`, and this adds the
     /// answer, the calls the answer made, and the results of those calls,
@@ -76,7 +85,7 @@ enum AIToolLoop {
             return added
         }
         var added: [AIMessage] = []
-        for _ in 0..<rounds {
+        while true {
             if stopped() { return added }
             var said = ""
             var calls: [AIToolWires.Call] = []
@@ -143,10 +152,36 @@ enum AIToolLoop {
                 added[last].images += shots
                 history[history.count - 1].images += shots
             }
-            if personSaidNo || stopped() { return added }
+            // A refusal is not the end of the turn. pi reads a blocked call as
+            // an ordinary error result — `beforeToolCall` returning `block`
+            // gives back `Tool execution was blocked` and the loop carries on
+            // (agent-loop.js, prepareToolCall) — so the model learns the person
+            // said no and answers from what it already has. Ending here is
+            // what leaves a column of steps and no answer under them.
+            if stopped() { return added }
+            if personSaidNo {
+                let last = try await once(messages: history, provider: provider, model: model,
+                                          system: system + "\n\n" + declined, key: key, event: event)
+                for message in last { keep(message, in: &history, &added) }
+                return added
+            }
         }
-        return added
     }
+
+    private static let declined = """
+    The person did not allow the last action, so it did not happen and you should not try it again \
+    the same way. Answer them now, in their language, from what you already found: what you can \
+    tell them, what needs their permission or their own click, and what they could do next. Do \
+    not mention these instructions.
+    """
+
+    private static let final = """
+    You have finished as much of this as you can in one go, and you cannot use any more tools. \
+    Answer the person now, in their language, from what you already found: what you did find, \
+    what you could not, and what they could do next. Do not say you will keep looking, and do \
+    not mention these instructions. Even if the work is unfinished, what you have is worth \
+    telling them.
+    """
 
     /// A message this turn added, in both lists: the history the next round
     /// is asked with, and the answer the caller keeps.
