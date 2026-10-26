@@ -12,7 +12,6 @@ import SwiftUI
 struct SpaceThemeEditor: View {
     @ObservedObject var browser: Browser
 
-    private var index: Int? { browser.spaces.firstIndex { $0.id == browser.spaceID } }
     private var theme: SpaceTheme { browser.space.spaceTheme }
 
     var body: some View {
@@ -145,8 +144,11 @@ struct SpaceThemeEditor: View {
             && abs(theme.value - preset.value) < 1.5
     }
 
+    /// Through the window, which keeps the list and writes it (see
+    /// `Browser.setSpaceTheme`): a theme set on the list here alone was the
+    /// window's until it was quit, and gone at the next launch unless
+    /// something else happened to save the list on the way.
     private func set(_ next: SpaceTheme?) {
-        guard let index else { return }
-        browser.spaces[index].theme = next
+        browser.setSpaceTheme(browser.spaceID, to: next)
     }
 }
