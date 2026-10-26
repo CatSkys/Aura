@@ -78,7 +78,7 @@
                                        each timed until the window has caught up; go: then Return, timed
                                        until the page is loading
     ./bench visible ID                 switched off: it made a window (off screen), and no verb makes one for now
-    ./bench ai mock URL | key PROVIDER KEY | ask PROVIDER MODEL TEXT | read ID | check TEXT | signin | engine [PATH MODELS] | use PROVIDER [MODEL] | summarize ID | question ID TEXT | agree | state | picture DIR | chat [open|close|ask TEXT]
+    ./bench ai mock URL | key PROVIDER KEY | ask PROVIDER MODEL TEXT | read ID | check TEXT | signin | engine [PATH MODELS] | use PROVIDER [MODEL] [--base URL] [--name NAME] [--wire openai|anthropic] | summarize ID | question ID TEXT | agree | state | picture DIR | chat [open|close|ask TEXT|new|page|pick ID|rename NAME|forget|clear|keep ON|save|list|state]
                                        the conversation that belongs to the window: open or close it, one
                                        question into it, or what it holds now
                                        test run: the AI add-on's requests, against a stand-in on this Mac;
@@ -564,7 +564,7 @@ def main(argv):
             elif word == "words": request["words"] = True
             else: sys.exit("usage: bench find TEXT [next N] [back N] [case] [words]")
     elif verb == "ai":
-        usage = "usage: bench ai mock URL | key PROVIDER KEY | ask PROVIDER MODEL TEXT | read ID | check TEXT | signin | engine [PATH MODELS] | use PROVIDER [MODEL] | summarize ID | question ID TEXT | agree | state | picture DIR | chat [open|close|ask TEXT]"
+        usage = "usage: bench ai mock URL | key PROVIDER KEY | ask PROVIDER MODEL TEXT | read ID | check TEXT | signin | engine [PATH MODELS] | use PROVIDER [MODEL] [--base URL] [--name NAME] [--wire openai|anthropic] | summarize ID | question ID TEXT | agree | state | picture DIR | chat [open|close|ask TEXT|new|page|pick ID|rename NAME|forget|clear|keep ON|save|list|state]"
         if not args: sys.exit(usage)
         request["action"] = args[0]
         if args[0] == "mock" and len(args) == 2: request["url"] = args[1]
@@ -574,9 +574,17 @@ def main(argv):
         elif args[0] == "signin" and len(args) == 1: pass
         elif args[0] == "engine" and len(args) in (1, 3):
             if len(args) == 3: request["path"], request["models"] = args[1], args[2]
-        elif args[0] == "use" and len(args) in (2, 3):
+        elif args[0] == "use" and len(args) >= 2:
             request["provider"] = args[1]
-            if len(args) == 3: request["model"] = args[2]
+            rest = args[2:]
+            i = 0
+            while i < len(rest):
+                if rest[i] in ("--base", "--name", "--wire") and i + 1 < len(rest):
+                    request[{"--base": "base", "--name": "name", "--wire": "wire"}[rest[i]]] = rest[i + 1]
+                    i += 2
+                else:
+                    request["model"] = rest[i]
+                    i += 1
         elif args[0] == "summarize" and len(args) == 2: request["id"] = args[1]
         elif args[0] == "question" and len(args) == 3: request["id"], request["text"] = args[1], args[2]
         elif args[0] in ("agree", "state") and len(args) == 1: pass

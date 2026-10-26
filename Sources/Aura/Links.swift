@@ -80,6 +80,9 @@ final class Links: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         // Every window, and windows.json (see Windows.swift).
         Browsers.flush()
+        // What was asked and answered, which waits a second before it is
+        // written (see Chats.swift).
+        Profiles.flushChats()
         // And the bookmarks or downloads list saved a moment ago, still on
         // their way to the disk.
         Disk.drain()

@@ -384,11 +384,9 @@ final class Browser: NSObject, ObservableObject {
     // MARK: - looking for something on the page
 
     @Published var finding = false
-    /// The AI panel's conversation about the page, while it is open.
-    @Published var assisting: Assistant?
-    /// The conversation that belongs to the window, beside the page (see
-    /// Chat.swift): nil until it is opened, and gone again when it is
-    /// closed — nothing of it is kept.
+    /// The conversation in front of this window, in the column beside the
+    /// page or on its own page (see Chat.swift): nil until one is made. It
+    /// stays in the profile's list when the column is put away (Chats.swift).
     @Published var chat: Chat?
     /// The side panel, beside the page (see SidePanel.swift): up or
     /// not, and what is in it.
@@ -3508,8 +3506,6 @@ final class Browser: NSObject, ObservableObject {
         // Back on a tab with the caret still in a box, the list may come again.
         looked = nil
         guard tab.id != activeID else { return }
-        // The AI panel is about the page it was opened on.
-        if assisting != nil { closeAssistant() }
         // An extension's panel opened for one tab goes and comes with it.
         sidePanelFollows(tab)
         // Coming back to the tab whose video is out brings it home first, so

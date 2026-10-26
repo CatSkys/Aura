@@ -21,7 +21,7 @@ struct ShortcutsPage: View {
         // Split View's commands only once it is on.
         if Command.split.contains(command.id), !browser.prefs.splitView { return false }
         if Command.ai.contains(command.id), !browser.prefs.ai,
-           command.id != "view.chat" { return false }
+           command.id != "view.chat", command.id != "view.chats" { return false }
         if Command.dusk.contains(command.id), !browser.prefs.darkensPages { return false }
         let words = hunt.trimmingCharacters(in: .whitespaces)
         guard !words.isEmpty else { return true }

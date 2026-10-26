@@ -1,109 +1,52 @@
 import SwiftUI
 
-// The conversation as a place of its own, beside nothing: Dia's chat fills
-// the page's own area rather than sitting in a card on the right — a head
-// line where the page's toolbar is, a column of writing, and the field
-// floating over the foot of it.
+// The conversation drawn: one set of pieces for the column beside the page
+// (ChatPane) and for the page of its own (ChatsPanel), so the two are the
+// same thing at two sizes rather than two designs.
 //
 // What is Dia's here, read off the application:
-//   · the head says where you are — a bubble, "Chat", then the first thing
-//     you asked — with back, forward and reload in front of it;
 //   · the answer is written, not boxed: 15 points on the page's white, its
 //     headings heavier, its bullets indented, a quote ruled down the left;
 //   · what you asked is a bubble tinted with the space's colour, 17 round,
 //     set to the right;
 //   · a sphere breathes while it thinks;
 //   · the field is one floating pill near the bottom: what you type, then
-//     small doors — a plus, a microphone — and the filled circle to send.
+//     small doors — a plus, a microphone — and the filled circle to send;
+//   · the head says what this is: a bubble, the conversation's name, and the
+//     doors that make another, open it as a page, or put it away.
 // Everything else — the ring, the inks, the ring round the field — is the
 // browser's own.
 
-struct ChatPane: View {
-    @ObservedObject var browser: Browser
+// MARK: - the writing
+
+/// What was said, once and again: yours in a bubble, the answer as text, the
+/// sphere where an answer is coming.
+struct ChatThread: View {
     @ObservedObject var chat: Chat
-    /// Drawn off screen, for a picture (bench ai picture): the scroll view
-    /// and the field stood in for, as the page's panel does.
+    /// The space's own colour, for the bubble: the column and the page take
+    /// the window's, so a conversation looks the same in both.
+    var seed: Color = Palette.Chat.muted
+    /// A page is in front to be read, for the words of the empty state.
+    var pageOpen = true
+    /// For a picture (bench ai picture): the scroll view stood in for.
     var drawn = false
-
-    @Environment(\.colorScheme) private var scheme
-    @FocusState private var typing: Bool
-
-    /// The column of writing: wide enough for a paragraph, never the whole
-    /// window.
-    private static let column: CGFloat = 760
+    /// The widest the writing gets: a paragraph, never the whole window.
+    var column: CGFloat = 760
+    /// Room under it for the field floating over the foot.
+    var foot: CGFloat = 140
 
     var body: some View {
-        VStack(spacing: 0) {
-            head
-            ZStack(alignment: .bottom) {
-                paper
-                field.padding(.horizontal, 20).padding(.bottom, 24)
-            }
-        }
-        .background(Palette.Chat.raised)
-        .onAppear { typing = true }
-    }
-
-    // MARK: - the head line
-
-    private var head: some View {
-        HStack(spacing: 14) {
-            HStack(spacing: 2) {
-                navDoor("chevron.left", help: "Back   ⌘[", on: browser.active?.canGoBack ?? false) { browser.back() }
-                navDoor("chevron.right", help: "Forward   ⌘]", on: browser.active?.canGoForward ?? false) { browser.forward() }
-                navDoor("arrow.clockwise", help: "Reload   ⌘R", on: browser.active?.isWeb ?? false) { browser.reload() }
-            }
-            HStack(spacing: 6) {
-                Image(systemName: "text.bubble")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(Palette.Chat.faint)
-                Text("Chat")
-                    .font(.system(size: 13))
-                    .foregroundStyle(Palette.Chat.muted)
-                if let first = chat.lines.first(where: { $0.mine })?.text ?? nil {
-                    Text(verbatim: "/").font(.system(size: 13)).foregroundStyle(Palette.Chat.faint)
-                    Text(first.replacingOccurrences(of: "\n", with: " "))
-                        .font(.system(size: 13))
-                        .foregroundStyle(Palette.Chat.ink)
-                        .lineLimit(1)
-                }
-                Spacer(minLength: 0)
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-    }
-
-    private func navDoor(_ icon: String, help: String, on: Bool, act: @escaping () -> Void) -> some View {
-        Button(action: act) {
-            Image(systemName: icon)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(on ? Palette.Chat.muted : Palette.Chat.faint.opacity(0.5))
-                .frame(width: 26, height: 26)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .disabled(!on)
-        .help(help)
-    }
-
-    // MARK: - the writing
-
-    @ViewBuilder private var paper: some View {
         if drawn {
-            column
-                .padding(.horizontal, 24)
-                .padding(.top, 20)
-                .padding(.bottom, 150)
+            writing.padding(.horizontal, 24).padding(.top, 20).padding(.bottom, foot)
         } else {
             ScrollViewReader { scroller in
                 ScrollView {
-                    column
-                        .frame(maxWidth: Self.column, alignment: .leading)
+                    writing
+                        .frame(maxWidth: column, alignment: .leading)
                         .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 24)
+                        .padding(.horizontal, 20)
                         .padding(.top, 20)
-                        .padding(.bottom, 140)
+                        .padding(.bottom, foot)
                     Color.clear.frame(height: 1).id("foot")
                 }
                 .onChange(of: chat.lines.count) { _, _ in scroll(scroller) }
@@ -112,57 +55,93 @@ struct ChatPane: View {
         }
     }
 
-    @ViewBuilder private var column: some View {
-        if chat.empty {
-            empty
-        } else {
-            LazyVStack(alignment: .leading, spacing: 22) {
-                ForEach(chat.lines) { line in row(line) }
+    @ViewBuilder private var writing: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            if chat.empty {
+                empty
+            } else {
+                LazyVStack(alignment: .leading, spacing: 22) {
+                    ForEach(chat.lines) { line in row(line) }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder private func row(_ line: Chat.Line) -> some View {
         if line.mine {
             HStack(spacing: 0) {
-                Spacer(minLength: 120)
-                Text(line.text)
+                Spacer(minLength: 60)
+                Text(verbatim: line.text)
                     .font(.system(size: 14))
                     .foregroundStyle(Palette.Chat.ink)
+                    .multilineTextAlignment(.leading)
                     .textSelection(.enabled)
                     .padding(.horizontal, 22)
                     .padding(.vertical, 15)
                     .background {
                         RoundedRectangle(cornerRadius: 17, style: .continuous)
-                            .fill(LinearGradient(colors: [tint(0.12), tint(0.09)],
+                            .fill(LinearGradient(colors: [seed.opacity(0.12), seed.opacity(0.09)],
                                                  startPoint: .top, endPoint: .bottom))
                     }
             }
         } else if line.text.isEmpty, !line.done {
             HStack(spacing: 10) {
                 Orb(seed: seed, size: 24)
-                Text(chat.reading ? "Reading this page…" : "Thinking…")
+                Text(chat.reading ? Localized("Reading this page…") : Localized("Thinking…"))
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(Palette.Chat.faint)
                 Spacer(minLength: 0)
             }
         } else {
             VStack(alignment: .leading, spacing: 10) {
+                if line.addressed {
+                    caution(Localized("This page has text written for an AI to follow. The answer may have been steered by it."))
+                }
                 Wrote(line.text)
                 if let failed = line.failed {
-                    Text(failed.localized)
+                    Text(verbatim: failed.localized)
                         .font(.system(size: 12))
                         .foregroundStyle(Palette.Chat.faint)
                 } else if line.done {
+                    if !line.strays.isEmpty { strays(line.strays) }
                     marks(line)
                 }
             }
         }
     }
 
+    /// What the answer said that the page never did: the check the page's
+    /// panel made, kept with the conversation.
+    private func strays(_ found: [String]) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 10, weight: .medium))
+            Text(verbatim: Localized("Not on the page: ") + found.joined(separator: ", "))
+                .font(.system(size: 11.5))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .foregroundStyle(Palette.Chat.muted)
+        .padding(8)
+        .background(Palette.Chat.ink.opacity(0.05), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    private func caution(_ text: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 10, weight: .medium))
+            Text(verbatim: text)
+                .font(.system(size: 11.5))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .foregroundStyle(Palette.Chat.muted)
+        .padding(8)
+        .background(Palette.Chat.ink.opacity(0.05), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
     /// What is under an answer in Dia: the thumb that liked it, the one that
-    /// didn't, and the copy.
+    /// didn't, the copy, and where it ran.
     private func marks(_ line: Chat.Line) -> some View {
         HStack(spacing: 16) {
             markDoor("hand.thumbsup") { }
@@ -236,9 +215,9 @@ struct ChatPane: View {
                 Text("Ask about something you see")
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(Palette.Chat.ink)
-                Text(browser.active?.isWeb == true
-                     ? "Aura reads the page you're on, and nothing is sent until you ask"
-                     : "Open a page and Aura can read it with your question")
+                Text(pageOpen
+                     ? Localized("Aura reads the page you're on, and nothing is sent until you ask")
+                     : Localized("Open a page and Aura can read it with your question"))
                     .font(.system(size: 15))
                     .foregroundStyle(Palette.Chat.muted)
                     .multilineTextAlignment(.center)
@@ -247,25 +226,44 @@ struct ChatPane: View {
             .padding(.horizontal, 24)
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 60)
+        .padding(.top, 40)
     }
 
-    // MARK: - the field
+    private func scroll(_ scroller: ScrollViewProxy) {
+        withAnimation(Motion.quick) { scroller.scrollTo("foot", anchor: .bottom) }
+    }
+}
 
-    @ViewBuilder private var field: some View {
+// MARK: - the field
+
+/// One floating pill: what you type, a plus, the microphone, the send — and,
+/// above it, the page that will go along with what is typed.
+struct ChatComposer: View {
+    @ObservedObject var browser: Browser
+    @ObservedObject var chat: Chat
+    /// As wide as the writing above it.
+    var column: CGFloat = 760
+    /// For a picture: the field stood in for.
+    var drawn = false
+
+    @FocusState private var typing: Bool
+
+    var body: some View {
         VStack(spacing: 8) {
             if let setup = browser.chatSetup {
                 setupCard(setup)
             } else if let notice = chat.notice {
                 noticeCard(notice)
+            } else if let trouble = chat.trouble {
+                troubleCard(trouble)
             } else {
                 pill
             }
         }
-        .frame(maxWidth: Self.column)
+        .frame(maxWidth: column)
+        .onAppear { if !drawn { typing = true } }
     }
 
-    /// One floating pill: what you type, a plus, the microphone, the send.
     private var pill: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let page = chipPage {
@@ -305,7 +303,7 @@ struct ChatPane: View {
                         .background(ready ? Palette.Chat.ink : Palette.Chat.faint, in: Circle())
                 }
                 .buttonStyle(.plain)
-                .help(chat.busy ? "Stop" : "Send   ⏎")
+                .help(chat.busy ? Localized("Stop") : Localized("Send   ⏎"))
             }
         }
         .padding(.horizontal, 16)
@@ -318,6 +316,8 @@ struct ChatPane: View {
         .shadow(color: .black.opacity(0.08), radius: 10, y: 3)
     }
 
+    /// The page that goes with the next question, said plainly: Dia's
+    /// current-webpage attachment, as a chip rather than a switch.
     private func pageChip(_ page: Tab) -> some View {
         HStack(spacing: 10) {
             Mark(icon: Favicons.shared.cached(for: page.pageAddress),
@@ -347,7 +347,7 @@ struct ChatPane: View {
 
     private func setupCard(_ setup: String) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(setup.localized)
+            Text(verbatim: setup)
                 .font(.system(size: 13))
                 .foregroundStyle(Palette.Chat.muted)
                 .fixedSize(horizontal: false, vertical: true)
@@ -363,7 +363,10 @@ struct ChatPane: View {
 
     private func noticeCard(_ notice: String) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(notice.localized)
+            Text(Localized("Answers from \(chat.provider.name)"))
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Palette.Chat.ink)
+            Text(verbatim: notice)
                 .font(.system(size: 13))
                 .foregroundStyle(Palette.Chat.muted)
                 .fixedSize(horizontal: false, vertical: true)
@@ -378,7 +381,17 @@ struct ChatPane: View {
         .background(Palette.Chat.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
-    // MARK: - sending
+    /// Nothing to read: said where it happened, and gone with the next
+    /// question.
+    private func troubleCard(_ trouble: String) -> some View {
+        Text(verbatim: trouble)
+            .font(.system(size: 13))
+            .foregroundStyle(Palette.Chat.muted)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+            .background(Palette.Chat.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
 
     private var ready: Bool { !chat.draft.trimmed.isEmpty || chat.busy }
 
@@ -390,20 +403,71 @@ struct ChatPane: View {
         }
         chat.submit(from: browser.active)
     }
+}
 
-    // MARK: - the space's own colour
+// MARK: - the column beside the page
+
+/// The conversation in the column beside the page (see SidePanel.swift): what
+/// its head says, then the writing with the field floating over its foot.
+struct ChatPane: View {
+    @ObservedObject var browser: Browser
+    @ObservedObject var chat: Chat
+    /// Drawn off screen, for a picture (bench ai picture).
+    var drawn = false
+
+    @Environment(\.colorScheme) private var scheme
+
+    /// The column is narrower than a page: the writing keeps its margins and
+    /// gives up being 760 wide.
+    private var column: CGFloat { drawn ? 660 : 720 }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            head
+            ZStack(alignment: .bottom) {
+                ChatThread(chat: chat, seed: seed, pageOpen: browser.active?.isWeb == true,
+                           drawn: drawn, column: column, foot: 132)
+                ChatComposer(browser: browser, chat: chat, column: column, drawn: drawn)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 14)
+            }
+        }
+        .background(Palette.Chat.raised)
+    }
+
+    /// What this is and the doors out of it: another conversation, the same
+    /// one as a page, and away.
+    private var head: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "text.bubble")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Palette.Chat.faint)
+            Text(chat.title.isEmpty ? Localized("Chat") : chat.title)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Palette.Chat.ink)
+                .lineLimit(1)
+                .truncationMode(.tail)
+            Spacer(minLength: 4)
+            Door(icon: "plus", help: Localized("New Chat")) { browser.newChat() }
+            Door(icon: "arrow.up.left.and.arrow.down.right", help: Localized("Open as a Page")) { browser.expandChat() }
+            Door(icon: "xmark", help: Localized("Close   esc")) { browser.closeChat() }
+        }
+        .padding(.leading, 14)
+        .padding(.trailing, 8)
+        .padding(.vertical, 6)
+        .background(Palette.Chat.raised)
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(Palette.Chat.edge).frame(height: 0.5)
+        }
+    }
 
     private var seed: Color {
         guard browser.prefs.usesSpaces else { return Palette.Chat.muted }
         return Color(nsColor: SpacePalette.title(browser.space.spaceTheme, dark: scheme == .dark))
     }
-
-    private func tint(_ amount: Double) -> Color { seed.opacity(amount) }
-
-    private func scroll(_ scroller: ScrollViewProxy) {
-        withAnimation(Motion.quick) { scroller.scrollTo("foot", anchor: .bottom) }
-    }
 }
+
+// MARK: - the answer, set
 
 /// What the answer says, set the way a letter is set: headings heavier than
 /// the rest, bullets given their own indent, a quote ruled down its left.

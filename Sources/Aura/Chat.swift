@@ -1,39 +1,65 @@
 import SwiftUI
 
-// The conversation that belongs to the window rather than to a page: one
-// thread you can carry from tab to tab, which is what Dia's assistant is.
-// The page you are on goes with each question when it can be read — its
-// text, its address — and a private tab's never does, by any provider off
-// this Mac.
+// The conversation: one thread, whether it is beside a page or on a page of
+// its own. Dia's assistant is this — the column beside the page while you
+// read (SidePanel.swift's `.ai`), the same conversation filling a page of its
+// own when you want the lot (`search://chat`, ChatsPanel.swift), and the list
+// of them all in Chats.swift. It belongs to the window rather than to a page,
+// so it is carried from tab to tab, and the page you are on goes with each
+// question when it can be read.
 //
-// A page's own conversation is `Assistant`'s (AIAssist.swift): it dies with
-// the page and with the panel. This one lives as long as the window, and is
-// kept nowhere: close the window and it is gone, as the page's is when you
-// close it.
+// What it can do is one machinery — AIPage's reading, AIClient's or
+// AIEngine's stream — so a summary of the page and a question about it are
+// the same request written differently: Summarize Page is this conversation's
+// first thing said. That is the whole of the page assistant that used to live
+// in a card of its own (AIAssist), merged here so there is one conversation
+// per window and not three things that each pretend to be one.
 //
-// What is asked and answered here is the same machinery — AIPage's text,
-// AIClient's or AIEngine's stream — so the two surfaces differ in how long
-// they live, not in what they can do.
+// A private tab's text never leaves this Mac: it is attached only for a
+// provider that runs here.
 
 @MainActor
 final class Chat: ObservableObject, Identifiable {
     /// One thing said, by you or to you. Dia's grammar: yours in a bubble,
     /// the answer as plain text on the surface.
-    struct Line: Identifiable, Equatable {
-        let id = UUID()
-        let mine: Bool
+    struct Line: Identifiable, Equatable, Codable {
+        var id = UUID()
+        var mine: Bool
         var text: String
         var done = true
         var failed: String?
         var at = Date()
         /// The page this question was asked from, when one went with it.
         var page: String?
+        /// What the answer says that the page never did — an address, a
+        /// phone number, an email (see AIPage.strays). Empty for an answer
+        /// with no page behind it.
+        var strays: [String] = []
+        /// The page that went with this question had words written for a
+        /// model to follow (see AIPage.addressesAI): the answer may have been
+        /// steered by them, which the models never say themselves.
+        var addressed = false
     }
 
-    let id = UUID()
+    /// A conversation as it is kept (Chats.swift): everything the page and
+    /// the column need to draw it, and nothing that was only live.
+    struct Record: Codable, Identifiable, Equatable {
+        var id: UUID
+        var title: String
+        var at: Date
+        var updated: Date
+        var provider: String
+        var model: String
+        var lines: [Line]
+    }
+
+    let id: UUID
+    let at: Date
     let provider: AIProvider
     let model: String
 
+    @Published private(set) var title: String
+    @Published private(set) var updated: Date
     @Published private(set) var lines: [Line] = []
     @Published var draft = ""
     /// What a provider off this Mac is sent, before it is agreed to.
@@ -41,21 +67,50 @@ final class Chat: ObservableObject, Identifiable {
     @Published private(set) var trouble: String?
     /// Reading the page, or waiting on the answer.
     @Published private(set) var busy = false
-    /// The page's own words, if it has any, so the panel can say what goes.
+    /// The page's own words, if it has any, so the column can say what goes.
     @Published private(set) var reading = false
-
     private var messages: [AIMessage] = []
     private let fence = AIPage.newFence()
-    private var waiting: (question: String, tab: Tab?)?
+    private var waiting: (ask: AIPage.Ask, tab: Tab?, shown: String)?
     private var task: Task<Void, Never>?
 
     init(provider: AIProvider, model: String) {
+        id = UUID()
+        at = Date()
+        updated = at
+        title = ""
         self.provider = provider
         self.model = model
     }
 
+    init(record: Record) {
+        id = record.id
+        at = record.at
+        updated = record.updated
+        title = record.title
+        provider = AIProvider(rawValue: record.provider) ?? .thisMac
+        model = record.model
+        lines = record.lines
+        messages = Chat.rebuilt(from: record.lines)
+    }
+
+    var record: Record {
+        Record(id: id, title: title, at: at, updated: updated,
+               provider: provider.rawValue, model: model, lines: lines)
+    }
+
+    /// A conversation kept from last time, as what a new question follows:
+    /// what you asked and what was answered. Not the pages — they were never
+    /// written down.
+    private static func rebuilt(from lines: [Line]) -> [AIMessage] {
+        lines.compactMap { line in
+            guard line.done, line.failed == nil, !line.text.isEmpty else { return nil }
+            return AIMessage(role: line.mine ? .user : .assistant, text: line.text)
+        }
+    }
+
     /// Where it ran, for the foot of every answer — the same sentence the
-    /// page's panel puts there.
+    /// column puts there.
     var place: String {
         provider == .thisMac ? "on this Mac · \(model)"
             : provider.isLocal ? "on this Mac · \(provider.name) · \(model)" : "sent to \(provider.name) · \(model)"
@@ -63,27 +118,44 @@ final class Chat: ObservableObject, Identifiable {
 
     var empty: Bool { lines.isEmpty && !busy }
 
+    /// The name on the row and over the thread: the first thing asked, or
+    /// what a summary was of.
+    func rename(_ name: String) {
+        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        title = String(name.prefix(120))
+        updated = Date()
+    }
+
     func submit(from tab: Tab?) {
         let question = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !question.isEmpty, !busy, notice == nil else { return }
         draft = ""
-        ask(String(question.prefix(4000)), from: tab)
+        let asked = String(question.prefix(4000))
+        send(.question(asked), from: tab, shown: asked)
     }
 
-    private func ask(_ question: String, from tab: Tab?) {
+    /// Dia's Summarize Page, as the first thing said here. Only the first:
+    /// later on, a summary of a page is a question about it.
+    func summarize(from tab: Tab?) {
+        guard lines.isEmpty, !busy, notice == nil else { return }
+        send(.summary, from: tab, shown: Localized("Summarize this page"))
+    }
+
+    private func send(_ ask: AIPage.Ask, from tab: Tab?, shown: String) {
         if !provider.isLocal, !Store.settings.bool(forKey: Localized("ai.told.\(provider.rawValue)")) {
-            waiting = (question, tab)
+            waiting = (ask, tab, shown)
             notice = AIAssist.notice(for: provider)
             return
         }
-        send(question, from: tab)
+        go(ask, from: tab, shown: shown)
     }
 
     /// The notice read and agreed to: what was asked goes.
     func agree() {
         Store.settings.set(true, forKey: Localized("ai.told.\(provider.rawValue)"))
         notice = nil
-        if let waiting { send(waiting.question, from: waiting.tab) }
+        if let waiting { go(waiting.ask, from: waiting.tab, shown: waiting.shown) }
         waiting = nil
     }
 
@@ -92,32 +164,45 @@ final class Chat: ObservableObject, Identifiable {
         waiting = nil
     }
 
-    private func send(_ question: String, from tab: Tab?) {
-        lines.append(Line(mine: true, text: question, page: tab?.title))
+    private func go(_ ask: AIPage.Ask, from tab: Tab?, shown: String) {
+        lines.append(Line(mine: true, text: shown, page: tab?.title))
         lines.append(Line(mine: false, text: "", done: false))
+        if title.isEmpty { title = Chat.name(for: ask, shown: shown, page: tab?.title) }
         busy = true
         trouble = nil
-        reading = true
+        reading = tab != nil
+        updated = Date()
         let key = provider.isLocal ? nil : AIKeys.key(for: provider)
+        let provider = self.provider
+        let model = self.model
         task = Task { @MainActor [weak self] in
             guard let self else { return }
             // The page goes with the question when there is one to read and
             // it may be read: a private tab's text never leaves this Mac, so
             // it is only ever attached for a model on this Mac.
-            var asked = question
-            // The same test the page's panel makes (AIAssist.startAssistant):
-            // a private tab is one with no persistent store behind it.
+            var asked = shown
+            var read: AIPage.Read?
             let shy = tab?.shy == true
                 || tab?.built.map { !$0.configuration.websiteDataStore.isPersistent } == true
-            if let tab, self.provider.isLocal || !shy, let read = await AIPage.read(tab) {
-                asked = AIPage.opening(read, .question(question), fence: self.fence)
+            if let tab, provider.isLocal || !shy, let found = await AIPage.read(tab) {
+                read = found
+                asked = AIPage.opening(found, ask, fence: self.fence)
+                if found.addressed, let last = self.lines.indices.last {
+                    self.lines[last].addressed = true
+                }
             }
             self.reading = false
+            // A summary needs the page; a question doesn't, and is asked
+            // whether or not there was something to read.
+            if ask == .summary, read == nil {
+                self.withdraw(Localized("There's nothing on this page to read."))
+                return
+            }
             self.messages.append(AIMessage(role: .user, text: asked))
-            let stream = self.provider == .thisMac
-                ? AIEngine.shared.stream(system: AIPage.system(fence: self.fence), messages: self.messages)
-                : AIClient.shared.stream(self.provider, model: self.model,
-                                         system: AIPage.system(fence: self.fence),
+            let system = AIPage.system(fence: self.fence)
+            let stream = provider == .thisMac
+                ? AIEngine.shared.stream(system: system, messages: self.messages)
+                : AIClient.shared.stream(provider, model: model, system: system,
                                          messages: self.messages, key: key)
             do {
                 for try await piece in stream {
@@ -125,71 +210,119 @@ final class Chat: ObservableObject, Identifiable {
                     self.lines[self.lines.count - 1].text += piece
                     if self.lines[self.lines.count - 1].text.count > Chat.longest { break }
                 }
-                self.finish(nil)
+                self.finish(nil, read: read)
             } catch {
-                self.finish(error.localizedDescription)
+                self.finish(error.localizedDescription, read: read)
             }
         }
     }
 
     /// Longer than any answer worth reading: a model talked into writing on
-    /// and on is stopped, as the page's panel stops it.
+    /// and on is stopped, as the page's panel stopped it.
     static let longest = 16_000
 
-    private func finish(_ failed: String?) {
+    private func finish(_ failed: String?, read: AIPage.Read?) {
         reading = false
         busy = false
+        updated = Date()
         guard let index = lines.indices.last else { return }
         lines[index].done = true
         lines[index].failed = failed
-        if failed == nil, !lines[index].text.isEmpty {
-            messages.append(AIMessage(role: .assistant, text: lines[index].text))
-        } else if !messages.isEmpty {
-            messages.removeLast()
+        let answer = lines[index].text
+        guard failed == nil, !answer.isEmpty else {
+            if !messages.isEmpty { messages.removeLast() }
+            return
         }
+        messages.append(AIMessage(role: .assistant, text: answer))
+        // Checked away from the window's thread: a long answer is a long look.
+        guard let read else { return }
+        let id = lines[index].id
+        Task.detached(priority: .userInitiated) { [self] in
+            let strays = AIPage.strays(in: answer, from: read)
+            guard !strays.isEmpty else { return }
+            await MainActor.run { self.note(strays, on: id) }
+        }
+    }
+
+    /// What the check found, on the line it belongs to.
+    private func note(_ strays: [String], on id: UUID) {
+        guard let at = lines.firstIndex(where: { $0.id == id }) else { return }
+        lines[at].strays = strays
+    }
+
+    /// A thing asked that turned out to have nothing to say: the question
+    /// comes back off the thread, and what is wrong is said where it stood.
+    private func withdraw(_ why: String) {
+        reading = false
+        busy = false
+        if lines.count >= 2 { lines.removeLast(2) }
+        trouble = why
     }
 
     func stop() {
         task?.cancel()
         task = nil
-        if busy { finish(nil) }
+        guard busy else { return }
+        busy = false
+        reading = false
+        updated = Date()
+        if let last = lines.indices.last { lines[last].done = true }
+        // A half-answer isn't what follows: the question stays on the thread,
+        // and only it goes into the next request again.
+        if !messages.isEmpty { messages.removeLast() }
     }
 
-    func clear() {
-        stop()
-        lines = []
-        messages = []
-        trouble = nil
-    }
-
-    /// A conversation with something already said in it, for a picture of
-    /// the panel (bench ai picture) — never for a real one.
+    /// A conversation with something already said in it, for a picture of the
+    /// column or the page (bench ai picture) — never for a real one.
     static func picture(provider: AIProvider = .ollama, model: String = "llama3.3") -> Chat {
         let chat = Chat(provider: provider, model: model)
+        chat.title = "Which file holds the theme colours?"
         chat.lines = [
-            Line(mine: true, text: "这三个文件里，哪个管主题色？顺便说说为什么拆开。",
+            Line(mine: true, text: "Of these three files, which one holds the theme colours? And why split it out?",
                  page: "Aura"),
-            Line(mine: false, text: "是 Design.swift。Palette 与 Metrics 都在它里面，一个管颜色、一个管尺寸，别的文件只引用名字，不再自己写色值。"),
+            Line(mine: false, text: "Design.swift does. Palette and Metrics both live in it — one for colour, one for size — and other files only refer to the names, never write a colour of their own."),
         ]
         return chat
+    }
+
+    /// The name a conversation goes by until it is renamed: what was asked,
+    /// or what a summary was of.
+    private static func name(for ask: AIPage.Ask, shown: String, page: String?) -> String {
+        switch ask {
+        case .summary:
+            let of = page.flatMap { $0.isEmpty ? nil : $0 } ?? Localized("this page")
+            return Localized("Summary · \(of)")
+        case .question:
+            return String(shown.replacingOccurrences(of: "\n", with: " ").prefix(60))
+        }
     }
 }
 
 extension Browser {
-    /// The side of the window the conversation opens on, opened or closed.
-    /// Off entirely until the add-on is on (Settings › AI), as the page's
-    /// panel is.
+    /// This window's conversations (see Chats.swift): the profile's, made
+    /// once and shared by every window of it.
+    var chats: Chats { Profiles.chats(profileID) }
+
+    /// ⌘⇧A, the column's foot and View › Chat: the conversation in the column
+    /// beside the page, opened or put away.
     func toggleChat() {
-        if chat != nil { closeChat() } else { openChat() }
+        if chatUp { closeChat() } else { openChat() }
     }
 
+    /// The panel is the conversation's: Dia keeps its assistant beside the
+    /// page, not over it.
+    var chatUp: Bool { sidePanelShown && sidePanel == .ai }
+
     /// What the conversation still needs before it can answer, in a
-    /// sentence — nil when it can. The panel says it where it stands and
+    /// sentence — nil when it can. The column says it where it stands and
     /// offers the page that fixes it, rather than the door doing nothing.
     var chatSetup: String? {
-        guard prefs.ai else { return "AI is off. Turn it on in Settings › AI." }
-        guard let provider = prefs.aiProvider else { return "Choose where the AI runs, in Settings › AI." }
-        if provider == .thisMac, AIEngine.shared.state != .ready { return "The model isn't on this Mac yet." }
+        guard prefs.ai else { return Localized("AI is off. Turn it on in Settings › AI.") }
+        guard let provider = prefs.aiProvider else { return Localized("Choose where the AI runs, in Settings › AI.") }
+        if provider == .thisMac, AIEngine.shared.state != .ready { return Localized("The model isn't on this Mac yet.") }
+        if provider == .custom, AIProvider.customAddress.isEmpty {
+            return Localized("Give your own model its address in Settings › AI.")
+        }
         guard !prefs.aiModel(for: provider).isEmpty else { return Localized("Choose a model for \(provider.name)") }
         guard provider.isLocal || AIKeys.hint(for: provider) != nil else {
             return Localized("No key for \(provider.name) yet")
@@ -197,25 +330,54 @@ extension Browser {
         return nil
     }
 
-    func openChat() {
+    /// The conversation in front: made on the way in, when there isn't one.
+    @discardableResult
+    func openChat() -> Chat? {
         // Off entirely until the add-on is in the build. Everything else the
-        // conversation needs is said inside the panel (chatSetup), so the
+        // conversation needs is said inside the column (chatSetup), so the
         // door always opens onto something rather than doing nothing.
-        guard AI.shipped || Store.testing else { return }
-        if chat != nil { return }
-        // One column beside the page: the conversation and the side panel
-        // cannot both be in it, so the one being opened takes it.
-        if sidePanelShown, sidePanel != nil {
-            closeSidePanel()
-            announce("Side panel closed")
-        }
-        else if let open = assisting { open.stop(); assisting = nil }
-        let provider = prefs.aiProvider ?? .thisMac
-        chat = Chat(provider: provider, model: prefs.aiModel(for: provider))
+        guard AI.shipped || Store.testing else { return nil }
+        // The conversation you were last in, rather than a fresh one every
+        // time the door is opened: Dia's assistant comes back where it was.
+        let chat = self.chat ?? chats.newest ?? newChat()
+        self.chat = chat
+        showChat()
+        return chat
     }
 
+    /// The column beside the page, with the conversation in it. One column,
+    /// and one thing in it: an extension's or a site's panel gives it up, as
+    /// Chrome shows one panel at a time.
+    func showChat() {
+        if case .page(_, _, let bound?) = sidePanel { SidePanelPages.shared.unbind(bound, in: self) }
+        SidePanelPages.shared.drop(in: self)
+        sidePanel = .ai
+        sidePanelShown = true
+    }
+
+    /// A conversation of its own, in front: New Chat, or the first word in a
+    /// window that has none.
+    @discardableResult
+    func newChat() -> Chat {
+        let provider = prefs.aiProvider ?? .thisMac
+        let chat = chats.make(provider: provider, model: prefs.aiModel(for: provider))
+        self.chat = chat
+        return chat
+    }
+
+    /// The conversation put away, and not thrown away: it is in the list, and
+    /// what it was answering carries on while you read something else.
     func closeChat() {
-        chat?.stop()
-        chat = nil
+        if case .ai = sidePanel { closeSidePanel() }
+    }
+
+    /// Dia's expand: the conversation into a page of its own, which is a tab
+    /// like Settings and History are (InternalPages.swift).
+    func expandChat() {
+        if chat == nil { openChat() }
+        show(InternalPage(.chat))
+        // Dia's expand is the panel turning into a tab: the column gives the
+        // page back once the page has the conversation.
+        if case .ai = sidePanel { closeSidePanel() }
     }
 }

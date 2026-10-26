@@ -18,6 +18,7 @@ struct InternalPage: Equatable {
         case settings, history, downloads, bookmarks, passwords
         case importing = "import"
         case notes = "release-notes"
+        case chat = "chat"
     }
 
     var kind: Kind
@@ -57,6 +58,7 @@ struct InternalPage: Equatable {
         case .passwords: return "Passwords"
         case .importing: return "Bring Things Over"
         case .notes: return "What's New"
+        case .chat: return "Chats"
         }
     }
 
@@ -69,6 +71,7 @@ struct InternalPage: Equatable {
         case .passwords: return "key"
         case .importing: return "square.and.arrow.down"
         case .notes: return "sparkles"
+        case .chat: return "text.bubble"
         }
     }
 
@@ -163,6 +166,8 @@ struct InternalPageView: View {
             ImportPanel(browser: browser)
         case .notes:
             ReleaseNotesPanel { browser.putAway(.notes) }
+        case .chat:
+            ChatsPanel(browser: browser, chats: browser.chats)
         }
     }
 }

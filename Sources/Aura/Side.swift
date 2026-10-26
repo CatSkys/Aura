@@ -820,7 +820,8 @@ private struct SideFoot: View {
 
     /// The conversation's own door, written out: Dia keeps its chat at the
     /// foot of the column too, and a word beside the bubble is how you find
-    /// it without reading an icon.
+    /// it without reading an icon. It opens the column beside the page, and
+    /// the conversation keeps answering there while you read on.
     private var chatDoor: some View {
         Button {
             browser.toggleChat()
@@ -831,12 +832,12 @@ private struct SideFoot: View {
                 Text("Chat")
                     .font(.system(size: 11.5, weight: .medium))
             }
-            .foregroundStyle(browser.chat != nil ? side.ink : side.muted)
+            .foregroundStyle(browser.chatUp ? side.ink : side.muted)
             .padding(.horizontal, 8)
             .frame(height: 26)
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(browser.chat != nil ? greys.wash : .clear)
+                    .fill(browser.chatUp ? greys.wash : .clear)
             )
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
