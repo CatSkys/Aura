@@ -1975,6 +1975,10 @@ final class Browser: NSObject, ObservableObject {
     /// in the window — the card sits above it or below (see SpaceSwitcher).
     @Published var spaceCardUp = false
     @Published var spaceDotFrame: CGRect = .zero
+    /// The tab whose card is up under the pointer, and where that tab stands
+    /// in the window — beside the column, or under the strip (see TabHover).
+    @Published var tabCard: Tab.ID?
+    @Published var tabCardAnchor = TabCardAnchor()
     /// A tab being sent into the Space being made from its context menu.
     var afterSpaceCreated: ((Space) -> Void)?
     /// A link's page, peeked at over this one (see Peek.swift).

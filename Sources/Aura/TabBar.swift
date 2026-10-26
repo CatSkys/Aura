@@ -742,12 +742,24 @@ private struct TabPill: View {
         })
         .modifier(ModifiedTabClick { if !editing { browser.extendTabSelection(to: tab, modifiers: $0) } })
         .overlay { MiddleClick(act: close) }
-        .onHover { hovering = $0 }
+        .onHover(perform: hover)
+        .onAppear { Bench.rowAppeared(tab.id, hover: hover) }
+        .onDisappear { Bench.rowDisappeared(tab.id) }
         .contextMenu { TabMenu(browser: browser, tab: tab, close: close) }
         .help(pinned || compact ? tab.label : "")
         .animation(Motion.quick, value: hovering)
         .animation(Motion.glide, value: editing)
         .animation(Motion.glide, value: tab.pin)
+        // Where this tab stands while the pointer is on it, for its card (see
+        // TabHover): under the strip.
+        .background {
+            if hovering && !editing {
+                GeometryReader { box in
+                    Color.clear.preference(key: TabCardAnchorKey.self,
+                                           value: TabCardAnchor(frame: box.frame(in: .global), beside: false))
+                }
+            }
+        }
         .onChange(of: browser.refusals) { _, _ in
             guard editing else { return }
             shake = 0
@@ -755,6 +767,13 @@ private struct TabPill: View {
         }
         // Arriving and leaving from the strip rather than from nowhere.
         .transition(.scale(scale: 0.9, anchor: .leading).combined(with: .opacity))
+    }
+
+    /// The pointer come or gone: the tab's own grey, and the card that stands
+    /// under it a moment later (see TabHover).
+    private func hover(_ over: Bool) {
+        hovering = over
+        if over { TabHover.rest(on: tab, in: browser) } else { TabHover.leave(tab, in: browser) }
     }
 
     @ViewBuilder

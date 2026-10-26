@@ -970,11 +970,29 @@ private struct PinSquare: View {
         .modifier(ModifiedTabClick { browser.extendTabSelection(to: tab, modifiers: $0) })
         // Put down, like ⌘W: close() is what knows a pin isn't removed.
         .overlay { MiddleClick { browser.close(tab) } }
-        .onHover { hovering = $0 }
+        .onHover(perform: hover)
+        .onAppear { Bench.rowAppeared(tab.id, hover: hover) }
+        .onDisappear { Bench.rowDisappeared(tab.id) }
         .contextMenu { TabMenu(browser: browser, tab: tab, close: { browser.close(tab) }) }
         .help(tab.label)
         .animation(Motion.quick, value: hovering)
         .transition(.scale(scale: 0.8).combined(with: .opacity))
+        // A square's room, for its card (see TabHover): out beside the column.
+        .background {
+            if hovering {
+                GeometryReader { box in
+                    Color.clear.preference(key: TabCardAnchorKey.self,
+                                           value: TabCardAnchor(frame: box.frame(in: .global), beside: true))
+                }
+            }
+        }
+    }
+
+    /// The pointer come or gone: the square's own grey, and the card that
+    /// stands beside the column a moment later (see TabHover).
+    private func hover(_ over: Bool) {
+        hovering = over
+        if over { TabHover.rest(on: tab, in: browser) } else { TabHover.leave(tab, in: browser) }
     }
 }
 
@@ -1160,6 +1178,16 @@ private struct SideRow: View {
                 SplitDropZone(browser: browser, tab: tab, kind: .strip)
             }
         }
+        // Where this row stands while the pointer is on it, for its card (see
+        // TabHover): beside the column, out over the page.
+        .background {
+            if hovering && !editing {
+                GeometryReader { box in
+                    Color.clear.preference(key: TabCardAnchorKey.self,
+                                           value: TabCardAnchor(frame: box.frame(in: .global), beside: true))
+                }
+            }
+        }
         .animation(Motion.quick, value: hovering)
         .animation(Motion.glide, value: editing)
         .onChange(of: browser.refusals) { _, _ in
@@ -1170,7 +1198,10 @@ private struct SideRow: View {
         .transition(.scale(scale: 0.94, anchor: .leading).combined(with: .opacity))
     }
 
-    private func hover(_ over: Bool) { hovering = over }
+    private func hover(_ over: Bool) {
+        hovering = over
+        if over { TabHover.rest(on: tab, in: browser) } else { TabHover.leave(tab, in: browser) }
+    }
 
     @ViewBuilder
     private var ground: some View {

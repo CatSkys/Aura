@@ -875,6 +875,10 @@ struct ContentView: View {
             .overlay { field }
             .overlay { panels }
             .overlay { switcherOverlay }
+            // The card of the tab under the pointer, out beside the column or
+            // under the strip: over the page, where there is the room for it
+            // (see TabHover).
+            .overlay { TabCardOverlay(browser: browser) }
             // The card of spaces, over the window and over the page: it is
             // put away by a click anywhere else or an Escape (see
             // SpaceCardOverlay).
@@ -882,6 +886,14 @@ struct ContentView: View {
             .onPreferenceChange(SpaceDotFrame.self) { frame in
                 MainActor.assumeIsolated {
                     if browser.spaceDotFrame != frame { browser.spaceDotFrame = frame }
+                }
+            }
+            // Where the tab under the pointer stands. A tab that has lost the
+            // pointer publishes nothing, so the last one with room in it is
+            // what the card is placed from.
+            .onPreferenceChange(TabCardAnchorKey.self) { anchor in
+                MainActor.assumeIsolated {
+                    if anchor.frame.width > 0, browser.tabCardAnchor != anchor { browser.tabCardAnchor = anchor }
                 }
             }
             .overlay(alignment: .topTrailing) {
@@ -925,6 +937,7 @@ struct ContentView: View {
                 if let window, (note.object as? NSWindow) === window {
                     browser.tabSwitcher.cancel()
                     browser.spaceCardUp = false
+                    TabHover.dismiss(browser)
                     if browser.commandHeld { browser.commandHeld = false }
                 }
             }
@@ -1462,6 +1475,12 @@ struct ContentView: View {
             }
             if browser.spaceCardUp {
                 browser.spaceCardUp = false
+                return true
+            }
+            // The card of the tab under the pointer, put away without moving
+            // the hand — a glance at a tab, dismissed.
+            if browser.tabCard != nil {
+                TabHover.dismiss(browser)
                 return true
             }
             if browser.peekTab != nil {
