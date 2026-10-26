@@ -75,6 +75,19 @@ holder_line() {
   return 0
 }
 
+# Why a branch was left out: on stderr just before a refusal, on stdout once
+# the delivery is done. `reasons` is read through ${a[@]+…} because bash 3.2 —
+# the one macOS ships, and this runs under it — calls an empty array unbound
+# under `set -u`, so the plain "${reasons[@]}" killed the script whenever there
+# was nothing to say: a delivery that went through reported itself failed at
+# its last line, and --ready with nothing pending died before its message.
+skips() {
+  local r
+  for r in ${reasons[@]+"${reasons[@]}"}; do
+    if [ "${1:-}" = err ]; then echo "跳过 $r" >&2; else echo "  跳过 $r"; fi
+  done
+}
+
 status() {
   local holder pid dirty since branch tree state n=0
   if holder="$(holder_line)"; then
@@ -178,7 +191,7 @@ else
   [ "$(git rev-list --count "main..$branch")" -gt 0 ] || refuse "$branch 相对 main 没有提交，没有可交付的"
   branches=("$branch")
 fi
-[ ${#branches[@]} -gt 0 ] || { for r in "${reasons[@]}"; do echo "跳过 $r" >&2; done; refuse "没有可交付的分支"; }
+[ ${#branches[@]} -gt 0 ] || { skips err; refuse "没有可交付的分支"; }
 
 merged=()
 for branch in "${branches[@]}"; do
@@ -196,7 +209,7 @@ for branch in "${branches[@]}"; do
   git merge --no-ff "$branch" -m "合并 $branch：$(git log -1 --format=%s "$branch")"
   merged+=("$branch")
 done
-[ ${#merged[@]} -gt 0 ] || { for r in "${reasons[@]}"; do echo "跳过 $r" >&2; done; refuse "没有合进去的分支"; }
+[ ${#merged[@]} -gt 0 ] || { skips err; refuse "没有合进去的分支"; }
 
 # One build for this delivery, and only when it can show something new.
 since="$(since_stamp)"
@@ -223,6 +236,6 @@ trap - EXIT
 rm -rf "$lock"
 
 echo "交付完成：$(git log --oneline -1)"
-for r in "${reasons[@]}"; do echo "  跳过 $r"; done
+skips
 echo "  产物：build/ $(date -r build/Aura.app/Contents/MacOS/Aura '+%F %T' 2>/dev/null || echo 没有)，构建自 $(git rev-parse --short "$(since_stamp)" 2>/dev/null || echo —)"
 echo "  worktree：$(git worktree list | wc -l | tr -d ' ') 个；未合并的任务分支：$(git branch --no-merged main | grep -vc gh-pages || true) 个；stash：$(git stash list | wc -l | tr -d ' ') 项"
