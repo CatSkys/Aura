@@ -860,16 +860,18 @@ struct ContentView: View {
                 if fullscreenTab == nil { Fold(browser: browser, prefs: browser.prefs) }
             }
             .overlay(alignment: .bottom) { bars }
+            // A page floating over this one takes the whole window's light: the
+            // column and the strip dim with the page, since Arc's peek is the
+            // window's, not the page's — and a click anywhere on the dimming
+            // puts it away (see PeekDim).
+            .overlay { PeekDim(browser: browser).ignoresSafeArea() }
             .overlay {
-                // Over the page only: the column, the strip, the bookmarks bar
-                // and the gap around the page's card stay as they are,
-                // uncovered and in reach. Placed from the page's own edges, so
-                // the dimming ends where the page does.
-                PeekLayer(browser: browser, corner: cards ? Metrics.cardRadius : 0)
+                // The panel itself, over the page's own edges rather than the
+                // window's: it fills nearly all of the page's height, its
+                // buttons out in the room the column keeps beside it.
+                PeekLayer(browser: browser)
                     .padding(pageEdges)
                     .offset(pageOffset)
-                    // From the window's own top edge, as the page is:
-                    // the title bar's band is page too.
                     .ignoresSafeArea()
             }
             .overlay { field }
