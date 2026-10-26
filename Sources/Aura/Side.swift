@@ -805,6 +805,14 @@ private struct SideFoot: View {
             // Only while a download is running, and a moment after.
             FetchDoor(browser: browser, fetches: fetches)
             Spacer(minLength: 0)
+            // The conversation's door, at the far end: Dia keeps its
+            // assistant in the column's foot too, and the far end is where a
+            // door the fingers find without reading goes.
+            if AI.shipped || Store.testing {
+                Door(icon: "bubble.left.and.text.bubble.right",
+                     on: browser.chat != nil,
+                     help: "Chat   ⌘⇧A") { browser.toggleChat() }
+            }
         }
         .padding(.horizontal, 10)
         .padding(.bottom, 10)

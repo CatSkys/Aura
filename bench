@@ -78,7 +78,9 @@
                                        each timed until the window has caught up; go: then Return, timed
                                        until the page is loading
     ./bench visible ID                 switched off: it made a window (off screen), and no verb makes one for now
-    ./bench ai mock URL | key PROVIDER KEY | ask PROVIDER MODEL TEXT | read ID | check TEXT | signin | engine [PATH MODELS] | use PROVIDER [MODEL] | summarize ID | question ID TEXT | agree | state | picture DIR
+    ./bench ai mock URL | key PROVIDER KEY | ask PROVIDER MODEL TEXT | read ID | check TEXT | signin | engine [PATH MODELS] | use PROVIDER [MODEL] | summarize ID | question ID TEXT | agree | state | picture DIR | chat [open|close|ask TEXT]
+                                       the conversation that belongs to the window: open or close it, one
+                                       question into it, or what it holds now
                                        test run: the AI add-on's requests, against a stand-in on this Mac;
                                        what of a page would go to the model, and an answer checked against it
     ./bench answer once|always|no|screen|window|noscreen
@@ -562,7 +564,7 @@ def main(argv):
             elif word == "words": request["words"] = True
             else: sys.exit("usage: bench find TEXT [next N] [back N] [case] [words]")
     elif verb == "ai":
-        usage = "usage: bench ai mock URL | key PROVIDER KEY | ask PROVIDER MODEL TEXT | read ID | check TEXT | signin | engine [PATH MODELS] | use PROVIDER [MODEL] | summarize ID | question ID TEXT | agree | state | picture DIR"
+        usage = "usage: bench ai mock URL | key PROVIDER KEY | ask PROVIDER MODEL TEXT | read ID | check TEXT | signin | engine [PATH MODELS] | use PROVIDER [MODEL] | summarize ID | question ID TEXT | agree | state | picture DIR | chat [open|close|ask TEXT]"
         if not args: sys.exit(usage)
         request["action"] = args[0]
         if args[0] == "mock" and len(args) == 2: request["url"] = args[1]
@@ -578,6 +580,9 @@ def main(argv):
         elif args[0] == "summarize" and len(args) == 2: request["id"] = args[1]
         elif args[0] == "question" and len(args) == 3: request["id"], request["text"] = args[1], args[2]
         elif args[0] in ("agree", "state") and len(args) == 1: pass
+        elif args[0] == "chat" and len(args) in (1, 2, 3):
+            request["sub"] = args[1] if len(args) > 1 else "state"
+            if len(args) == 3: request["text"] = args[2]
         elif args[0] == "picture" and len(args) == 2: request["path"] = args[1]
         elif args[0] == "check" and len(args) == 2: request["text"] = args[1]
         else: sys.exit(usage)

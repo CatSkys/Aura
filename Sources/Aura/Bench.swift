@@ -1939,6 +1939,31 @@ final class Bench {
             case "agree":
                 browser.assisting?.agree()
                 answer(["open": browser.assisting != nil])
+            case "chat":
+                // The conversation that belongs to the window (Chat.swift):
+                // opened, closed, or one question sent into it.
+                switch request["sub"] as? String ?? "state" {
+                case "open":
+                    browser.openChat()
+                    answer(["open": browser.chat != nil, "trouble": browser.chat == nil ? "not opened" : ""])
+                case "close":
+                    browser.closeChat()
+                    answer(["open": browser.chat != nil])
+                case "ask":
+                    guard let chat = browser.chat else { answer(["error": "no chat open"]); return }
+                    chat.draft = request["text"] as? String ?? ""
+                    chat.submit(from: browser.active)
+                    answer(["open": true])
+                default:
+                    guard let chat = browser.chat else { answer(["open": false]); return }
+                    answer([
+                        "open": true, "busy": chat.busy, "reading": chat.reading,
+                        "notice": chat.notice ?? "", "trouble": chat.trouble ?? "",
+                        "place": chat.place,
+                        "lines": chat.lines.map { ["mine": $0.mine, "text": $0.text, "done": $0.done,
+                                                   "failed": $0.failed ?? "", "page": $0.page ?? ""] as [String: Any] },
+                    ])
+                }
             case "state":
                 guard let assistant = browser.assisting else { answer(["open": false]); return }
                 answer([
@@ -1962,6 +1987,7 @@ final class Bench {
                     if (try? png.write(to: url)) != nil { made.append(url.path) }
                 }
                 if let assistant = browser.assisting { draw(AssistantPanel(browser: browser, assistant: assistant, drawn: true), "ai-panel.png") }
+                draw(ChatPanel(browser: browser, chat: .picture(), card: false, drawn: true).frame(width: 380), "chat-panel.png")
                 draw(AISettings(browser: browser, prefs: browser.prefs, drawn: true).frame(width: 440), "ai-settings.png")
                 answer(["made": made])
             case "read":

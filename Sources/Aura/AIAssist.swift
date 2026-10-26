@@ -184,14 +184,41 @@ extension Browser {
     func summarizePage() { startAssistant(summary: true) }
     func askAboutPage() { startAssistant(summary: false) }
 
-    private func startAssistant(summary: Bool) {
-        guard AI.shipped || Store.testing, let tab = active, tab.isWeb else { return }
+    /// Where an answer would come from, once everything it needs is there.
+    /// When it isn't, says what is missing and opens the page that fixes it:
+    /// the model, the key, the download. Both the page's panel and the
+    /// window's conversation ask this, so they answer the same way.
+    func whereAI() -> (provider: AIProvider, model: String)? {
         guard prefs.ai, let provider = prefs.aiProvider else {
             settingsPage = .ai
             tuning = true
             announce(prefs.ai ? "Choose where the AI runs" : "Turn on AI in Settings › AI")
-            return
+            return nil
         }
+        if provider == .thisMac, AIEngine.shared.state != .ready {
+            settingsPage = .ai
+            tuning = true
+            announce("The model isn't on this Mac yet")
+            return nil
+        }
+        let model = prefs.aiModel(for: provider)
+        guard !model.isEmpty else {
+            settingsPage = .ai
+            tuning = true
+            announce(Localized("Choose a model for \(provider.name)"))
+            return nil
+        }
+        guard provider.isLocal || AIKeys.hint(for: provider) != nil else {
+            settingsPage = .ai
+            tuning = true
+            announce(Localized("No key for \(provider.name) yet"))
+            return nil
+        }
+        return (provider, model)
+    }
+
+    private func startAssistant(summary: Bool) {
+        guard AI.shipped || Store.testing, let tab = active, tab.isWeb else { return }
         // A web page, nothing else: not a file, not an extension's page.
         guard let scheme = tab.pageAddress?.scheme?.lowercased(), scheme == "https" || scheme == "http" else {
             announce("AI works on web pages")
@@ -199,34 +226,17 @@ extension Browser {
         }
         // A private tab leaves nothing behind anywhere, a provider included.
         let shy = tab.shy || tab.built.map { !$0.configuration.websiteDataStore.isPersistent } == true
-        guard !shy || provider.isLocal else {
+        guard !shy || prefs.aiProvider?.isLocal == true else {
             announce("In a private tab, only an AI on this Mac")
             return
         }
-        if provider == .thisMac, AIEngine.shared.state != .ready {
-            settingsPage = .ai
-            tuning = true
-            announce("The model isn't on this Mac yet")
-            return
-        }
-        let model = prefs.aiModel(for: provider)
-        guard !model.isEmpty else {
-            settingsPage = .ai
-            tuning = true
-            announce(Localized("Choose a model for \(provider.name)"))
-            return
-        }
-        guard provider.isLocal || AIKeys.hint(for: provider) != nil else {
-            settingsPage = .ai
-            tuning = true
-            announce(Localized("No key for \(provider.name) yet"))
-            return
-        }
+        guard let whereAI = whereAI() else { return }
+        let provider = whereAI.provider
         // Asked again on the page the panel is already about: the same
         // conversation goes on.
         if !summary, let open = assisting, open.tab == tab.id, open.provider == provider { return }
         assisting?.stop()
-        assisting = Assistant(tab: tab, provider: provider, model: model, summary: summary)
+        assisting = Assistant(tab: tab, provider: provider, model: whereAI.model, summary: summary)
     }
 
     func closeAssistant() {
@@ -267,33 +277,55 @@ struct AssistantPanel: View {
                 scrolling
             }
 
-            Rectangle().fill(Palette.hairline).frame(height: 1)
-            HStack(spacing: 8) {
+            HStack(alignment: .bottom, spacing: 8) {
                 if drawn {
-                    Text("Ask about this page…").font(.system(size: 12.5)).foregroundStyle(Palette.faint)
+                    Text("Ask about this page…").font(.system(size: 14)).foregroundStyle(Palette.Chat.faint)
                 } else {
-                    TextField("", text: $assistant.draft, prompt: Text("Ask about this page…").foregroundStyle(Palette.faint))
+                    TextField("", text: $assistant.draft,
+                              prompt: Text("Ask about this page…").foregroundStyle(Palette.Chat.faint))
                         .textFieldStyle(.plain)
-                        .font(.system(size: 12.5))
-                        .foregroundStyle(Palette.ink)
+                        .font(.system(size: 14))
+                        .foregroundStyle(Palette.Chat.ink)
                         .focused($typing)
                         .onSubmit { assistant.submit() }
                         .disabled(assistant.notice != nil)
                 }
+                Image(systemName: "arrow.up")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(Palette.Chat.raised)
+                    .frame(width: 22, height: 22)
+                    .background((assistant.draft.trimmed.isEmpty ? Palette.Chat.faint : Palette.Chat.ink),
+                                in: Capsule())
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.leading, 14)
+            .padding(.trailing, 8)
+            .padding(.vertical, 8)
+            .background(Palette.Chat.raised, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .strokeBorder(Palette.Chat.edge, lineWidth: 0.5)
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 10)
             Text(Localized("AI — may be wrong · \(assistant.place)"))
-                .font(.system(size: 10.5))
-                .foregroundStyle(Palette.faint)
+                .font(.system(size: 11))
+                .foregroundStyle(Palette.Chat.faint)
                 .lineLimit(1)
                 .padding(.horizontal, 16)
+                .padding(.top, 8)
                 .padding(.bottom, 10)
         }
         .frame(width: 380, alignment: .leading)
-        .background(Palette.ground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Palette.hairline, lineWidth: 1))
-        .shadow(color: .black.opacity(0.14), radius: 24, y: 8)
+        // Dia's panel: a surface a step darker than the page, 20 points
+        // round, a half-point ring rather than a hairline, and a lift shallow
+        // enough to read as paper on the window rather than a window of its
+        // own.
+        .background(Palette.Chat.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(Palette.Chat.edge, lineWidth: 0.5)
+        }
+        .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
         .onAppear { if !assistant.summary, !drawn { typing = true } }
     }
 
@@ -360,29 +392,45 @@ struct AssistantPanel: View {
 
     private struct TurnView: View {
         let turn: Assistant.Turn
+        /// The space's own colour, for the bubble: the same tint the window's
+        /// conversation uses, so the two surfaces are one design.
+        var seed: Color = Palette.Chat.muted
 
         var body: some View {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 10) {
                 if let question = turn.question {
-                    Text(verbatim: question)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(Palette.muted)
+                    HStack(spacing: 0) {
+                        Spacer(minLength: 40)
+                        Text(verbatim: question)
+                            .font(.system(size: 14))
+                            .foregroundStyle(Palette.Chat.ink)
+                            .multilineTextAlignment(.leading)
+                            .textSelection(.enabled)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 16)
+                            .background {
+                                RoundedRectangle(cornerRadius: 17, style: .continuous)
+                                    .fill(LinearGradient(colors: [seed.opacity(0.12), seed.opacity(0.09)],
+                                                         startPoint: .top, endPoint: .bottom))
+                            }
+                    }
                 }
                 if turn.answer.isEmpty, !turn.done {
-                    Text("…").font(.system(size: 13)).foregroundStyle(Palette.faint)
+                    Orb(seed: seed, size: 24)
+                        .padding(.vertical, 2)
                 }
                 // As written, and never as markdown: no link to follow, no
                 // picture to fetch.
                 if !turn.answer.isEmpty {
                     Text(verbatim: turn.answer)
-                        .font(.system(size: 13))
-                        .foregroundStyle(Palette.ink)
-                        .lineSpacing(2.5)
+                        .font(.system(size: 15))
+                        .foregroundStyle(Palette.Chat.ink)
+                        .lineSpacing(4)
                         .textSelection(.enabled)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 if let failed = turn.failed {
-                    Text(verbatim: failed).font(.system(size: 12)).foregroundStyle(Palette.muted)
+                    Text(verbatim: failed).font(.system(size: 12)).foregroundStyle(Palette.Chat.faint)
                 }
                 if !turn.strays.isEmpty {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {

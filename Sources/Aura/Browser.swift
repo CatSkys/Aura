@@ -386,6 +386,10 @@ final class Browser: NSObject, ObservableObject {
     @Published var finding = false
     /// The AI panel's conversation about the page, while it is open.
     @Published var assisting: Assistant?
+    /// The conversation that belongs to the window, beside the page (see
+    /// Chat.swift): nil until it is opened, and gone again when it is
+    /// closed — nothing of it is kept.
+    @Published var chat: Chat?
     /// The side panel, beside the page (see SidePanel.swift): up or
     /// not, and what is in it.
     @Published var sidePanelShown = false

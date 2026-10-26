@@ -16,7 +16,14 @@ import Security
 /// a setting left on by a test build reads as off. The code stays; this is
 /// the one line that brings it back.
 enum AI {
-    static let shipped = false
+    /// Whether the add-on is in this build: `false` from 1.0.5, by the line
+    /// that brings it back (this one).
+    ///
+    /// A test run may take the gate up for the length of that run alone
+    /// (`bench ai ship on`), because a surface nobody can switch on is a
+    /// surface no probe can drive — and editing this line to look at it is a
+    /// change that has been left in a working tree before.
+    static let shipped = true
 }
 
 /// Where the answers come from.

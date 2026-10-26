@@ -1268,3 +1268,15 @@
 "No account, no sync, no telemetry: tabs, history and passwords stay on this Mac, and the only things that leave it are the pages you ask for and one request a day to see whether there is a newer version." = "没有账号、没有同步、没有遥测：标签页、历史记录和密码都留在这台 Mac 上，离开它的只有你要的那些页面，以及每天一次看看有没有新版本的请求。";
 "Passkeys are not in this version: the entitlement they need is granted to organization accounts only." = "这一版没有通行密钥：它需要的那条权利只发给组织类型的开发者账号。";
 "Reading mode, a floating video, profiles with their own sign-ins and history, pages translated on this Mac, and passwords in the keychain." = "阅读模式、浮动视频、各有独立登录状态与历史记录的配置文件、在这台 Mac 上翻译的页面，以及存在钥匙串里的密码。";
+"Chat" = "对话";
+"Chat…" = "对话…";
+"Close Chat" = "关闭对话";
+"Chat   ⌘⇧A" = "对话   ⌘⇧A";
+"Ask anything…" = "问点什么…";
+"Ask about this page, or anything else." = "问这一页，或者别的什么。";
+"Reading this page…" = "正在读这一页…";
+"Thinking…" = "正在想…";
+"Reading {1} · {2}" = "正在读 {1} · {2}";
+"AI — may be wrong" = "AI — 可能有错";
+"Send   ⏎" = "发送   ⏎";
+"Side panel closed" = "侧面板已收起";

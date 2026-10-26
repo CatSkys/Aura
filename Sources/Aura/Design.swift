@@ -95,6 +95,17 @@ enum Palette {
         static let sideHover = pair(0.915, 0.13)
         static let sideTile = pair(0.925, 0.115)
         static let sidePinLive = pair(0.86, 0.19)
+        /// The conversation's own surface (see `Palette.Chat`): Dia's values,
+        /// not the page's. Its ground is a step darker than the paper the
+        /// browser draws on, and what you write on sits on white above it.
+        static let chatSurface = pair(0.953, 0.125)
+        static let chatRaised = pair(1.0, 0.173)
+        static let chatCard = pair(0.977, 0.204)
+        static let chatEdge = pair(0.89, 0.275)
+        static let chatInk = pair(0.145, 0.882)
+        static let chatMuted = pair(0.60, 0.62)
+        static let chatFaint = pair(0.70, 0.41)
+
         /// The resting traffic lights, drawn by hand when the app is behind.
         static let resting = pair(0.80, 0.30)
         static let safe = tint(light: (0.08, 0.50, 0.24), dark: (0.29, 0.87, 0.50))
@@ -113,6 +124,23 @@ enum Palette {
                 return NSColor(white: dim ? dark : light, alpha: 1)
             }
         }
+    }
+}
+
+extension Palette {
+    /// The conversation's colours, taken from Dia's own values because the
+    /// conversation is Dia's: a surface a step darker than the page, what you
+    /// write raised to white on it, and its own ink — softer than the
+    /// browser's near-black, which is what makes the panel read as a letter
+    /// rather than a dialog.
+    enum Chat {
+        static let surface = Color(nsColor: NS.chatSurface)
+        static let raised = Color(nsColor: NS.chatRaised)
+        static let card = Color(nsColor: NS.chatCard)
+        static let edge = Color(nsColor: NS.chatEdge)
+        static let ink = Color(nsColor: NS.chatInk)
+        static let muted = Color(nsColor: NS.chatMuted)
+        static let faint = Color(nsColor: NS.chatFaint)
     }
 }
 

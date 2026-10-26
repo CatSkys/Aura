@@ -201,6 +201,8 @@ struct SearchApp: App {
                     Button("Ask About This Page…") { browser.askAboutPage() }
                         .shortcut("view.ask")
                         .disabled(!(browser.active?.isWeb ?? false))
+                    Button(browser.chat != nil ? "Close Chat" : "Chat…") { browser.toggleChat() }
+                        .shortcut("view.chat")
                 }
                 Divider()
                 Button("Hide Elements…") { browser.toggleHiding() }
@@ -505,7 +507,7 @@ struct ContentView: View {
 
             // An extension's side panel, on the side away from the column
             // (see SidePanel.swift); two pages in Split View share what's left.
-            if panelRoom > 0 { sidePanel }
+            if panelRoom > 0 { beside }
 
             // The column of tabs, in the way that has one. It takes the full
             // height, so the traffic lights sit in its own corner rather than
@@ -665,6 +667,13 @@ struct ContentView: View {
         browser.sidePanelShown && browser.sidePanel != nil && !browser.sidePanelHeld && fullscreenTab == nil
     }
 
+    /// The conversation beside the page: Dia's assistant, in the column the
+    /// side panel would take (see Chat.swift). The one that is opened has the
+    /// column; the other closes, since a window has one of these at a time.
+    private var chatUp: Bool {
+        browser.chat != nil && fullscreenTab == nil
+    }
+
     /// The side panel's width as drawn: as you left it, or narrower in a
     /// window too narrow to keep 320 points of page beside it.
     private var panelWidth: CGFloat {
@@ -677,7 +686,23 @@ struct ContentView: View {
     /// What the side panel takes from the page: its width, and the card's
     /// gap before it with the page as a card, or its hairline edge to edge.
     private var panelRoom: CGFloat {
-        panelUp ? panelWidth + (cards ? Metrics.cardGap : 1) : 0
+        panelUp || chatUp ? panelWidth + (cards ? Metrics.cardGap : 1) : 0
+    }
+
+    /// What is in the column: the conversation when it is open, an
+    /// extension's or a site's panel otherwise.
+    @ViewBuilder private var beside: some View {
+        if chatUp, let chat = browser.chat {
+            ChatBeside(browser: browser, chat: chat, onLeft: sideOnRight, card: cards, width: panelWidth)
+                .padding(.top, chrome.height)
+                .padding(.bottom, farGap)
+                .padding(sideOnRight ? .leading : .trailing, farGap)
+                .frame(maxWidth: .infinity, maxHeight: .infinity,
+                       alignment: sideOnRight ? .topLeading : .topTrailing)
+                .transition(.opacity)
+        } else {
+            sidePanel
+        }
     }
 
     private var sidePanel: some View {
@@ -1474,6 +1499,10 @@ struct ContentView: View {
             }
             if browser.assisting != nil {
                 browser.closeAssistant()
+                return true
+            }
+            if browser.chat != nil {
+                browser.closeChat()
                 return true
             }
             if browser.veiling {
