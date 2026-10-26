@@ -391,7 +391,7 @@ final class Chat: ObservableObject, Identifiable {
             Line(mine: false, text: "Design.swift does. Palette and Metrics both live in it — one for colour, one for size — and other files only refer to the names, never write a colour of their own.",
                  steps: [
                     .note("先看一下设计文件都写了什么。"),
-                    AIToolStep.named("snapshot", detail: "Read the page."),
+                    AIToolStep.named("snapshot"),
                     AIToolStep.done("navigate", arguments: AIToolArguments(text: #"{"url":"https://www.bilibili.com"}"#),
                                     did: "Opened https://www.bilibili.com/.", failed: false),
                     .note("页面已经打开，在读它的内容。"),

@@ -51,6 +51,11 @@ struct AIToolStep: Identifiable, Equatable, Codable {
     /// Whether it worked. A row that failed is drawn, not hidden — that is
     /// the difference between a record and a brag.
     var failed = false
+    /// The tool's own account of what it did — AITool's `did`, the audit
+    /// record. Kept with the row and not drawn on it: Dia's rail shows a
+    /// title and what came back, never the machine's receipt, and a rail of
+    /// receipts reads as a log instead of as sentences.
+    var audit: String?
     /// What the row shows under its title: Dia's own chips. A call carries
     /// what it asked with (the query), and what came back (the results, each
     /// with its site's mark), because "Searched the web" alone says nothing
@@ -73,94 +78,113 @@ extension AIToolStep {
 }
 
 extension AIToolStep {
-    /// The mark in the margin. Dia maps its tools onto SF Symbols and tints a
-    /// picture with `background: currentColor` over a mask, which is what a
-    /// template image in AppKit is; `dot` is its 6pt circle for a step with no
-    /// tool of its own.
+    /// The mark in the margin. Dia names its glyphs and maps each name to an
+    /// SF Symbol (`Zr` in nodes/4.DUxGFY7h.js), tinting a mask with
+    /// `currentColor`; AppKit's template images are the same idea. The names
+    /// are Dia's own, so the mapping below is a table and not a judgement.
     enum Glyph: String, Codable {
         case dot
+        case page
         case globe
         case tabs
-        case shield
-        case cursor
-        case page
-        case question
-        case command
-        case stop
+        case search
+        case edit
+        case attach
+        case comment
+        case contact
+        case people
+        case commandPrompt
+        case stopSolid
+        case bubbleQuestion
+        case bulletedList
+        case backToWindow
+        case brain
+        case calendar
+        case mail
+        case bubbles
+        case folder
+        case pencil
+        case person
+        case list
+        case compress
+        case splitView
+        case keyboard
+        case terminal
+        case robot
+        case support
     }
 
-    /// The words for a tool that ran, in Dia's grammar: a verb for what
-    /// happened, and a count when it happened more than once.
+    /// A row's title and glyph, from Dia's own table (`Xn` in
+    /// chunks/CQThNcLC.js). Every one of its entries is a pair — present
+    /// participle while the call is happening, past tense once it is done —
+    /// and that is its whole grammar of progress: `X(t, present, past)` picks
+    /// one by `complete`. A row in this app is written when the call has
+    /// finished, so it says the past tense; the present is here for the row
+    /// that is still running.
     ///
-    /// `times` is how many calls of this tool the turn made in a row, which is
-    /// what its "(2 times)" says; `detail` is the one thing worth naming under
-    /// it, if any.
-    static func named(_ tool: String, times: Int = 1, detail: String? = nil, failed: Bool = false) -> AIToolStep {
-        let one = singular(tool)
-        let title: String
-        var said = detail
+    /// Its titles never carry the tool's result. Dia puts what came back in
+    /// rows under the title — a query, the pages found, the tab it opened —
+    /// because "Read the page" is the statement and "71 elements" is the
+    /// result, and mixing them makes a log rather than a sentence.
+    static func named(_ tool: String, _ going: Bool = false, where site: String? = nil) -> AIToolStep {
+        let (title, glyph) = words(for: tool, going, where: site)
+        return AIToolStep(kind: .tool, tool: tool, title: title, detail: nil, glyph: glyph)
+    }
+
+    /// Dia's table, for the tools this browser has. Where Dia has no entry
+    /// the tool keeps its own name, which is what its `external` case does
+    /// with a tool it doesn't know.
+    private static func words(for tool: String, _ going: Bool, where site: String?) -> (String, Glyph) {
         switch tool {
-        case "snapshot":
-            title = Localized("Read the page")
-        case "read":
-            title = Localized("Read the page")
-        case "screenshot":
-            title = Localized("Took a screenshot")
-        case "tabs":
-            title = Localized("Tabs")
+        case "read", "snapshot", "screenshot":
+            // Dia's `toolResultRead` / `attachmentRead`: the page, by its
+            // `page` glyph.
+            return (going ? Localized("Reading the page") : Localized("Read the page"), .page)
         case "navigate":
-            title = Localized("Opened a page")
+            return (going ? Localized("Opening page") : Localized("Opened page"), .globe)
         case "back":
-            title = Localized("Went back")
+            return (going ? Localized("Going back") : Localized("Went back"), .globe)
         case "forward":
-            title = Localized("Went forward")
+            return (going ? Localized("Going forward") : Localized("Went forward"), .globe)
         case "reload":
-            title = Localized("Reloaded the page")
+            return (going ? Localized("Reloading page") : Localized("Reloaded page"), .globe)
+        case "tabs":
+            // Dia's `qn`: one verb per action, in both tenses.
+            return (going ? Localized("Working with tabs") : Localized("Worked with tabs"), .tabs)
         case "click":
-            title = Localized("Clicked")
+            return (going ? Localized("Clicking") : Localized("Clicked"), .pencil)
         case "set_value":
-            title = Localized("Filled in")
+            return (going ? Localized("Filling in") : Localized("Filled in"), .keyboard)
         case "press":
-            title = Localized("Pressed a key")
+            return (going ? Localized("Pressing a key") : Localized("Pressed a key"), .keyboard)
         case "scroll":
-            title = Localized("Scrolled")
+            return (going ? Localized("Scrolling") : Localized("Scrolled"), .backToWindow)
         case "wait_for":
-            title = Localized("Waited")
+            return (going ? Localized("Waiting") : Localized("Waited"), .commandPrompt)
         case "ask_user":
-            title = Localized("Asked you")
+            return (Localized("Asked you"), .bubbleQuestion)
         default:
-            title = one
+            return (tool, .support)
         }
-        // Dia counts a repeat rather than drawing the same row again.
-        if times > 1 { said = Self.times(times) }
-        return AIToolStep(kind: .tool, tool: tool, title: title, detail: said,
-                          glyph: glyph(tool), failed: failed)
     }
 
-    /// The model's own line while it works: Dia's `activity`, drawn as a dot
-    /// with grey words rather than as a tool's row, because nothing has
-    /// happened yet — it is what the assistant is doing, not what the browser
-    /// did.
-    static func note(_ said: String) -> AIToolStep {
-        AIToolStep(kind: .note, tool: "say", title: said, detail: nil, glyph: .dot)
-    }
-
-    /// The row for a call, with what it carried and what came back as chips:
-    /// the address a page was opened on, the page that was read, the query a
-    /// search was made with. Dia puts these under its rows and they are most
-    /// of what makes the row worth reading.
+    /// The row of a call that has run: title from the table, and under it
+    /// what the call carried and came to — Dia's `byline`, its `queries`, and
+    /// its `links`.
     static func done(_ tool: String, arguments: AIToolArguments, did: String, failed: Bool) -> AIToolStep {
-        // `did` is the audit record, so it is the row's own detail unless
-        // something more specific is found below.
-        var step = named(tool, detail: did, failed: failed)
+        var step = named(tool)
+        step.failed = failed
+        // The row is Dia's: a title, and under it what the call carried or
+        // came to as chips. It never prints the tool's own account — "Took a
+        // snapshot of the page: 71 elements" is the machine's receipt, and a
+        // rail of receipts reads as a log instead of as sentences. The
+        // receipt is still the audit record; it goes to the model, not here.
+        step.audit = did
         switch tool {
         case "navigate":
             if let url = arguments.string("url") { step.chips = [site(url)] }
         case "tabs":
             if let url = arguments.string("url") { step.chips = [site(url)] }
-        case "read", "snapshot":
-            // The page it read, by name where the tab has one.
-            step.chips = []
         default:
             break
         }
@@ -174,41 +198,12 @@ extension AIToolStep {
                     site: host, glyph: .globe)
     }
 
-    /// "Searched the web (2 times)": Dia's own way of saying a thing happened
-    /// more than once without drawing it twice.
-    private static func times(_ count: Int) -> String {
-        Localized("\(count) times")
-    }
-
-    private static func singular(_ tool: String) -> String {
-        switch tool {
-        case "snapshot", "read": return Localized("Read the page")
-        case "screenshot": return Localized("Took a screenshot")
-        case "tabs": return Localized("Tabs")
-        case "navigate": return Localized("Opened a page")
-        case "back": return Localized("Went back")
-        case "forward": return Localized("Went forward")
-        case "reload": return Localized("Reloaded the page")
-        case "click": return Localized("Clicked")
-        case "set_value": return Localized("Filled in")
-        case "press": return Localized("Pressed a key")
-        case "scroll": return Localized("Scrolled")
-        case "wait_for": return Localized("Waited")
-        case "ask_user": return Localized("Asked you")
-        default: return tool
-        }
-    }
-
-    private static func glyph(_ tool: String) -> Glyph {
-        switch tool {
-        case "navigate", "back", "forward", "reload": return .globe
-        case "tabs": return .tabs
-        case "click", "set_value", "press", "scroll": return .cursor
-        case "snapshot", "read", "screenshot": return .page
-        case "ask_user": return .question
-        case "wait_for": return .command
-        default: return .dot
-        }
+    /// The model's own line while it works: Dia's `activity`, drawn as a dot
+    /// with grey words rather than as a tool's row, because nothing has
+    /// happened yet — it is what the assistant is doing, not what the browser
+    /// did.
+    static func note(_ said: String) -> AIToolStep {
+        AIToolStep(kind: .note, tool: "say", title: said, detail: nil, glyph: .dot)
     }
 }
 
@@ -245,12 +240,44 @@ struct AIToolRail: View {
         static var inset: CGFloat { marker / 2 + spacing }
     }
 
+    /// The folded row's own words, and Dia's: when a turn used one sort of
+    /// tool it says that sort in the past — "Searched the web", "Searched
+    /// tabs" — and when it used several it says what it gathered, which is
+    /// `Gathered context` (`Vr` in nodes/4.DUxGFY7h.js). One call of one tool
+    /// keeps its own title, as its rows do.
     private var heading: String {
         let tools = steps.filter { $0.kind == .tool }
         guard let first = tools.first else { return Localized("What it did") }
         if tools.count == 1 { return first.title }
-        if Set(tools.map(\.tool)).count == 1 { return first.title }
-        return Localized("What it did")
+        let kinds = Set(tools.map(kind(_:)))
+        if kinds.count == 1, let only = kinds.first { return only.past }
+        return Localized("Gathered context")
+    }
+
+    /// Dia's own grouping of a tool into what it went and got (`zr`).
+    private func kind(_ step: AIToolStep) -> Sort {
+        switch step.tool {
+        case "navigate", "back", "forward", "reload", "read", "snapshot", "screenshot":
+            return .web
+        case "tabs":
+            return .tabs
+        default:
+            return .context
+        }
+    }
+
+    /// The three things a turn can have gone and done, with Dia's past-tense
+    /// names for each.
+    private enum Sort {
+        case web, tabs, context
+
+        var past: String {
+            switch self {
+            case .web: return Localized("Searched the web")
+            case .tabs: return Localized("Searched tabs")
+            case .context: return Localized("Gathered context")
+            }
+        }
     }
 
     var body: some View {
@@ -337,14 +364,26 @@ struct AIToolRail: View {
         .modifier(FadeFoot(on: folded && !running))
     }
 
-    /// Dia's connector: from half a marker plus its spacing, down through the
-    /// gap to the next marker.
+    /// Dia's connector, and it is a segment per step and not one rule through
+    /// them. Its CSS is exact about both ends:
+    ///
+    ///     top: calc(line-center + connector-inset);
+    ///     height: max(0px, calc(100% + rail-gap - 2 * connector-inset));
+    ///
+    /// with `connector-inset` = half a marker plus `connector-spacing` (8 + 6
+    /// = 14) and `rail-gap` 22. Worked through in this file's own points: the
+    /// segment starts 22 below the row's top — 6 under its marker — and ends
+    /// 16 above the row's bottom, which is 6 above the next row's marker. So
+    /// every mark sits in a gap, and the rail reads as a column of short
+    /// lines rather than a line behind the marks. Drawn as one line it also
+    /// doubled up where the segments met its neighbours, which is what made
+    /// some lengths of it darker than others.
     private var line: some View {
         Rectangle()
             .fill(Palette.Chat.edge)
             .frame(width: Measure.line)
-            .padding(.top, Measure.inset)
-            .padding(.bottom, -(Measure.step + Measure.inset))
+            .padding(.top, Measure.marker + Measure.spacing)
+            .padding(.bottom, -Measure.marker)
     }
 
     private func row(_ step: AIToolStep, last: Bool, tail: Bool) -> some View {
@@ -356,6 +395,7 @@ struct AIToolRail: View {
             .frame(width: Measure.marker, alignment: .top)
             VStack(alignment: .leading, spacing: 6) {
                 Text(verbatim: step.title)
+                    .modifier(Shimmer(on: running && step.kind == .tool))
                     // A note is narration, so it is grey; a tool's row is the
                     // record, so it is a step heavier. Dia's own weights:
                     // `--dia-fw-medium` on the tool title, and thinking at
@@ -374,6 +414,7 @@ struct AIToolRail: View {
             }
             Spacer(minLength: 0)
         }
+        .modifier(RowIn())
     }
 
     /// Dia's `.chips`: a wrapping row 6 apart, each chip popping in at a
@@ -397,6 +438,10 @@ struct AIToolRail: View {
     }
 
     @ViewBuilder private func mark(_ step: AIToolStep) -> some View {
+        markBody(step).modifier(MarkerIn())
+    }
+
+    @ViewBuilder private func markBody(_ step: AIToolStep) -> some View {
         // A note is Dia's plain dot whatever it says: narration has no icon.
         if step.glyph == .dot || step.kind == .note {
             Circle()
@@ -411,19 +456,110 @@ struct AIToolRail: View {
         }
     }
 
-    /// Dia's own table (`Zr` in nodes/4.DUxGFY7h.js), tool to SF Symbol.
+    /// Dia's own table (`Zr` in nodes/4.DUxGFY7h.js), glyph name to SF
+    /// Symbol — copied, not chosen:
+    ///
+    ///     brain→brain  alignLeft→align-left  search→search  calendar→calendar
+    ///     mail→mail  message/comment→comment  bubbles→bubbles  folder→folder
+    ///     page→page  globe→globe  tabs→split-view  pencil→edit
+    ///     person→contact  people→people  terminal→command-prompt
+    ///     stop→stop-solid  question→bubble-question  list→bulleted-list
+    ///     compress→back-to-window  paperclip→attach
+    ///
+    /// A few names its own table never uses but its tables above do
+    /// (`keyboard`, `robot`, `support`) get the closest symbol.
     private func symbol(_ glyph: AIToolStep.Glyph) -> String {
         switch glyph {
         case .dot: return "circle.fill"
-        case .globe: return "globe"
-        case .tabs: return "rectangle.split.3x1"
-        case .shield: return "shield"
-        case .cursor: return "cursorarrow"
+        case .brain: return "brain"
+        case .search: return "magnifyingglass"
+        case .calendar: return "calendar"
+        case .mail: return "envelope"
+        case .comment, .bubbleQuestion: return "bubble.left"
+        case .bubbles: return "bubble.left.and.bubble.right"
+        case .folder: return "folder"
         case .page: return "doc.text"
-        case .question: return "questionmark.bubble"
-        case .command: return "command"
-        case .stop: return "stop.circle.fill"
+        case .globe: return "globe"
+        case .tabs, .splitView: return "rectangle.split.3x1"
+        case .pencil, .edit: return "pencil"
+        case .person, .contact: return "person.crop.circle"
+        case .people: return "person.2"
+        case .commandPrompt, .terminal: return "apple.terminal"
+        case .stopSolid: return "stop.fill"
+        case .bulletedList, .list: return "list.bullet"
+        case .backToWindow, .compress: return "arrow.down.right.and.arrow.up.left"
+        case .attach: return "paperclip"
+        case .keyboard: return "keyboard"
+        case .robot: return "gearshape"
+        case .support: return "wrench.and.screwdriver"
         }
+    }
+}
+
+/// Dia's `dia-shimmer`: the words of a row still being written are painted by
+/// a gradient that sweeps across them once every 1.5s, in 90 steps, with the
+/// middle of the sweep dropped to half strength — `background-clip: text` over
+/// a 250%-wide gradient moved from 160% to -60%. It is how its unfinished
+/// disclosure titles say "not settled yet" without a spinner.
+private struct Shimmer: ViewModifier {
+    let on: Bool
+
+    @Environment(\.accessibilityReduceMotion) private var calm
+
+    func body(content: Content) -> some View {
+        if on, !calm {
+            TimelineView(.animation(minimumInterval: 1.5 / 90)) { context in
+                // 90 steps of a 1.5s sweep: where the bright band is now.
+                let phase = context.date.timeIntervalSinceReferenceDate
+                    .truncatingRemainder(dividingBy: 1.5) / 1.5
+                let at = 160 - 220 * phase
+                content
+                    .foregroundStyle(
+                        LinearGradient(stops: [
+                            .init(color: Palette.Chat.muted, location: max(0, (at - 10) / 100)),
+                            .init(color: Palette.Chat.muted.opacity(0.45), location: min(1, max(0, at / 100))),
+                            .init(color: Palette.Chat.muted, location: min(1, (at + 10) / 100)),
+                        ], startPoint: .leading, endPoint: .trailing))
+            }
+        } else {
+            content
+        }
+    }
+}
+
+/// A row arriving while the turn runs: Dia's rows come in from
+/// `translateY(6px)` and no opacity (`--reveal`, its empty state's fade-in),
+/// and the words resolve with them. Used only while a turn is going, so a
+/// finished answer's rail is simply there.
+private struct RowIn: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var calm
+    @State private var shown = false
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(shown ? 1 : 0)
+            .offset(y: shown || calm ? 0 : 6)
+            .animation(calm ? nil : .easeOut(duration: 0.22), value: shown)
+            .onAppear { shown = true }
+    }
+}
+
+/// Dia's marker entrance, and the one place it puts a blur: a mark arrives
+/// from `opacity 0`, `blur(10px)` and `scale(.2)` over 695.6413353499257ms
+/// (`--marker-duration` in nodes/4.DUxGFY7h.js, which is what it measures
+/// once and writes into the style), so a new row's mark resolves out of a
+/// smudge instead of appearing.
+private struct MarkerIn: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var calm
+    @State private var shown = false
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(shown ? 1 : 0)
+            .blur(radius: shown || calm ? 0 : 10)
+            .scaleEffect(shown || calm ? 1 : 0.2)
+            .animation(calm ? nil : .easeOut(duration: 0.6956), value: shown)
+            .onAppear { shown = true }
     }
 }
 
@@ -447,8 +583,10 @@ private struct PendingDots: View {
                         .delay(Double(index) * 0.1), value: lit)
             }
         }
-        // Centred on the marker and allowed to be wider than it: Dia's rail
-        // lets the dots overrun the gutter rather than shrink them.
+        // Room for the widest the dots get: `scaleEffect` does not change the
+        // layout size, so without this the growing dot is drawn against the
+        // clip of its own 5pt frame and loses its edge.
+        .frame(height: 5 * 1.45)
         .fixedSize()
         .onAppear { if !calm { lit = true } }
     }
@@ -461,15 +599,18 @@ private struct FadeFoot: ViewModifier {
     let on: Bool
 
     func body(content: Content) -> some View {
-        content.mask {
-            if on {
+        // A mask clips to its own bounds even when it is solid, so the mask
+        // is only ever attached when there is something to fade. Attached
+        // always, it cut the growing dots in half at the foot of the rail.
+        if on {
+            content.mask {
                 LinearGradient(stops: [.init(color: .black, location: 0),
                                        .init(color: .black, location: 0.7),
                                        .init(color: .black.opacity(0.1), location: 1)],
                                startPoint: .top, endPoint: .bottom)
-            } else {
-                Color.black
             }
+        } else {
+            content
         }
     }
 }
@@ -527,13 +668,13 @@ private struct ChipPill: View {
         switch chip.glyph {
         case .globe: return "globe"
         case .page: return "doc.text"
-        case .cursor: return "cursorarrow"
-        case .tabs: return "rectangle.split.3x1"
-        case .question: return "questionmark.bubble"
-        case .command: return "command"
-        case .shield: return "shield"
-        case .stop: return "stop.circle.fill"
+        case .search: return "magnifyingglass"
+        case .tabs, .splitView: return "rectangle.split.3x1"
+        case .bubbleQuestion: return "bubble.left"
+        case .commandPrompt, .terminal: return "apple.terminal"
+        case .pencil, .edit: return "pencil"
         case .dot: return "circle.fill"
+        default: return "globe"
         }
     }
 }
