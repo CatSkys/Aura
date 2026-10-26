@@ -21,6 +21,10 @@ struct AIMessage: Equatable {
     enum Role: String { case user, assistant }
     let role: Role
     let text: String
+    /// Pictures that go with it, as JPEG: a page's own look, when a model
+    /// that can see was asked (see AIPage.shot). Only ever on the question
+    /// being asked — the history keeps the words.
+    var images: [Data] = []
 }
 
 enum AIError: LocalizedError, Equatable {
@@ -32,10 +36,11 @@ enum AIError: LocalizedError, Equatable {
 
     var errorDescription: String? {
         switch self {
-        case .noKey: return "No key is kept for this provider."
-        case .refusedHost: return "That address isn't the provider's."
-        case .http(let status, let said): return said.isEmpty ? "The provider answered \(status)." : "\(said) (\(status))"
-        case .unreadable: return "The provider's answer couldn't be read."
+        case .noKey: return Localized("No key is kept for this provider.")
+        case .refusedHost: return Localized("That address isn't the provider's.")
+        case .http(let status, let said):
+            return said.isEmpty ? Localized("The provider answered \(status).") : "\(said) (\(status))"
+        case .unreadable: return Localized("The provider's answer couldn't be read.")
         case .unreachable(let why): return why
         }
     }
@@ -143,7 +148,9 @@ final class AIClient: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
             url = provider.base.appendingPathComponent("chat/completions")
             body = [
                 "model": model, "stream": true,
-                "messages": [["role": "system", "content": system]] + messages.map { ["role": $0.role.rawValue, "content": $0.text] },
+                "messages": [["role": "system", "content": system]] + messages.map { message in
+                    ["role": message.role.rawValue, "content": openAIContent(message)]
+                },
             ]
             // Only providers that keep nothing of the request.
             if provider == .openRouter { body["provider"] = ["zdr": true] }
@@ -154,7 +161,9 @@ final class AIClient: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
             url = provider.base.appendingPathComponent("messages")
             body = [
                 "model": model, "stream": true, "max_tokens": 2048, "system": system,
-                "messages": messages.map { ["role": $0.role.rawValue, "content": $0.text] },
+                "messages": messages.map { message in
+                    ["role": message.role.rawValue, "content": anthropicContent(message)]
+                },
             ]
         case .gemini:
             // The model's name is part of the path; nothing of the key is.
@@ -165,7 +174,9 @@ final class AIClient: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
             url = made
             body = [
                 "systemInstruction": ["parts": [["text": system]]],
-                "contents": messages.map { ["role": $0.role == .user ? "user" : "model", "parts": [["text": $0.text]]] },
+                "contents": messages.map { message in
+                    ["role": message.role == .user ? "user" : "model", "parts": geminiParts(message)]
+                },
                 "generationConfig": ["maxOutputTokens": 2048],
             ]
         }
@@ -188,6 +199,38 @@ final class AIClient: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
         }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         return request
+    }
+
+    /// A message as each way of writing wants it: the words alone, or the
+    /// words and the pictures with them. A message with no pictures stays a
+    /// plain string, which every server understands.
+    private static func openAIContent(_ message: AIMessage) -> Any {
+        guard !message.images.isEmpty else { return message.text }
+        var parts: [[String: Any]] = [["type": "text", "text": message.text]]
+        for image in message.images {
+            parts.append(["type": "image_url",
+                          "image_url": ["url": "data:image/jpeg;base64," + image.base64EncodedString()]])
+        }
+        return parts
+    }
+
+    private static func anthropicContent(_ message: AIMessage) -> Any {
+        guard !message.images.isEmpty else { return message.text }
+        var parts: [[String: Any]] = [["type": "text", "text": message.text]]
+        for image in message.images {
+            parts.append(["type": "image",
+                          "source": ["type": "base64", "media_type": "image/jpeg",
+                                     "data": image.base64EncodedString()]])
+        }
+        return parts
+    }
+
+    private static func geminiParts(_ message: AIMessage) -> [[String: Any]] {
+        var parts: [[String: Any]] = [["text": message.text]]
+        for image in message.images {
+            parts.append(["inline_data": ["mime_type": "image/jpeg", "data": image.base64EncodedString()]])
+        }
+        return parts
     }
 
     /// OpenRouter's one-time code, and the flow's verifier, for a key of
@@ -314,13 +357,13 @@ final class AIClient: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
 
     private static func reason(_ error: URLError, _ provider: AIProvider) -> String {
         switch error.code {
-        case .cannotConnectToHost where provider.isLocal: return "\(provider.name) isn't running on this Mac."
-        case .notConnectedToInternet: return "This Mac is offline."
-        case .timedOut: return "\(provider.name) took too long to answer."
+        case .cannotConnectToHost where provider.isLocal: return Localized("\(provider.name) isn't running on this Mac.")
+        case .notConnectedToInternet: return Localized("This Mac is offline.")
+        case .timedOut: return Localized("\(provider.name) took too long to answer.")
         case .serverCertificateUntrusted, .serverCertificateHasBadDate, .serverCertificateNotYetValid,
              .serverCertificateHasUnknownRoot, .secureConnectionFailed:
-            return "The connection to \(provider.name) isn't secure."
-        default: return "\(provider.name) couldn't be reached."
+            return Localized("The connection to \(provider.name) isn't secure.")
+        default: return Localized("\(provider.name) couldn't be reached.")
         }
     }
 }

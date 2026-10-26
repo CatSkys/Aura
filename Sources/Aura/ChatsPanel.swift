@@ -187,7 +187,7 @@ struct ChatsPanel: View {
         if let chat = browser.chat {
             ZStack(alignment: .bottom) {
                 ChatThread(chat: chat, seed: seed, pageOpen: browser.active?.isWeb == true,
-                           drawn: drawn, column: 760, foot: 132)
+                           drawn: drawn, column: 760, foot: 150)
                     .id(chat.id)
                 ChatComposer(browser: browser, chat: chat, column: 760)
                     .padding(.horizontal, 20)

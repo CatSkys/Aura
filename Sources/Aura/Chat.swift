@@ -39,6 +39,10 @@ final class Chat: ObservableObject, Identifiable {
         /// model to follow (see AIPage.addressesAI): the answer may have been
         /// steered by them, which the models never say themselves.
         var addressed = false
+        /// How many pictures went with it. The pictures themselves are not
+        /// written down: they were sent once, and the answer stands without
+        /// them (see AIPage.shot).
+        var shots = 0
     }
 
     /// A conversation as it is kept (Chats.swift): everything the page and
@@ -69,6 +73,12 @@ final class Chat: ObservableObject, Identifiable {
     @Published private(set) var busy = false
     /// The page's own words, if it has any, so the column can say what goes.
     @Published private(set) var reading = false
+    /// Whether the page on screen goes with the next question: Dia's chip,
+    /// and its cross takes it off for that question.
+    @Published var attachPage = true
+    /// Anything added with the plus — another tab, a file, a picture of a
+    /// page — for the next question, and then gone.
+    @Published var extras: [AIPage.Attachment] = []
     private var messages: [AIMessage] = []
     private let fence = AIPage.newFence()
     private var waiting: (ask: AIPage.Ask, tab: Tab?, shown: String)?
@@ -107,13 +117,6 @@ final class Chat: ObservableObject, Identifiable {
             guard line.done, line.failed == nil, !line.text.isEmpty else { return nil }
             return AIMessage(role: line.mine ? .user : .assistant, text: line.text)
         }
-    }
-
-    /// Where it ran, for the foot of every answer — the same sentence the
-    /// column puts there.
-    var place: String {
-        provider == .thisMac ? "on this Mac · \(model)"
-            : provider.isLocal ? "on this Mac · \(provider.name) · \(model)" : "sent to \(provider.name) · \(model)"
     }
 
     var empty: Bool { lines.isEmpty && !busy }
@@ -165,12 +168,17 @@ final class Chat: ObservableObject, Identifiable {
     }
 
     private func go(_ ask: AIPage.Ask, from tab: Tab?, shown: String) {
+        // What goes with this question, fixed now: the page unless its chip
+        // was taken off, then whatever the plus added, which is spent.
+        let extras = self.extras
+        let pageOn = attachPage
+        self.extras = []
         lines.append(Line(mine: true, text: shown, page: tab?.title))
         lines.append(Line(mine: false, text: "", done: false))
         if title.isEmpty { title = Chat.name(for: ask, shown: shown, page: tab?.title) }
         busy = true
         trouble = nil
-        reading = tab != nil
+        reading = tab != nil || !extras.isEmpty
         updated = Date()
         let key = provider.isLocal ? nil : AIKeys.key(for: provider)
         let provider = self.provider
@@ -180,25 +188,37 @@ final class Chat: ObservableObject, Identifiable {
             // The page goes with the question when there is one to read and
             // it may be read: a private tab's text never leaves this Mac, so
             // it is only ever attached for a model on this Mac.
-            var asked = shown
-            var read: AIPage.Read?
+            var reads: [AIPage.Read] = []
             let shy = tab?.shy == true
                 || tab?.built.map { !$0.configuration.websiteDataStore.isPersistent } == true
-            if let tab, provider.isLocal || !shy, let found = await AIPage.read(tab) {
-                read = found
-                asked = AIPage.opening(found, ask, fence: self.fence)
-                if found.addressed, let last = self.lines.indices.last {
-                    self.lines[last].addressed = true
-                }
+            if pageOn, let tab, provider.isLocal || !shy, let found = await AIPage.read(tab) {
+                reads.append(found)
             }
+            reads += extras.compactMap(\.read)
+            let shots = extras.compactMap(\.image)
             self.reading = false
-            // A summary needs the page; a question doesn't, and is asked
-            // whether or not there was something to read.
-            if ask == .summary, read == nil {
+            // A summary needs something to read; a question doesn't, and is
+            // asked whether or not there was anything to attach.
+            if ask == .summary, reads.isEmpty {
                 self.withdraw(Localized("There's nothing on this page to read."))
                 return
             }
-            self.messages.append(AIMessage(role: .user, text: asked))
+            // The engine on this Mac reads words: a picture would be dropped
+            // on the floor, so it is said rather than sent.
+            if provider == .thisMac, !shots.isEmpty {
+                self.withdraw(Localized("The model on this Mac can't look at pictures. Choose a model that can, in Settings › AI."))
+                return
+            }
+            let asked = reads.isEmpty && shots.isEmpty
+                ? shown
+                : AIPage.opening(reads, ask, fence: self.fence, shots: shots.count)
+            if reads.contains(where: { $0.addressed }), let last = self.lines.indices.last {
+                self.lines[last].addressed = true
+            }
+            if !shots.isEmpty, let last = self.lines.indices.last {
+                self.lines[last].shots = shots.count
+            }
+            self.messages.append(AIMessage(role: .user, text: asked, images: shots))
             let system = AIPage.system(fence: self.fence)
             let stream = provider == .thisMac
                 ? AIEngine.shared.stream(system: system, messages: self.messages)
@@ -210,9 +230,9 @@ final class Chat: ObservableObject, Identifiable {
                     self.lines[self.lines.count - 1].text += piece
                     if self.lines[self.lines.count - 1].text.count > Chat.longest { break }
                 }
-                self.finish(nil, read: read)
+                self.finish(nil, reads: reads)
             } catch {
-                self.finish(error.localizedDescription, read: read)
+                self.finish(error.localizedDescription, reads: reads)
             }
         }
     }
@@ -221,7 +241,7 @@ final class Chat: ObservableObject, Identifiable {
     /// and on is stopped, as the page's panel stopped it.
     static let longest = 16_000
 
-    private func finish(_ failed: String?, read: AIPage.Read?) {
+    private func finish(_ failed: String?, reads: [AIPage.Read]) {
         reading = false
         busy = false
         updated = Date()
@@ -234,8 +254,14 @@ final class Chat: ObservableObject, Identifiable {
             return
         }
         messages.append(AIMessage(role: .assistant, text: answer))
+        // A picture went once: left in what follows, every question after it
+        // would send it again.
+        if let question = messages.lastIndex(where: { $0.role == .user }), !messages[question].images.isEmpty {
+            messages[question].images = []
+        }
         // Checked away from the window's thread: a long answer is a long look.
-        guard let read else { return }
+        guard !reads.isEmpty else { return }
+        let read = AIPage.together(reads)
         let id = lines[index].id
         Task.detached(priority: .userInitiated) { [self] in
             let strays = AIPage.strays(in: answer, from: read)
@@ -276,6 +302,13 @@ final class Chat: ObservableObject, Identifiable {
     /// column or the page (bench ai picture) — never for a real one.
     static func picture(provider: AIProvider = .ollama, model: String = "llama3.3") -> Chat {
         let chat = Chat(provider: provider, model: model)
+        // The chips Dia's field wears: a file and a picture, taken off with
+        // their crosses.
+        chat.extras = [
+            AIPage.Attachment(kind: .file, title: "note.txt", detail: "Desktop",
+                              read: AIPage.shaped(title: "note.txt", url: nil, text: "…", links: [], source: "file")),
+            AIPage.Attachment(kind: .shot, title: "Screenshot", detail: "example.com", image: Data([0xFF])),
+        ]
         chat.title = "Which file holds the theme colours?"
         chat.lines = [
             Line(mine: true, text: "Of these three files, which one holds the theme colours? And why split it out?",

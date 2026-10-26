@@ -15,21 +15,31 @@ import SwiftUI
 enum AIAssist {
     /// What a provider off this Mac is sent, said once, the first time it is
     /// used — and a word on what it does with it where that matters.
+    ///
+    /// A sentence to a key, so a translator can put them in another order or
+    /// say them shorter: the last card that was built by pasting English
+    /// together came out in English inside a Chinese window. `{1}` is the
+    /// host it goes to.
     static func notice(for provider: AIProvider) -> String {
         let to = provider.host.isEmpty ? provider.name : provider.host
-        var text = "When you ask, Aura sends this page's text, its address and your question to \(to)"
-        text += provider == .openRouter ? ", which passes them to the model's provider." : "."
-        text += " Their terms and privacy policy apply. Nothing is sent until you ask, never from a private tab"
-        text += Chats.keeps ? ", and what you asked and were answered stays on this Mac." : ", and Aura keeps no copy."
+        var said = [
+            provider == .openRouter
+                ? Localized("When you ask, Aura sends this page's text, its address and your question to \(to), which passes them to the model's provider.")
+                : Localized("When you ask, Aura sends this page's text, its address and your question to \(to)."),
+            Localized("Their terms and privacy policy apply."),
+            Chats.keeps
+                ? Localized("Nothing is sent until you ask, never from a private tab, and what you asked and were answered stays on this Mac.")
+                : Localized("Nothing is sent until you ask, never from a private tab, and Aura keeps no copy."),
+        ].joined(separator: " ")
         switch provider {
         case .gemini:
-            text += "\n\nOn Gemini's free tier, outside the EEA, Switzerland and the UK, Google may use this to improve its products, and people may read it. Don't use it on sensitive pages."
+            said += "\n\n" + Localized("On Gemini's free tier, outside the EEA, Switzerland and the UK, Google may use this to improve its products, and people may read it. Don't use it on sensitive pages.")
         case .openRouter:
-            text += "\n\nAura asks OpenRouter to use only providers that keep nothing (zero data retention)."
+            said += "\n\n" + Localized("Aura asks OpenRouter to use only providers that keep nothing (zero data retention).")
         default:
             break
         }
-        return text
+        return said
     }
 }
 
