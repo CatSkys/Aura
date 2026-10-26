@@ -314,6 +314,9 @@ final class Chat: ObservableObject, Identifiable {
             Line(mine: true, text: "Of these three files, which one holds the theme colours? And why split it out?",
                  page: "Aura"),
             Line(mine: false, text: "Design.swift does. Palette and Metrics both live in it — one for colour, one for size — and other files only refer to the names, never write a colour of their own."),
+            // And one still being written, so a picture shows what stands
+            // where an answer is coming.
+            Line(mine: false, text: "", done: false),
         ]
         return chat
     }

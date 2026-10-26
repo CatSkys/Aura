@@ -87,11 +87,8 @@ struct ChatThread: View {
                     }
             }
         } else if line.text.isEmpty, !line.done {
-            HStack(spacing: 10) {
-                Orb(seed: seed, size: 24)
-                Text(chat.reading ? Localized("Reading this page…") : Localized("Thinking…"))
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Palette.Chat.faint)
+            HStack(spacing: 0) {
+                Pulsing(chat.reading ? Localized("Reading this page…") : Localized("Thinking…"))
                 Spacer(minLength: 0)
             }
         } else {
@@ -168,65 +165,51 @@ struct ChatThread: View {
         .buttonStyle(.plain)
     }
 
-    /// Nothing asked yet: the tip card Dia opens with, then the two lines.
+    /// Nothing asked yet: the two lines, and no card over them. Dia opens its
+    /// chat with a tip that names a Capture Tool and asks what the page is
+    /// about; the field below already says what to do, and a card explaining
+    /// a conversation that hasn't started is in the way of starting it.
     private var empty: some View {
-        VStack(spacing: 0) {
-            VStack(spacing: 0) {
-                HStack(spacing: 10) {
-                    Image(systemName: "camera")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Palette.Chat.ink)
-                    Text("Capture Tool")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Palette.Chat.ink)
-                    Spacer(minLength: 0)
-                }
-                .padding(.horizontal, 18)
-                .padding(.vertical, 14)
-                .background(Palette.Chat.ink.opacity(0.06))
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("What's this page about?")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Palette.Chat.ink)
-                    Text("Or anything you're looking at.")
-                        .font(.system(size: 15))
-                        .foregroundStyle(Palette.Chat.muted)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 18)
-                .padding(.vertical, 16)
-                .background(Palette.Chat.raised)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(Palette.Chat.edge, lineWidth: 0.5)
-            }
-            .shadow(color: .black.opacity(0.10), radius: 10, y: 4)
-            .frame(maxWidth: 360)
-            .padding(.horizontal, 20)
-
-            VStack(spacing: 8) {
-                Text("Ask about something you see")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Palette.Chat.ink)
-                Text(pageOpen
-                     ? Localized("Aura reads the page you're on, and nothing is sent until you ask")
-                     : Localized("Open a page and Aura can read it with your question"))
-                    .font(.system(size: 15))
-                    .foregroundStyle(Palette.Chat.muted)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(.top, 40)
-            .padding(.horizontal, 24)
+        VStack(spacing: 8) {
+            Text("Ask about something you see")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(Palette.Chat.ink)
+            Text(pageOpen
+                 ? Localized("Aura reads the page you're on, and nothing is sent until you ask")
+                 : Localized("Open a page and Aura can read it with your question"))
+                .font(.system(size: 15))
+                .foregroundStyle(Palette.Chat.muted)
+                .multilineTextAlignment(.center)
         }
+        .frame(maxWidth: 360)
         .frame(maxWidth: .infinity)
-        .padding(.top, 40)
+        .padding(.top, 48)
     }
 
     private func scroll(_ scroller: ScrollViewProxy) {
         withAnimation(Motion.quick) { scroller.scrollTo("foot", anchor: .bottom) }
+    }
+}
+
+/// What stands where an answer is coming: the words, breathing. The sphere
+/// Dia breathes there was a black ball sitting in a column of writing — it
+/// said nothing the words didn't, and it drew the eye to itself. With less
+/// motion asked for, the words hold still.
+private struct Pulsing: View {
+    let text: String
+
+    @Environment(\.accessibilityReduceMotion) private var calm
+    @State private var faint = false
+
+    init(_ text: String) { self.text = text }
+
+    var body: some View {
+        Text(verbatim: text)
+            .font(.system(size: 13, weight: .medium))
+            .foregroundStyle(Palette.Chat.muted)
+            .opacity(faint ? 0.4 : 1)
+            .animation(calm ? nil : .easeInOut(duration: 0.85).repeatForever(autoreverses: true), value: faint)
+            .onAppear { if !calm { faint = true } }
     }
 }
 
