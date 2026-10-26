@@ -507,6 +507,16 @@ struct ContentView: View {
                             .offset(y: cards && !browser.prefs.splitView ? -(Beam.height + 2) : 0)
                     }
                 }
+                // The conversation takes the page's place, over it: the
+                // window's own chrome — the column, the strip — stays where
+                // it is, as it does in Dia.
+                .overlay {
+                    if let chat = browser.chat {
+                        ChatPane(browser: browser, chat: chat)
+                            .transition(.opacity)
+                    }
+                }
+                .animation(Motion.quick, value: browser.chat?.id)
                 .padding(pageEdges)
                 .offset(pageOffset)
 
@@ -691,23 +701,14 @@ struct ContentView: View {
     /// What the side panel takes from the page: its width, and the card's
     /// gap before it with the page as a card, or its hairline edge to edge.
     private var panelRoom: CGFloat {
-        panelUp || chatUp ? panelWidth + (cards ? Metrics.cardGap : 1) : 0
+        panelUp ? panelWidth + (cards ? Metrics.cardGap : 1) : 0
     }
 
-    /// What is in the column: the conversation when it is open, an
-    /// extension's or a site's panel otherwise.
+    /// The column beside the page holds one thing: an extension's or a
+    /// site's panel. The conversation is a place of its own (see Chat.swift),
+    /// over the page's area rather than beside it, as Dia's is.
     @ViewBuilder private var beside: some View {
-        if chatUp, let chat = browser.chat {
-            ChatBeside(browser: browser, chat: chat, onLeft: sideOnRight, card: cards, width: panelWidth)
-                .padding(.top, chrome.height)
-                .padding(.bottom, farGap)
-                .padding(sideOnRight ? .leading : .trailing, farGap)
-                .frame(maxWidth: .infinity, maxHeight: .infinity,
-                       alignment: sideOnRight ? .topLeading : .topTrailing)
-                .transition(.opacity)
-        } else {
-            sidePanel
-        }
+        sidePanel
     }
 
     private var sidePanel: some View {

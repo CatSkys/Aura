@@ -1987,7 +1987,7 @@ final class Bench {
                     if (try? png.write(to: url)) != nil { made.append(url.path) }
                 }
                 if let assistant = browser.assisting { draw(AssistantPanel(browser: browser, assistant: assistant, drawn: true), "ai-panel.png") }
-                draw(ChatPanel(browser: browser, chat: .picture(), card: false, drawn: true).frame(width: 380), "chat-panel.png")
+                draw(ChatPane(browser: browser, chat: .picture(), drawn: true).frame(width: 700, height: 560), "chat-panel.png")
                 draw(AISettings(browser: browser, prefs: browser.prefs, drawn: true).frame(width: 440), "ai-settings.png")
                 answer(["made": made])
             case "read":

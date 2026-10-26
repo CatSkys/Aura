@@ -795,6 +795,8 @@ private struct SideFoot: View {
     @ObservedObject var browser: Browser
     @ObservedObject var prefs: Preferences
     @ObservedObject var fetches: Fetches
+    @Environment(\.greys) private var greys
+    @Environment(\.sideInk) private var side
 
     var body: some View {
         HStack(spacing: 2) {
@@ -809,13 +811,37 @@ private struct SideFoot: View {
             // assistant in the column's foot too, and the far end is where a
             // door the fingers find without reading goes.
             if AI.shipped || Store.testing {
-                Door(icon: "bubble.left.and.text.bubble.right",
-                     on: browser.chat != nil,
-                     help: "Chat   ⌘⇧A") { browser.toggleChat() }
+                chatDoor
             }
         }
         .padding(.horizontal, 10)
         .padding(.bottom, 10)
+    }
+
+    /// The conversation's own door, written out: Dia keeps its chat at the
+    /// foot of the column too, and a word beside the bubble is how you find
+    /// it without reading an icon.
+    private var chatDoor: some View {
+        Button {
+            browser.toggleChat()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "text.bubble")
+                    .font(.system(size: 11, weight: .medium))
+                Text("Chat")
+                    .font(.system(size: 11.5, weight: .medium))
+            }
+            .foregroundStyle(browser.chat != nil ? side.ink : side.muted)
+            .padding(.horizontal, 8)
+            .frame(height: 26)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(browser.chat != nil ? greys.wash : .clear)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .help("Chat   ⌘⇧A")
     }
 
     /// How many pinned extensions fit beside the doors that stay. Every door
