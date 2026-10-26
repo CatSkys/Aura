@@ -135,7 +135,8 @@ final class AIToolLoopTests: XCTestCase {
             if case .did(let step) = event { return step }
             return nil
         }
-        XCTAssertEqual(steps.map(\.detail), ["pretended: one", "pretended: two"], "one record for each call")
+        XCTAssertEqual(steps.map(\.audit), ["pretended: one", "pretended: two"], "one record for each call")
+        XCTAssertEqual(steps.map(\.detail), [nil, nil], "and the receipt is not drawn on the row")
         XCTAssertEqual(steps.map(\.tool), ["pretend", "pretend"], "named by the tool that ran")
         XCTAssertEqual(steps.map(\.failed), [false, false])
 
