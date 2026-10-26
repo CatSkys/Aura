@@ -1800,6 +1800,7 @@ final class Tab: ObservableObject, Identifiable {
     /// Called when the tab is thrown away. Without it the view keeps running
     /// whatever the page left behind — timers, video, sockets.
     func close() {
+        AIToolSnap.forget(self)
         onZoom = nil
         onLink = nil
         onPick = nil

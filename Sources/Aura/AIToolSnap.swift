@@ -84,6 +84,18 @@ enum AIToolSnap {
         return registry.issued.contains(number)
     }
 
+    /// A tab that is gone, and with it every number it was given.
+    ///
+    /// Not folded into `invalidate`: a new document keeps the numbers on the
+    /// books so a stale one can be told from an imaginary one, while a closed
+    /// tab has no page left to tell anyone anything about. It is forgotten
+    /// rather than left behind because these are keyed by the tab's address in
+    /// memory, and a tab made after this one freed could be given the same one
+    /// — inheriting numbers it never issued.
+    static func forget(_ tab: Tab) {
+        registries.removeValue(forKey: ObjectIdentifier(tab))
+    }
+
     /// Every number, gone: a test run is done with the page it was using.
     static func reset() {
         registries.removeAll()
