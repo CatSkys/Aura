@@ -128,10 +128,9 @@ struct SpaceSwitcher: View {
             // What tells one space from another at a glance, and what the
             // window's glass is tinted with while you are in it (see
             // SpaceTheme.swift): Arc's own palette, on a page of its own.
+            // Back to the default is the palette's own Reset (see
+            // SpaceThemeEditor): one door to it, on the page it belongs to.
             SpaceCardRow(title: "Colour…".localized, symbol: "paintpalette", next: true) { page = .colour }
-            SpaceCardRow(title: "Default Colour".localized, symbol: "arrow.uturn.backward") {
-                browser.setSpaceTheme(here.id, to: nil)
-            }
             // The order is the swipe's, and ⌃1–⌃9's.
             if let at, at > 0 || at < browser.spaces.count - 1 { divider }
             if let at, at > 0 {

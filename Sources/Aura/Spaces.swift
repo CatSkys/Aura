@@ -440,10 +440,14 @@ extension Browser {
     /// Arc's palette, as its Space Style Editor keeps it: the hue and how much
     /// of it, and the grain over the glass (see SpaceTheme.swift). Nil puts
     /// the space back on the colour it had before themes.
+    ///
+    /// Written here, and this window's profile's spaces only: the editor is
+    /// the one place that changes a theme, and a drag changes it on every
+    /// step, so a step that changes nothing writes nothing.
     func setSpaceTheme(_ id: UUID, to theme: SpaceTheme?) {
-        guard let at = spaces.firstIndex(where: { $0.id == id }) else { return }
+        guard let at = spaces.firstIndex(where: { $0.id == id }), spaces[at].theme != theme else { return }
         spaces[at].theme = theme
-        Spaces.write(spaces)
+        Spaces.write(spaces, profile: profileID)
     }
 
     func setSpaceDownloads(_ id: UUID, to folder: URL?) {
