@@ -105,6 +105,10 @@ enum Palette {
         static let chatInk = pair(0.145, 0.882)
         static let chatMuted = pair(0.60, 0.62)
         static let chatFaint = pair(0.70, 0.41)
+        /// Dia's waiting dots: 18% of the ink, and 30% at the top of a beat
+        /// (`--dot-color` / `--dot-emphasized-color`). Far lighter than any
+        /// grey in the column — at `chatFaint` they read as three full stops.
+        static let chatDot = pair(0.82, 0.82)
 
         /// The resting traffic lights, drawn by hand when the app is behind.
         static let resting = pair(0.80, 0.30)
@@ -141,6 +145,9 @@ extension Palette {
         static let ink = Color(nsColor: NS.chatInk)
         static let muted = Color(nsColor: NS.chatMuted)
         static let faint = Color(nsColor: NS.chatFaint)
+        /// The waiting dots, lighter than any text: Dia draws them at 18% of
+        /// the ink and they are meant to be barely there.
+        static let dot = Color(nsColor: NS.chatDot)
     }
 }
 

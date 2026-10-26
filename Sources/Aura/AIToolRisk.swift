@@ -219,7 +219,10 @@ enum AIToolRisk {
     private static func ask(_ kind: Class, _ what: String, _ tab: Tab, _ browser: Browser) async -> Verdict {
         if allowed(kind, on: tab.pageAddress) { return .allowed }
         let site = tab.pageAddress?.host() ?? ""
-        let answer = await AIToolAsk.confirm(kind: kind, what: what, site: site, in: browser)
+        guard let asking = browser.chat?.asking else {
+            return .refused(Localized("Nothing was done: this conversation is closed."))
+        }
+        let answer = await asking.confirm(kind: kind, what: what, site: site)
         switch answer {
         case .allow:
             return .allowed

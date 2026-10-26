@@ -2075,7 +2075,12 @@ final class Bench {
                         },
                         "lines": chat.lines.map { ["mine": $0.mine, "text": $0.text, "done": $0.done,
                                                    "failed": $0.failed ?? "", "page": $0.page ?? "",
-                                                   "strays": $0.strays] as [String: Any] },
+                                                   "strays": $0.strays,
+                                                   "steps": $0.steps.map { step in
+                                                       ["kind": step.kind.rawValue, "title": step.title,
+                                                        "detail": step.detail ?? "", "failed": step.failed,
+                                                        "chips": step.chips.map(\.label)] as [String: Any]
+                                                   }] as [String: Any] },
                     ])
                 }
             case "state":
@@ -2088,7 +2093,12 @@ final class Bench {
                     "provider": chat.provider.rawValue, "model": chat.model,
                     "lines": chat.lines.map { ["mine": $0.mine, "text": $0.text, "done": $0.done,
                                                "failed": $0.failed ?? "", "page": $0.page ?? "",
-                                               "strays": $0.strays] as [String: Any] },
+                                               "strays": $0.strays,
+                                               "steps": $0.steps.map { step in
+                                                   ["kind": step.kind.rawValue, "title": step.title,
+                                                    "detail": step.detail ?? "", "failed": step.failed,
+                                                    "chips": step.chips.map(\.label)] as [String: Any]
+                                               }] as [String: Any] },
                 ])
             case "picture":
                 // The panel as it stands, and Settings › AI, drawn off screen

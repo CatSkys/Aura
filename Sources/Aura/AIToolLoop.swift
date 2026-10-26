@@ -42,8 +42,9 @@ enum AIToolLoop {
         case wrote(String)
         /// The model's own line for you, for the panel's pulse row.
         case saying(String)
-        /// One call, done, as the record says it.
-        case did(String)
+        /// One call, done: the row the conversation keeps, and the record as
+        /// the tool wrote it.
+        case did(AIToolStep)
         /// The person said no, and the turn ended there.
         case refused
     }
@@ -119,7 +120,10 @@ enum AIToolLoop {
                 if outcome.refused { personSaidNo = true; event(.refused) }
                 results.append(AIToolResult(id: call.id, name: call.name,
                                             content: outcome.result.content, isError: outcome.result.isError))
-                if !outcome.result.did.isEmpty { event(.did(outcome.result.did)) }
+                if !outcome.result.did.isEmpty {
+                    event(.did(AIToolStep.done(call.name, arguments: AIToolArguments(text: call.arguments),
+                                               did: outcome.result.did, failed: outcome.result.isError)))
+                }
             }
             keep(AIMessage(role: .user, text: "", results: results), in: &history, &added)
             // A picture a tool took can't ride in a tool result on any of the
