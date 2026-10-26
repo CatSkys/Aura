@@ -1300,6 +1300,7 @@
 "Summary · {1}" = "总结 · {1}";
 "this page" = "这个页面";
 "There's nothing on this page to read." = "这个页面上没有可读的内容。";
+"Nothing came back. Ask again, or try another model." = "什么都没回。再问一次，或换个模型。";
 "This page has text written for an AI to follow. The answer may have been steered by it." = "这个页面里有写给 AI 看的文字，回答可能被它带偏。";
 "Agree" = "同意";
 "Open as a Page" = "作为页打开";

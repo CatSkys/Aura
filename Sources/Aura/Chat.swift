@@ -94,6 +94,12 @@ final class Chat: ObservableObject, Identifiable {
     /// page — for the next question, and then gone.
     @Published var extras: [AIPage.Attachment] = []
     private var messages: [AIMessage] = []
+    /// Where this turn's question went into `messages`, so a turn that ends
+    /// with no answer can be taken back out whole rather than a message at a
+    /// time: taking off only the last one left the assistant's call for tools
+    /// standing with nothing answering it, and every request after that was
+    /// refused for it (AIMessage.paired).
+    private var mark = 0
     /// The window this conversation is in, so its tools act in the right one:
     /// set where the conversation is opened, and weak because the window owns
     /// the conversation, not the other way round.
@@ -191,6 +197,10 @@ final class Chat: ObservableObject, Identifiable {
         let extras = self.extras
         let pageOn = attachPage
         self.extras = []
+        // What an older build may have left half-answered is put back
+        // together before anything is asked (AIMessage.paired).
+        messages = AIMessage.paired(messages)
+        mark = messages.count
         lines.append(Line(mine: true, text: shown, page: tab?.title))
         lines.append(Line(mine: false, text: "", done: false))
         if title.isEmpty { title = Chat.name(for: ask, shown: shown, page: tab?.title) }
@@ -325,7 +335,12 @@ final class Chat: ObservableObject, Identifiable {
         lines[index].failed = failed
         let answer = lines[index].text
         guard failed == nil, !answer.isEmpty else {
-            if !messages.isEmpty { messages.removeLast() }
+            // Nothing to keep. What the turn put into the history goes back
+            // out whole — a call left asking for tools nothing answered makes
+            // the provider refuse this conversation from then on — and the
+            // question stays, so the next thing said is said after it.
+            rollBack(keepingQuestion: failed == nil)
+            if failed == nil { lines[index].failed = Localized("Nothing came back. Ask again, or try another model.") }
             return
         }
         // A picture went once: left in what follows, every question after it
@@ -357,7 +372,22 @@ final class Chat: ObservableObject, Identifiable {
         busy = false
         saying = nil
         if lines.count >= 2 { lines.removeLast(2) }
+        rollBack(keepingQuestion: false)
         trouble = why
+    }
+
+    /// The turn taken back out of the history, from where its question went
+    /// in: everything it added — the page's words, the calls, their answers,
+    /// half an answer — rather than the last message and no more.
+    ///
+    /// With `keepingQuestion` the question is put back as it was sent, so the
+    /// next one is asked after it (a stopped turn, or one that answered
+    /// nothing); without it nothing of the turn stays (a turn that failed).
+    private func rollBack(keepingQuestion: Bool) {
+        let at = min(mark, messages.count)
+        let question = at < messages.count ? messages[at] : nil
+        messages.removeSubrange(at...)
+        if keepingQuestion, let question { messages.append(question) }
     }
 
     func stop() {
@@ -370,7 +400,7 @@ final class Chat: ObservableObject, Identifiable {
         if let last = lines.indices.last { lines[last].done = true }
         // A half-answer isn't what follows: the question stays on the thread,
         // and only it goes into the next request again.
-        if !messages.isEmpty { messages.removeLast() }
+        rollBack(keepingQuestion: true)
     }
 
     /// A conversation with something already said in it, for a picture of the
