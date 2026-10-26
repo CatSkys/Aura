@@ -3597,6 +3597,11 @@ final class Browser: NSObject, ObservableObject {
         detachSplit(tab)
         heldDialogs.removeValue(forKey: tab.id)?.forEach { $0.dismiss() }
         dropQuestions(for: tab.id)
+        // A conversation asked on this tab goes with the tab, and so does the
+        // turn it was in the middle of: its tools click and fill in this page,
+        // and a page that is gone must not be acted on. Closing the tab ends
+        // the turn where closing the panel only puts it away.
+        tab.chat?.stop()
 
         // A tab whose page is out in the little window takes the window with
         // it. Left alone, the window would go on holding a page belonging to a

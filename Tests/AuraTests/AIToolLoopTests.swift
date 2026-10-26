@@ -182,6 +182,35 @@ final class AIToolLoopTests: XCTestCase {
                        "the turn ended without an answer")
     }
 
+    /// A page the assistant opens goes behind the one being read, never over
+    /// it: Dia's `open_tabs` opens "new web pages in tabs in the current
+    /// browser window", and the page you were reading is still there when it
+    /// comes back. The tab's own id comes with the result, so the turn can go
+    /// on reading it.
+    func testOpeningAPageLeavesThePageInFrontWhereItWas() async throws {
+        let browser = Browser(record: WindowRecord())
+        self.browser = browser
+        let reading = browser.benchOpen(try XCTUnwrap(URL(string: "about:blank")))
+        self.tab = reading
+        let before = browser.tabs.count
+        // `benchOpen` does not put its tab in front, so what is in front is
+        // read before the call rather than assumed.
+        browser.select(reading)
+        let inFront = browser.activeID
+
+        let definition = try XCTUnwrap(AITool.named("navigate"))
+        let context = AITool.Context(browser: browser, tab: reading, say: "Opening example.com")
+        let result = await definition.run(AIToolArguments(text: #"{"url": "https://example.com/", "say": "Opening example.com"}"#),
+                                          context)
+
+        let opened = result.did
+        XCTAssertEqual(browser.tabs.count, before + 1, "the page was not opened in a tab of its own")
+        XCTAssertEqual(browser.activeID, inFront, "the page in front was replaced instead of left alone")
+        XCTAssertTrue(reading.address?.absoluteString.contains("about:blank") == true,
+                      "the page being read was navigated away")
+        XCTAssertTrue(opened.contains("id is"), "the turn was not told which tab it may read: \(opened)")
+    }
+
     /// A refusal is not the end of the turn: pi reads a blocked call as an
     /// ordinary error result and carries on, so the model answers from what it
     /// has. This is the case that used to leave a column of steps with nothing
