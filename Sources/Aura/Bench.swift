@@ -1239,6 +1239,7 @@ final class Bench {
                 case .open: "open"
                 case .visited: "visited"
                 case .known: "known"
+                case .bookmark: "bookmark"
                 case .command: "command"
                 }
             }

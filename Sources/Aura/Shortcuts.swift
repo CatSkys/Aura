@@ -165,6 +165,7 @@ struct Command: Identifiable {
         Command("file.reopen", "Reopen Closed Tab", .file, KeyCombo("t", shift: true)) { $0.reopen() },
         Command("file.openAddress", "Open Address…", .file, KeyCombo("l")) { $0.edit() },
         Command("file.closeTab", "Close Tab", .file, KeyCombo("w")) { $0.closeFront() },
+        Command("file.savePage", "Save Page As…", .file, nil) { $0.savePage() },
         Command("file.closeWindow", "Close Window", .file, KeyCombo("w", shift: true)) { $0.closeWindow() },
         Command("file.import", "Bring Things Over…", .file, nil) { $0.bringingIn = "" },
         Command("file.share", "Share…", .file, nil) { $0.share() },
@@ -244,6 +245,16 @@ struct Command: Identifiable {
         Command("tabs.pasteAndGo", "Paste and Go", .tabs, KeyCombo("v", shift: true)) { $0.pasteAndGo() },
         Command("tabs.closeOthers", "Close Other Tabs", .tabs, nil) { browser in
             if let tab = browser.active { browser.closeOthers(but: tab) }
+        },
+        Command("tabs.closeBelow", "Close Tabs Below", .tabs, nil) { browser in
+            if let tab = browser.active { browser.closeBelow(tab) }
+        },
+        // Arc's ⌥⌘[ and ⌥⌘], beside ⌘[ and ⌘] (Back and Forward).
+        Command("tabs.foldAll", "Fold All Groups", .tabs, KeyCombo("[", option: true)) { browser in
+            browser.foldAllGroups(true)
+        },
+        Command("tabs.unfoldAll", "Unfold All Groups", .tabs, KeyCombo("]", option: true)) { browser in
+            browser.foldAllGroups(false)
         },
         Command("tabs.mute", "Stop Sound in Tab", .tabs, KeyCombo("m", shift: true)) { $0.pauseMedia() },
 

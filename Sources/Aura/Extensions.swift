@@ -257,8 +257,10 @@ final class Extensions: NSObject, ObservableObject {
     /// lists no records for extension origins, so there is no clearing one
     /// extension's alone; clearing them all stops the workers that run. So
     /// it is done at launch, before any extension loads, and only when what
-    /// they would run has changed since. Websites' workers go with them and
-    /// are registered again on the next visit.
+    /// they would run has changed since. With an extension installed the
+    /// websites' workers go with them and are registered again on the next
+    /// visit, which is the price of a stale copy going; with none installed
+    /// there is nothing stale to clear, so the websites keep theirs (idea 446).
     private static let workersKey = "extensions.workers"
 
     private var workers: String {
@@ -267,7 +269,15 @@ final class Extensions: NSObject, ObservableObject {
 
     private func forgetWorkersIfChanged() async {
         guard Store.settings.string(forKey: Extensions.workersKey) != workers else { return }
-        await Store.websites.removeData(ofTypes: [WKWebsiteDataTypeServiceWorkerRegistrations], modifiedSince: .distantPast)
+        // The list holds the shim's version, which changes with nearly every
+        // update, so clearing regardless meant that every update also took
+        // every site's worker: Google Docs, Gmail, X and YouTube each started
+        // from the network again and registered and filled their own anew,
+        // and the days after an update felt slower. With no extension there
+        // is no stale copy to clear, only the sites' own to lose (idea 446).
+        if !installed.isEmpty {
+            await Store.websites.removeData(ofTypes: [WKWebsiteDataTypeServiceWorkerRegistrations], modifiedSince: .distantPast)
+        }
         Store.settings.set(workers, forKey: Extensions.workersKey)
     }
 

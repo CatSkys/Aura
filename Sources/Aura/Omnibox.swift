@@ -344,6 +344,14 @@ struct Omnibox: View {
                 } else {
                     Color.clear
                 }
+            case .bookmark:
+                // A site you kept: the page's own icon where this Mac has
+                // one, and the bookmark mark where it hasn't.
+                if let icon = favicon {
+                    icon
+                } else {
+                    glyph("bookmark")
+                }
             case .command:
                 glyph("command")
             }
@@ -375,6 +383,9 @@ struct Omnibox: View {
                 return offer.key
             case .visited, .known:
                 return offer.title.isEmpty ? Address.withoutWWW(offer.key) : offer.title
+            case .bookmark:
+                // Its name, as the bookmarks list has it.
+                return offer.key.isEmpty ? Address.pretty(offer.url) : offer.key
             default:
                 return offer.kind == .suggested ? offer.key : Address.withoutWWW(offer.key)
             }
@@ -389,6 +400,8 @@ struct Omnibox: View {
                 return offer.title.isEmpty ? "" : Address.withoutWWW(offer.title)
             case .visited, .known:
                 return offer.title.isEmpty ? "" : Address.withoutWWW(offer.key)
+            case .bookmark:
+                return Address.withoutWWW(offer.url.absoluteString)
             case .search:
                 return offer.title
             default:
