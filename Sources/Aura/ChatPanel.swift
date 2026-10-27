@@ -36,7 +36,15 @@ struct ChatThread: View {
     var foot: CGFloat = 140
 
     var body: some View {
-        if drawn {
+        if chat.empty {
+            // Nothing asked yet: the words sit in the middle of the column,
+            // where the eye lands when the panel opens, rather than up under
+            // the title in the corner. The room the field floats over is not
+            // part of the middle.
+            empty
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.bottom, foot)
+        } else if drawn {
             writing.padding(.horizontal, 24).padding(.top, 20).padding(.bottom, foot)
         } else {
             ScrollViewReader { scroller in
@@ -51,62 +59,80 @@ struct ChatThread: View {
                 }
                 .onChange(of: chat.lines.count) { _, _ in scroll(scroller) }
                 .onChange(of: chat.lines.last?.text) { _, _ in scroll(scroller) }
+                // A turn made of the rail alone — read the page, read it
+                // again, clicked — grows without writing a word, so watching
+                // the words left it growing on under the field, out of sight.
+                .onChange(of: chat.lines.last?.steps.count) { _, _ in scroll(scroller) }
             }
         }
     }
 
     @ViewBuilder private var writing: some View {
         VStack(alignment: .leading, spacing: 18) {
-            if chat.empty {
-                empty
-            } else {
-                LazyVStack(alignment: .leading, spacing: 22) {
-                    ForEach(chat.lines) { line in row(line) }
-                    // The assistant's own question, in the column and not as a
-                    // sheet: it is about this conversation, and the page it is
-                    // about has to stay visible behind it.
-                    if let card = chat.asking.card {
-                        AIToolAskCard(asking: chat.asking, card: card)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
+            LazyVStack(alignment: .leading, spacing: 22) {
+                ForEach(chat.lines) { line in row(line) }
+                // The assistant's own question, in the column and not as a
+                // sheet: it is about this conversation, and the page it is
+                // about has to stay visible behind it.
+                if let card = chat.asking.card {
+                    AIToolAskCard(asking: chat.asking, card: card)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .animation(.easeOut(duration: 0.2), value: chat.asking.card?.id)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .animation(.easeOut(duration: 0.2), value: chat.asking.card?.id)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder private func row(_ line: Chat.Line) -> some View {
         if line.mine {
-            HStack(spacing: 0) {
-                Spacer(minLength: 60)
-                Text(verbatim: line.text)
-                    .font(.system(size: 14))
-                    .foregroundStyle(Palette.Chat.ink)
-                    .multilineTextAlignment(.leading)
-                    .textSelection(.enabled)
-                    .padding(.horizontal, 22)
-                    .padding(.vertical, 15)
-                    .background {
-                        RoundedRectangle(cornerRadius: 17, style: .continuous)
-                            .fill(LinearGradient(colors: [seed.opacity(0.12), seed.opacity(0.09)],
-                                                 startPoint: .top, endPoint: .bottom))
+            VStack(alignment: .trailing, spacing: 8) {
+                // What went with this question, on the question: the page it
+                // was asked from, a tab, a file, a picture — a chip in the
+                // field would only ever be the next one's.
+                if !line.carried.isEmpty {
+                    VStack(alignment: .trailing, spacing: 6) {
+                        ForEach(line.carried) { thing in
+                            CarriedCard(thing: thing)
+                        }
                     }
+                }
+                HStack(spacing: 0) {
+                    Spacer(minLength: 60)
+                    Text(verbatim: line.text)
+                        .font(.system(size: 14))
+                        .foregroundStyle(Palette.Chat.ink)
+                        .multilineTextAlignment(.leading)
+                        .textSelection(.enabled)
+                        .padding(.horizontal, 22)
+                        .padding(.vertical, 15)
+                        .background {
+                            RoundedRectangle(cornerRadius: 17, style: .continuous)
+                                .fill(LinearGradient(colors: [seed.opacity(0.12), seed.opacity(0.09)],
+                                                     startPoint: .top, endPoint: .bottom))
+                        }
+                }
             }
-        } else if line.text.isEmpty, !line.done {
-            // The turn as it happens: the same rail the answer keeps, growing a
-            // row at a time — the model's own lines and what the browser did in
-            // between — and the dots under them while it works.
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        } else if !line.done {
+            // The turn as it happens, from the first breath to the last word:
+            // the rail the answer keeps, growing a row at a time — the model's
+            // own lines and what the browser did in between — with the dots
+            // under it while it works, and whatever has been written so far
+            // under that. The pulse belongs to the turn and to nothing else:
+            // it used to go out with the first word, and the rail folded
+            // itself mid-answer as though the work were over.
             VStack(alignment: .leading, spacing: 12) {
-                if line.steps.isEmpty {
+                if !line.steps.isEmpty {
+                    AIToolRail(steps: line.steps, running: true)
+                } else if line.text.isEmpty {
                     HStack(spacing: 0) {
                         Pulsing(chat.reading ? Localized("Reading this page…") : "")
                         Spacer(minLength: 0)
                     }
-                } else {
-                    AIToolRail(steps: line.steps, running: true)
                 }
+                if !line.text.isEmpty { Wrote(line.text) }
             }
         } else {
             VStack(alignment: .leading, spacing: 10) {
@@ -202,12 +228,51 @@ struct ChatThread: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: 360)
-        .frame(maxWidth: .infinity)
-        .padding(.top, 48)
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 
     private func scroll(_ scroller: ScrollViewProxy) {
         withAnimation(Motion.quick) { scroller.scrollTo("foot", anchor: .bottom) }
+    }
+}
+
+// MARK: - what went with a question
+
+/// One thing a question was asked with, under the question itself: the
+/// page's own favicon, its name, and the site. Dia draws what a message
+/// carried on the message; a chip left standing in the field would be about
+/// the next question instead of the one that was asked.
+struct CarriedCard: View {
+    let thing: Chat.Carried
+
+    var body: some View {
+        HStack(spacing: 7) {
+            Group {
+                if let icon = thing.address.flatMap({ URL(string: $0) }).flatMap({ Favicons.shared.cached(for: $0) }) {
+                    Image(nsImage: icon).resizable().interpolation(.high).frame(width: 14, height: 14)
+                } else {
+                    Image(systemName: thing.kind.symbol)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(Palette.Chat.muted)
+                        .frame(width: 14, height: 14)
+                }
+            }
+            Text(verbatim: thing.title)
+                .font(.system(size: 11.5, weight: .medium))
+                .foregroundStyle(Palette.Chat.muted)
+                .lineLimit(1)
+            if !thing.detail.isEmpty {
+                Text(verbatim: thing.detail)
+                    .font(.system(size: 11))
+                    .foregroundStyle(Palette.Chat.faint)
+                    .lineLimit(1)
+            }
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 5)
+        .background(Palette.Chat.ink.opacity(0.05),
+                    in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -384,16 +449,16 @@ struct ChatComposer: View {
 
     // MARK: - what goes with the question
 
-    /// The page on screen, then what the plus added: each a chip whose cross
-    /// takes it off this question.
+    /// What is added to this question by hand — another tab, a file, a
+    /// picture — each a chip whose cross takes it off again.
+    ///
+    /// The page on screen is not here: it goes with every question while the
+    /// field says "Ask a question about this page…", and it is drawn on the
+    /// question it went with instead of standing in the field for ever
+    /// (ChatThread's CarriedCard). The plus still takes it off for one
+    /// question, and puts it back.
     private var chips: [AIPage.Attachment] {
-        var out: [AIPage.Attachment] = []
-        if chat.attachPage, let page = chipPage {
-            out.append(AIPage.Attachment(kind: .page,
-                                         title: page.title.isEmpty ? (page.pageAddress?.host() ?? "") : page.title,
-                                         detail: page.pageAddress?.host() ?? ""))
-        }
-        return out + chat.extras
+        chat.extras
     }
 
     /// A row that scrolls sideways once there are more chips than fit: three
@@ -458,20 +523,19 @@ struct ChatComposer: View {
                     in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
-    /// The cross on a chip: the page comes off this question, an added tab, a
-    /// file or a picture is dropped.
+    /// The cross on a chip: an added tab, a file or a picture is dropped. The
+    /// page has no chip to cross — the plus takes it off (addItems).
     private func take(_ attachment: AIPage.Attachment) {
-        if attachment.kind == .page {
-            chat.attachPage = false
-        } else {
-            chat.extras.removeAll { $0.id == attachment.id }
-        }
+        chat.extras.removeAll { $0.id == attachment.id }
     }
 
     @ViewBuilder private var addItems: some View {
-        if !chat.attachPage, let page = chipPage {
-            Button(Localized("This Page")) {
-                chat.attachPage = true
+        // The page goes with the question unless it is taken off here: the
+        // field says which it is, and the question that went without it says
+        // so afterwards by carrying nothing.
+        if let page = chipPage {
+            Button(chat.attachPage ? Localized("Don't Send This Page") : Localized("Send This Page")) {
+                chat.attachPage.toggle()
                 _ = page
             }
         }

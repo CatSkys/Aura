@@ -41,7 +41,10 @@ enum AIPage {
     /// file from this Mac, or a picture of a page. Dia's attachments, read
     /// off its composer — a chip with a cross to take it off again.
     struct Attachment: Identifiable, Equatable {
-        enum Kind: Equatable {
+        /// What kind of thing went with the question. It is kept with the
+        /// question in the conversation's file (Chat.Carried), so it says
+        /// what it is in a word rather than in whatever a case is called.
+        enum Kind: String, Codable, Equatable {
             /// The page on screen.
             case page
             /// Another of your tabs.

@@ -2074,7 +2074,7 @@ final class Bench {
                              "bytes": extra.image?.count ?? 0] as [String: Any]
                         },
                         "lines": chat.lines.map { ["mine": $0.mine, "text": $0.text, "done": $0.done,
-                                                   "failed": $0.failed ?? "", "page": $0.page ?? "",
+                                                   "failed": $0.failed ?? "", "page": $0.carried.first?.title ?? "",
                                                    "strays": $0.strays,
                                                    "steps": $0.steps.map { step in
                                                        ["kind": step.kind.rawValue, "title": step.title,
@@ -2092,7 +2092,7 @@ final class Bench {
                     "notice": chat.notice ?? "", "trouble": chat.trouble ?? "",
                     "provider": chat.provider.rawValue, "model": chat.model,
                     "lines": chat.lines.map { ["mine": $0.mine, "text": $0.text, "done": $0.done,
-                                               "failed": $0.failed ?? "", "page": $0.page ?? "",
+                                               "failed": $0.failed ?? "", "page": $0.carried.first?.title ?? "",
                                                "strays": $0.strays,
                                                "steps": $0.steps.map { step in
                                                    ["kind": step.kind.rawValue, "title": step.title,

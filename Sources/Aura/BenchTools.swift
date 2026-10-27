@@ -26,7 +26,7 @@ enum BenchTools {
             answer(["reveal": browser.prefs.aiToolsReveal])
         case "list":
             answer(["tools": AITool.all.map { tool in
-                ["name": tool.name, "risk": "\(tool.risk)", "says": tool.says,
+                ["name": tool.name, "risk": "\(tool.risk)",
                  "required": tool.schema.required.sorted()] as [String: Any]
             }])
         case "classes":
@@ -72,7 +72,7 @@ enum BenchTools {
         if request["value"] != nil { raw["value"] = request["value"] }
         // A probe that wants to see what a call without its line does says so;
         // otherwise the line is filled in the way a model would write one.
-        if raw["say"] == nil, tool.says, (request["no-say"] as? Bool) != true { raw["say"] = "bench" }
+        if raw["say"] == nil, (request["no-say"] as? Bool) != true { raw["say"] = "bench" }
         let arguments = AIToolArguments(raw)
         if let wrong = arguments.checked(against: tool.schema) {
             answer(["error": "arguments: \(wrong)", "tool": name]); return

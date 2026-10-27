@@ -70,13 +70,17 @@ final class AIToolArgumentsTests: XCTestCase {
         XCTAssertNil(arguments(#"{"say": "Going back", "why": "because"}"#).checked(against: tool.schema))
     }
 
-    func testEveryToolAsksForItsLineAndTheThreeThatDont() {
-        // The tools that change nothing say nothing: a `say` for reading a
-        // page would be a line of narration nobody asked for.
-        let quiet = AITool.all.filter { !$0.says }.map(\.name).sorted()
-        XCTAssertEqual(quiet, ["ask_user", "read", "screenshot", "snapshot", "wait_for"])
-        for tool in AITool.all where tool.says {
-            XCTAssertTrue(tool.schema.required.contains("say"), "\(tool.name) says but does not require say")
+    func testEveryToolAsksForItsLine() {
+        // `say` is on every tool, not only the ones that change something:
+        // it is the row the rail keeps for the call, in the model's own words
+        // (AIToolStep), so reading a page says what it read rather than
+        // "Read the page" once more.
+        for tool in AITool.all {
+            let asked = AIToolWires.parameters(tool)
+            let properties = asked["properties"] as? [String: Any] ?? [:]
+            XCTAssertNotNil(properties["say"], "\(tool.name) is not asked for its line")
+            XCTAssertTrue((asked["required"] as? [String])?.contains("say") == true,
+                          "\(tool.name) does not require say")
         }
     }
 
