@@ -132,6 +132,26 @@ enum WhatsNew {
     /// Newest first.
     static let notes: [Notes] = [
         Notes(
+            version: "0.1.1", date: "27 October 2026",
+            headline: "An assistant beside the page, and an interface that answers your hand.",
+            new: [
+                "Chat, ⌘⇧A: a conversation in the column beside the page, which reads the page with you and keeps every conversation on this Mac. Off until you turn it on in Settings › AI.",
+                "It answers from Ollama or LM Studio on this Mac, from your own key at Anthropic, OpenAI, Gemini or OpenRouter, or from an API of your own.",
+                "Act on pages, the second switch: it clicks, types, scrolls and opens tabs for you, and asks first, on a card, before money, a deletion, a send that can't be recalled or a permission.",
+                "The page's right-click menu is a page's menu: Save Page As…, Export as PDF…, Print…, Share…, Translate Page, Hide This Element.",
+                "A tab says what it is when the pointer rests on it — its name, its site, and the doors to pin it, copy its link, put it beside the page and ask about it.",
+                "The address field knows your bookmarks; a tab's menu has Close Tabs Below; ⌥⌘[ and ⌥⌘] fold and unfold every group.",
+            ],
+            better: [
+                "Everything gives under the press and springs back, and Settings is ten short sections with a colour to a group and a field that finds any setting by its words.",
+                "A sleeping tab is frozen in memory rather than let go: coming back to x.com takes 23 ms, where loading it again took a second and a half.",
+                "⌘Q asks with a card you hold for a second rather than a dialog answered by reflex.",
+            ],
+            fixed: [
+                "An update no longer costs every site its service worker when no extension is installed, a muted tab comes back muted, and a space's colour is kept.",
+            ]
+        ),
+        Notes(
             version: "0.1.0", date: "25 October 2026",
             headline: "The first version, made for the day Arc stops.",
             new: [

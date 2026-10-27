@@ -1296,6 +1296,19 @@
 "Send   ⏎" = "发送   ⏎";
 "Side panel closed" = "侧面板已收起";
 
+/* —— 0.1.1 的说明（2026-10-27：助手、回手的界面、冻住的标签页）—— */
+"An assistant beside the page, and an interface that answers your hand." = "一个在页面旁边的助手，和一只会被回应的手。";
+"Chat, ⌘⇧A: a conversation in the column beside the page, which reads the page with you and keeps every conversation on this Mac. Off until you turn it on in Settings › AI." = "对话，⌘⇧A：页面旁边那一列里的一段对话，它和你一起读这一页，把每段对话都留在这台 Mac 上。设置 › AI 里打开才生效。";
+"It answers from Ollama or LM Studio on this Mac, from your own key at Anthropic, OpenAI, Gemini or OpenRouter, or from an API of your own." = "答案来自本机的 Ollama 或 LM Studio，来自你自己在 Anthropic、OpenAI、Gemini、OpenRouter 的密钥，或来自你自己的一个接口。";
+"Act on pages, the second switch: it clicks, types, scrolls and opens tabs for you, and asks first, on a card, before money, a deletion, a send that can't be recalled or a permission." = "「在页面上操作」是第二个开关：它替你点击、输入、滚动、开新标签页；花钱、删除、发出去收不回来、给出权限这四件事，它先用一张卡片问一句。";
+"The page's right-click menu is a page's menu: Save Page As…, Export as PDF…, Print…, Share…, Translate Page, Hide This Element." = "网页右键是页面自己的菜单：存储页面为…、导出为 PDF…、打印…、共享…、翻译页面、隐藏元素。";
+"A tab says what it is when the pointer rests on it — its name, its site, and the doors to pin it, copy its link, put it beside the page and ask about it." = "指针停在标签页上，它会说出自己是什么——名字、网站，还有固定它、复制它的地址、把它放到页面旁边、就它提问这几道门。";
+"The address field knows your bookmarks; a tab's menu has Close Tabs Below; ⌥⌘[ and ⌥⌘] fold and unfold every group." = "地址栏认得你的书签；标签页的菜单里有关闭下方标签页；⌥⌘[ 和 ⌥⌘] 收起、展开所有标签页组。";
+"Everything gives under the press and springs back, and Settings is ten short sections with a colour to a group and a field that finds any setting by its words." = "每个按钮按下去会陷、松开弹回；设置是十个短分区，一组一个颜色，一个输入框按你说的话就能找到任何一项。";
+"A sleeping tab is frozen in memory rather than let go: coming back to x.com takes 23 ms, where loading it again took a second and a half." = "睡着的标签页不再被放掉，而是冻在内存里：回到 x.com 上要 23 毫秒，而重新加载要一秒半。";
+"⌘Q asks with a card you hold for a second rather than a dialog answered by reflex." = "⌘Q 先用一张要按住一秒的卡片问一句，不再是靠手快回掉的系统提示。";
+"An update no longer costs every site its service worker when no extension is installed, a muted tab comes back muted, and a space's colour is kept." = "没有装扩展时，更新不再让每个网站丢掉自己的 service worker；静音的标签页回来还是静音的；空间的颜色存得住。";
+
 /* —— AI 会话 —— */
 "Chats" = "会话";
 "All Chats" = "全部会话";
