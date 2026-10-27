@@ -25,7 +25,6 @@ struct SideBar: View {
         glass ? .glass(browser.space.spaceTheme, dark: scheme == .dark) : .standard
     }
 
-    @Namespace private var pill
 
     @State private var landing = false
     /// The width the column had when the edge was picked up.
@@ -35,9 +34,6 @@ struct SideBar: View {
     /// A pin, picked up out of the grid — a separate state from the loose
     /// rows above, since the two gestures never happen at once but move on
     /// two different axes.
-    /// The neighbouring spaces' own grey, apart from this one's.
-    @Namespace private var before
-    @Namespace private var after
 
     @State private var groupFrames: [UUID: GroupDropFrame] = [:]
 
@@ -202,16 +198,16 @@ struct SideBar: View {
         let swipe = browser.spaceSwipe
         let at = spaceAt
         return ZStack(alignment: .topLeading) {
-            page(at, pill: pill)
+            page(at)
                 .offset(x: swipe)
             // Only while the fingers are bringing one in: the one they are
             // bringing, a page's width away.
             if swipe > 0, at > 0 {
-                page(at - 1, pill: before)
+                page(at - 1)
                     .offset(x: swipe - width)
             }
             if swipe < 0, at < browser.spaces.count {
-                page(at + 1, pill: after)
+                page(at + 1)
                     .offset(x: swipe + width)
             }
         }
@@ -223,7 +219,7 @@ struct SideBar: View {
     /// One space's page: the rows on screen, another space's rows as they
     /// were left, or past the last the card for a new one.
     @ViewBuilder
-    private func page(_ index: Int, pill: Namespace.ID) -> some View {
+    private func page(_ index: Int) -> some View {
         Group {
             if index == browser.spaces.count {
                 VStack(spacing: 0) {
@@ -312,7 +308,7 @@ struct SideBar: View {
                 .coordinateSpace(name: "column")
                 .animation(Motion.settle, value: crossing)
             } else {
-                preview(browser.parked[browser.spaces[index].id] ?? Parked(tabs: [], active: nil), pill: pill)
+                preview(browser.parked[browser.spaces[index].id] ?? Parked(tabs: [], active: nil))
             }
         }
         .padding(.horizontal, 10)
@@ -327,7 +323,7 @@ struct SideBar: View {
     /// Another space's rows, drawn with the same pieces as this one's so the
     /// two read as one column while they pass — and nothing to press until
     /// it is the one on screen.
-    private func preview(_ row: Parked, pill: Namespace.ID) -> some View {
+    private func preview(_ row: Parked) -> some View {
         let pins = row.tabs.filter { $0.pin != nil && !($0.listed && prefs.showsPinRows) }
         let listed = prefs.showsPinRows ? row.tabs.filter { $0.pin != nil && $0.listed } : []
         let (groups, rest) = row.drawn(groupsOn: prefs.usesTabGroups, splitView: prefs.splitView)
@@ -337,8 +333,7 @@ struct SideBar: View {
                 VStack(spacing: 0) {
                     PinGrid(cells: cells) {
                         ForEach(Array(pins.enumerated()), id: \.element.id) { index, tab in
-                            PinSquare(browser: browser, prefs: prefs, tab: tab, live: tab.id == row.active,
-                                      pill: pill, width: cells[index].width, height: cells[index].height)
+                            PinSquare(browser: browser, prefs: prefs, tab: tab, live: tab.id == row.active, width: cells[index].width, height: cells[index].height)
                         }
                     }
                 }
@@ -346,15 +341,14 @@ struct SideBar: View {
             }
             VStack(spacing: SideBar.gap) {
                 ForEach(listed) { tab in
-                    SideRow(browser: browser, prefs: prefs, tab: tab, live: tab.id == row.active,
-                            pill: pill, close: {}, interactive: false)
+                    SideRow(browser: browser, prefs: prefs, tab: tab, live: tab.id == row.active, close: {}, interactive: false)
                 }
                 // Its groups, folded as they were left (see Parked.drawn).
                 ForEach(groups) { drawn in
                     GroupHeading(browser: browser, group: drawn.group)
                     ForEach(drawn.tabs) { tab in
                         rowItem(tab, tabs: row.tabs, splits: row.splits, activeID: row.active,
-                                interactive: false, pill: pill, close: {})
+                                interactive: false, close: {})
                     }
                 }
                 // Under the groups, as on screen.
@@ -363,7 +357,7 @@ struct SideBar: View {
                 }
                 ForEach(rest) { tab in
                     rowItem(tab, tabs: row.tabs, splits: row.splits, activeID: row.active,
-                            interactive: false, pill: pill, close: {})
+                            interactive: false, close: {})
                 }
             }
             newTab
@@ -407,7 +401,6 @@ struct SideBar: View {
         splits: [TabSplit],
         activeID: Tab.ID?,
         interactive: Bool,
-        pill: Namespace.ID,
         close: @escaping () -> Void
     ) -> some View {
         let pair = prefs.splitView ? splits.first(where: { $0.left == tab.id }) : nil
@@ -416,11 +409,11 @@ struct SideBar: View {
                          width: nil, height: rowHeight,
                          live: activeID.map { pair.contains($0) } ?? false,
                          focusedID: activeID,
-                         interactive: interactive, pill: pill)
+                         interactive: interactive)
                 .frame(maxWidth: .infinity)
         } else {
             SideRow(browser: browser, prefs: prefs, tab: tab,
-                    live: tab.id == activeID, pill: pill, close: close,
+                    live: tab.id == activeID, close: close,
                     interactive: interactive)
         }
     }
@@ -501,7 +494,6 @@ struct SideBar: View {
                     prefs: prefs,
                     tab: tab,
                     live: tab.id == browser.activeID,
-                    pill: pill,
                     width: cells[index].width,
                     height: cells[index].height
                 )
@@ -534,7 +526,7 @@ struct SideBar: View {
                     RowGhost(tab: carried, height: rowHeight, size: prefs.sideTitle)
                 }
                 SideRow(browser: browser, prefs: prefs, tab: tab,
-                        live: tab.id == browser.activeID, pill: pill,
+                        live: tab.id == browser.activeID,
                         close: { browser.close(tab) })
                     .modifier(Carried(index: index, count: pins.count,
                                       step: rowHeight + SideBar.gap, vertical: true,
@@ -582,7 +574,7 @@ struct SideBar: View {
                             RowGhost(tab: carried, height: rowHeight, size: prefs.sideTitle)
                         }
                         rowItem(tab, tabs: browser.tabs, splits: browser.splits,
-                                activeID: browser.activeID, interactive: true, pill: pill,
+                                activeID: browser.activeID, interactive: true,
                                 close: { browser.close(tab) })
                         // Positions here are among the loose rows; the pinned block
                         // sits in front of them in the real list.
@@ -626,7 +618,7 @@ struct SideBar: View {
         return VStack(spacing: SideBar.gap) {
             ForEach(Array(members.enumerated()), id: \.element.id) { index, tab in
                 rowItem(tab, tabs: browser.tabs, splits: browser.splits,
-                        activeID: browser.activeID, interactive: true, pill: pill,
+                        activeID: browser.activeID, interactive: true,
                         close: { browser.close(tab) })
                     .padding(.leading, 14)
                     .modifier(Carried(index: index, count: members.count,
@@ -894,7 +886,6 @@ private struct PinSquare: View {
     @ObservedObject var prefs: Preferences
     @ObservedObject var tab: Tab
     let live: Bool
-    let pill: Namespace.ID
     var width: CGFloat = 34
     var height: CGFloat = 34
 
@@ -933,14 +924,14 @@ private struct PinSquare: View {
                     // pin barely showed among the others).
                     RoundedRectangle(cornerRadius: scale * 9 / 34, style: .continuous)
                         .fill(greys.pinLive)
-                        .matchedGeometryEffect(id: "live", in: pill)
+                        .transition(.opacity)
                 } else {
                     RoundedRectangle(cornerRadius: scale * 9 / 34, style: .continuous)
                         .fill(browser.selectedTabIDs.contains(tab.id) ? greys.wash :
                               lit ? greys.hover : greys.tile)
                 }
             }
-            .animation(Motion.quick, value: live)
+            .animation(Motion.released, value: live)
         }
         .overlay {
             if browser.selectedTabIDs.contains(tab.id) {
@@ -1029,7 +1020,6 @@ private struct SideRow: View {
     @ObservedObject var prefs: Preferences
     @ObservedObject var tab: Tab
     let live: Bool
-    let pill: Namespace.ID
     let close: () -> Void
     var interactive = true
 
@@ -1180,7 +1170,10 @@ private struct SideRow: View {
         .animation(Motion.quick, value: tab.blockedPopups.isEmpty)
         .animation(Motion.quick, value: tab.translation == nil)
         .animation(Motion.quick, value: peeking)
-        .background { ground.animation(Motion.quick, value: live) }
+        // The live grey is the row's own now, arriving on the return spring
+        // rather than sliding here from the row before it: what was asked for
+        // is the give of a press, not a highlight travelling down the column.
+        .background { ground.animation(Motion.released, value: live) }
         .overlay {
             if browser.selectedTabIDs.contains(tab.id) {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
@@ -1249,7 +1242,7 @@ private struct SideRow: View {
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-            .matchedGeometryEffect(id: "live", in: pill)
+            .transition(.opacity)
         } else if browser.selectedTabIDs.contains(tab.id) {
             RoundedRectangle(cornerRadius: 9, style: .continuous)
                 .fill(greys.wash)

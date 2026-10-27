@@ -514,7 +514,16 @@ struct ContentView: View {
 
             // An extension's side panel, on the side away from the column
             // (see SidePanel.swift); two pages in Split View share what's left.
-            if panelRoom > 0 { beside }
+            //
+            // The animation lives out here, on the container, not on the panel:
+            // a transition is run by the transaction of the view that puts the
+            // panel in or takes it out, so an `.animation` inside the panel
+            // animates nothing about its own arrival — which is exactly how the
+            // conversation opened and closed without moving until now.
+            Group {
+                if panelRoom > 0 { beside }
+            }
+            .animation(Motion.settle, value: panelUp)
 
             // The column of tabs, in the way that has one. It takes the full
             // height, so the traffic lights sit in its own corner rather than
@@ -699,12 +708,12 @@ struct ContentView: View {
             .padding(sideOnRight ? .leading : .trailing, farGap)
             .frame(maxWidth: .infinity, maxHeight: .infinity,
                    alignment: sideOnRight ? .topLeading : .topTrailing)
-            // In and out on a spring rather than in one frame: it is the page's
-            // neighbour, and the page gives up its room at once for the reason
+            // A drawer out of the edge it lives on, rather than a card that
+            // blinks in: the page gives up its room at once, for the reason
             // `make(room:after:)` explains — a web view laid out again on every
-            // frame of a slide judders along its edge.
-            .animation(Motion.settle, value: panelUp)
-            .transition(.opacity)
+            // frame of a slide judders along its edge — and the panel then
+            // arrives over the ground that room left.
+            .transition(.move(edge: sideOnRight ? .leading : .trailing).combined(with: .opacity))
     }
 
     /// The bookmarks bar is up: asked for, bookmarks are a thing, there are
@@ -911,10 +920,10 @@ struct ContentView: View {
                 if let job = browser.fileImport { ImportProgress(browser: browser, job: job) }
             }
             .environment(\.tabShortcutNumbers, browser.tabShortcutNumbers)
-            // The field comes on its spring, and goes quickly: once Return
-            // is pressed the page is on its way, and the field is not what
-            // there is to watch.
-            .animation(browser.fieldShowing ? Motion.settle : Motion.quick, value: browser.fieldShowing)
+            // The field comes up with a little weight behind it (Motion.raised)
+            // and goes quickly: once Return is pressed the page is on its way,
+            // and the field is not what there is to watch.
+            .animation(browser.fieldShowing ? Motion.raised : Motion.quick, value: browser.fieldShowing)
             .background(windowSetup)
             .onChange(of: browser.prefs.sidebar) { _, _ in
                 DispatchQueue.main.async { Lights.refresh(window); measureLights() }

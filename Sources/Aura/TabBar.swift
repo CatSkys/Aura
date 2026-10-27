@@ -10,10 +10,6 @@ struct TabBar: View {
 
     @ObservedObject var browser: Browser
 
-    @Namespace private var pill
-    /// The neighbouring spaces' own grey, apart from this one's.
-    @Namespace private var above
-    @Namespace private var below
 
     /// Which tab is under the hand, where it started, and how far it has come.
     @State private var landing = false
@@ -122,11 +118,11 @@ struct TabBar: View {
                                 .offset(y: browser.spaceSwipe)
                         }
                         if browser.spaceSwipe > 0, spaceAt > 0 {
-                            page(spaceAt - 1, in: geo.size.width, pill: above)
+                            page(spaceAt - 1, in: geo.size.width)
                                 .offset(y: browser.spaceSwipe - Metrics.strip)
                         }
                         if browser.spaceSwipe < 0, spaceAt < browser.spaces.count {
-                            page(spaceAt + 1, in: geo.size.width, pill: below)
+                            page(spaceAt + 1, in: geo.size.width)
                                 .offset(y: browser.spaceSwipe + Metrics.strip)
                         }
                     }
@@ -227,7 +223,7 @@ struct TabBar: View {
     /// two read as one bar while they pass — nothing to press until it is
     /// the one on screen. Past the last, the row for a new space.
     @ViewBuilder
-    private func page(_ index: Int, in strip: CGFloat, pill: Namespace.ID) -> some View {
+    private func page(_ index: Int, in strip: CGFloat) -> some View {
         if index == browser.spaces.count {
             NewSpaceCard(browser: browser, inline: true)
                 .fixedSize()
@@ -251,7 +247,7 @@ struct TabBar: View {
                     ForEach(pins) { tab in
                         rowItem(tab, in: row.tabs, splits: row.splits, activeID: row.active,
                                 width: each, room: strip - lights - 12,
-                                height: Metrics.strip, interactive: false, pill: pill)
+                                height: Metrics.strip, interactive: false)
                     }
                     if line { PinLine() }
                     ForEach(groups) { drawn in
@@ -259,20 +255,20 @@ struct TabBar: View {
                         ForEach(drawn.tabs) { tab in
                             rowItem(tab, in: row.tabs, splits: row.splits, activeID: row.active,
                                     width: each, room: strip - lights - 12,
-                                    height: Metrics.strip, interactive: false, pill: pill)
+                                    height: Metrics.strip, interactive: false)
                         }
                     }
                     ForEach(loose) { tab in
                         rowItem(tab, in: row.tabs, splits: row.splits, activeID: row.active,
                                 width: each, room: strip - lights - 12,
-                                height: Metrics.strip, interactive: false, pill: pill)
+                                height: Metrics.strip, interactive: false)
                     }
                 } else {
                     ForEach(Array(shown.enumerated()), id: \.element.id) { index, tab in
                         if line, index == firstLoose { PinLine() }
                         rowItem(tab, in: row.tabs, splits: row.splits, activeID: row.active,
                                 width: each, room: strip - lights - 12,
-                                height: Metrics.strip, interactive: false, pill: pill)
+                                height: Metrics.strip, interactive: false)
                     }
                 }
             }
@@ -310,7 +306,7 @@ struct TabBar: View {
         let step = (tab.pin != nil ? Metrics.pinWidth : itemWidth) + Metrics.tabGap
         return rowItem(tab, in: browser.tabs, splits: browser.splits, activeID: browser.activeID,
                        width: each, room: strip - lights - leading - 12,
-                       height: Metrics.strip, interactive: true, pill: pill)
+                       height: Metrics.strip, interactive: true)
             .background {
                 if browser.prefs.splitView && !isPairRepresentative {
                     SplitDropZone(browser: browser, tab: tab, kind: .strip)
@@ -338,8 +334,7 @@ struct TabBar: View {
         width: CGFloat,
         room: CGFloat,
         height: CGFloat,
-        interactive: Bool,
-        pill: Namespace.ID
+        interactive: Bool
     ) -> some View {
         let pair = browser.prefs.splitView ? splits.first(where: { $0.left == tab.id }) : nil
         if let pair, let right = tabs.first(where: { $0.id == pair.right }) {
@@ -350,10 +345,10 @@ struct TabBar: View {
                          width: displayedWidth, height: height,
                          live: activeID.map { pair.contains($0) } ?? false,
                          focusedID: activeID,
-                         interactive: interactive, pill: pill)
+                         interactive: interactive)
         } else {
             TabPill(browser: browser, prefs: browser.prefs, tab: tab,
-                    live: tab.id == activeID, width: width, room: room, pill: pill,
+                    live: tab.id == activeID, width: width, room: room,
                     close: interactive ? { browser.close(tab) } : {})
         }
     }
@@ -645,7 +640,6 @@ private struct TabPill: View {
     let width: CGFloat
     /// How much of the strip there is, for the field that grows over it.
     let room: CGFloat
-    let pill: Namespace.ID
     let close: () -> Void
 
     @State private var hovering = false
@@ -907,6 +901,9 @@ private struct TabPill: View {
         .animation(Motion.quick, value: speaker)
         .animation(Motion.quick, value: tab.blockedPopups.isEmpty)
         .animation(Motion.quick, value: tab.translation == nil)
+        // The grey of the tab you are on appears where it is instead of
+        // travelling from the one you left (see the note in Side.swift).
+        .animation(Motion.released, value: live)
     }
 
     @ViewBuilder
@@ -928,7 +925,7 @@ private struct TabPill: View {
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-            .matchedGeometryEffect(id: "live", in: pill)
+            .transition(.opacity)
         } else if browser.selectedTabIDs.contains(tab.id) {
             RoundedRectangle(cornerRadius: 9, style: .continuous)
                 .fill(Palette.wash)

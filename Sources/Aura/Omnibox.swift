@@ -64,6 +64,7 @@ struct Omnibox: View {
                     .contentShape(Rectangle())
                     .ignoresSafeArea(.all, edges: fitted ? [] : .all)
                     .onTapGesture { browser.dismiss() }
+                    .transition(.opacity)
             }
 
             panel(width: width)
@@ -73,6 +74,11 @@ struct Omnibox: View {
                 // height would otherwise carry the field up with it, out from
                 // under what is being typed.
                 .offset(y: listHeight / 2 - Self.lift)
+                // Raised on ⌘K, ⌘T or ⌘L. Without this the bar had no
+                // transition at all: the window's animation had nothing to
+                // carry, so the whole panel was simply inserted, on the frame
+                // the key arrived.
+                .transition(.scale(scale: 0.97, anchor: .top).combined(with: .opacity))
                 .modifier(Shake(travel: shake))
                 // The list's arrival and its leaving are animated from here,
                 // briefly, and its rows follow what was typed or pasted at
