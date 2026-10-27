@@ -164,6 +164,7 @@ gitleaks git --pre-commit --staged        # 提交前扫密钥（.gitleaks.toml�
 
 ## 已知遗留（实测，别踩）
 
+- **`Tests/ExtensionWorkerRecovery/live.py` 还没真跑过一次**：它钉死的 `Search.app` 与进程名已收成 `APP_NAME = 'Aura'`、`--self-test` 56 条全过，但一次真跑要拉起 app 与 lldb（上限 504 秒）——这是唯一覆盖「真 WebKit worker 卸载/重载到真端口」的东西，改名之后值得跑一次把结论落下来。
 - **`Tests/popup_gesture_script.js` 没人跑了**：它读 `PopupGesture.swift` 的源码做文本检查，路径已修，但仓库里没有任何脚本或套件调用它——要么接进一个跑器，要么删掉。
 - **引擎命名两套**：源码是 `Engine/aura-ai-engine.cpp`，`engine.sh` 产物是 `aura-ai-engine-<arch>`，运行时找的下载程序叫 `search-ai-engine`；以 `engine.sh` 与 `AIEngine.swift` 为准。
 - `AI.shipped = false` 是 AI 附加功能的总闸（1.0.5 起收起）：动 AI 代码前先读这一行。
