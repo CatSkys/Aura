@@ -1451,6 +1451,16 @@ final class Browser: NSObject, ObservableObject {
         finishDisplay(0)
     }
 
+    /// The same, for a tab being let go of. Its view is not asked, because by
+    /// then the tab may have stopped holding one — `Tab.discard` lets go of
+    /// `built` before the view is torn down, and a screen's question asked
+    /// against a let-go view matched no tab and was left hanging, with the page
+    /// gone and nothing left to answer it.
+    func cancelDisplay(of tab: Tab) {
+        guard displayTab === tab else { return }
+        finishDisplay(0)
+    }
+
     private func finishDisplay(_ decision: Int) {
         guard let reply = decideDisplay else { return }
         decideDisplay = nil
