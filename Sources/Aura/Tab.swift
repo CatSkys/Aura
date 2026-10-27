@@ -1855,6 +1855,24 @@ final class Tab: ObservableObject, Identifiable {
         }
     }
 
+    /// Out of whatever fills the screen, in the words the page itself knows:
+    /// a video element's own full screen, the document's, and the older
+    /// prefixed pair each one may be wearing.
+    private static let leaveFullScreen = """
+    (function () {
+      function quietly(work) { try { work(); } catch (e) {} }
+      var videos = document.querySelectorAll('video');
+      for (var i = 0; i < videos.length; i++) {
+        if (videos[i].webkitDisplayingFullscreen) {
+          quietly(function () { videos[i].webkitExitFullscreen(); });
+        }
+      }
+      if (document.webkitFullscreenElement) quietly(function () { document.webkitExitFullscreen(); });
+      if (document.fullscreenElement) quietly(function () { document.exitFullscreen(); });
+      return 0;
+    })()
+    """
+
     /// The view and everything listening to it, gone — timers, video,
     /// sockets, and the document WebKit would otherwise keep in its
     /// back-forward cache. The tab keeps its address; `web` builds again the
@@ -1869,6 +1887,22 @@ final class Tab: ObservableObject, Identifiable {
         quiet = nil
         media.forget()
         guard let web = built else { return }
+        // A page filling the screen has its view inside WebKit's own window,
+        // which holds it: let go there, the page keeps its picture and its
+        // sound with nothing of Aura's left to stop either. So it is asked to
+        // come out first — the same page whose video fills the screen, or the
+        // whole document, whichever asked.
+        if web.fullscreenState != .notInFullscreen {
+            web.webKit.evaluateJavaScript(Tab.leaveFullScreen, completionHandler: nil)
+        }
+        // And its sound goes before the view does, by command rather than by
+        // the page ceasing to exist. WebKit's own player — the one a video
+        // site gets, and the last thing WebKit lets go of — can outlive the
+        // page by a moment, and a peek put away was heard after it went for
+        // that reason. Muted here, which is silent at once, and its playback
+        // suspended, which nothing on the page can undo before it goes.
+        Muter.set(true, on: web.webKit)
+        web.webKit.setAllMediaPlaybackSuspended(true, completionHandler: nil)
         (delegate as? Browser)?.cancelDisplay(for: web.webKit)
         built = nil
         Passkeys.shared.forget(web.webKit)
