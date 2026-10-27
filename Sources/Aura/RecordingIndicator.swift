@@ -91,13 +91,39 @@ final class RecordingIndicator: ObservableObject {
         hosted.removeAll { $0.web.superview == nil && $0.web.window == nil && !isLent($0.web) }
         let wanted = !lines.isEmpty || !hosted.isEmpty
         guard wanted else {
-            panel?.orderOut(nil)
+            // Faded rather than dropped: a pill that is there on one frame and
+            // gone on the next reads as the screen glitching, not as Aura
+            // answering. AppKit's own panels have no animation to inherit, so
+            // this one is asked for by hand, and not at all with Reduce Motion.
+            guard let panel, panel.isVisible else { return }
+            guard !Motion.reduced else {
+                panel.orderOut(nil)
+                return
+            }
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.16
+                panel.animator().alphaValue = 0
+            } completionHandler: {
+                panel.orderOut(nil)
+                panel.alphaValue = 1
+            }
             return
         }
         let panel = ownPanel()
         panel.fit()
         guard !Store.testing else { return }
-        if !panel.isVisible { panel.orderFrontRegardless() }
+        if !panel.isVisible {
+            guard !Motion.reduced else {
+                panel.orderFrontRegardless()
+                return
+            }
+            panel.alphaValue = 0
+            panel.orderFrontRegardless()
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.20
+                panel.animator().alphaValue = 1
+            }
+        }
     }
 
     private func isLent(_ web: WKWebView) -> Bool { panel?.holds(web) == true }

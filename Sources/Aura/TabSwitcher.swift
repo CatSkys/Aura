@@ -379,6 +379,7 @@ struct TabSwitcherOverlay: View {
     }
 
     var body: some View {
+        Group {
         if switcher.visible, host == nil || switcher.home == host {
             GeometryReader { geometry in
                 let columns = min(5, switcher.candidates.count)
@@ -414,7 +415,14 @@ struct TabSwitcherOverlay: View {
                 guard !Task.isCancelled else { return }
                 switcher.capturePreviews(of: tab, current: current)
             }
+            .transition(.opacity.combined(with: .scale(scale: 0.97)))
         }
+        }
+        // Outside the `if`, for the reason the space card had to learn: a view
+        // a condition inserts cannot animate its own arrival. The switcher had
+        // no entrance at all -- ⌃Tab put the grid on the dimmed window in one
+        // frame.
+        .animation(Motion.raised, value: switcher.visible)
     }
 
     /// The planet: the tabs, five to a row.
