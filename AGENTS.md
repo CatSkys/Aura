@@ -72,7 +72,9 @@ AURA_APP=build/debug/Aura.app python3 Tests/<名字>.py
 ./deliver.sh --status                      # 锁在谁手里、待交付、产物覆盖没覆盖 HEAD
 
 # 测试世界与探针
-./fresh.sh | ./fresh.sh again             # 测试世界；AURA_PROBE=<slug> 一树一世界
+./fresh.sh | ./fresh.sh again             # 测试世界；没有 build/Aura.app 时建 debug 档
+                                          # （release 那档是两分钟，探针不需要）；
+                                          # AURA_APP=<另一个 app> 也能指；AURA_PROBE=<slug> 一树一世界
 ./bench help                              # 驱动运行中的 app；改界面一律加 --test 或 --world
 
 # 译文

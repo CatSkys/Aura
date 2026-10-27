@@ -36,7 +36,16 @@ if [ "${1:-}" != "again" ]; then
   echo "world \"$WORLD\" wiped"
 fi
 
-[ -d "build/Aura.app" ] || ./build.sh release
+# The app to open: the delivered one when there is one, the debug one
+# otherwise. A tree that has never built has no build/ at all, and this script
+# used to answer that with a release build — a whole-module compile of two or
+# three minutes to open a window a probe drives, which is what a session spent
+# in a fresh tree before it could test anything.
+APP="${AURA_APP:-build/Aura.app}"
+if [ ! -d "$APP" ]; then
+  AURA_OUT=build/debug ./build.sh debug
+  APP=build/debug/Aura.app
+fi
 
 # A world the bench is going to drive opens hidden. A test run that comes to
 # the front trips the probe's own guard, which hides the app and then refuses
@@ -47,4 +56,4 @@ HIDDEN=""
 if [ "$(defaults read "$SUITE" bench 2>/dev/null || true)" = 1 ]; then
   HIDDEN="-g -j"
 fi
-open -n $HIDDEN --env AURA_PROBE="$WORLD" "build/Aura.app"
+open -n $HIDDEN --env AURA_PROBE="$WORLD" "$APP"
