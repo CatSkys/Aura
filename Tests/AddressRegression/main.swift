@@ -3,6 +3,11 @@ import Foundation
 // Which scheme a typed address gets. Address.swift alone, so this runs
 // without building the app (Tests/AddressRegression/run.sh).
 
+/// Address.swift names Aura's own pages' scheme (InternalPages.swift) among the
+/// ones it keeps; this runner compiles address parsing alone, so it stands in
+/// for the rest of that type.
+enum InternalPage { static let scheme = "search" }
+
 private var failures = 0
 
 private func expect(_ typed: String, _ wanted: String?) {

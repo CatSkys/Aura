@@ -11,6 +11,7 @@
 # 「完成的定义」says which is which, and names what counts as behaviour.
 set -euo pipefail
 cd "$(dirname "$0")"
+./guard.sh
 start=$(date +%s)
 log="$(mktemp "${TMPDIR:-/tmp}/aura-check.XXXXXX")"
 trap 'rm -f "$log"' EXIT

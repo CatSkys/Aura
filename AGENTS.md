@@ -49,11 +49,19 @@ AURA_ARCH=x86_64 ./build.sh release dmg   # Intel 档，出 build/intel/
 swift test --filter ExtensionWorkerPortTests   # 改成 --filter <套件名>
 
 # 全量 —— 只在跨模块、动契约时才跑
-swift test                                # 223 例 / 74 秒，全绿（1 例跳过）
+swift test                                # 492 例 / 约 270 秒，全绿（1 例跳过）
+                                          # 慢的一半是 Crypto 与 AppKit：
+                                          # ApplePasswords 85s＋ApplePairing 21s、
+                                          # PinDrag 23s、SidebarPress 23s、
+                                          # DownloadLifecycle 14s
 
 # 界面行为 —— 只跑受影响的那个探针
-python3 Tests/<名字>.py                   # 先 ./build.sh
-./Tests/AddressRegression/run.sh          # 解析类回归；脚本里的源码路径已失效，见「已知遗留」
+python3 Tests/<名字>.py                   # 对 build/Aura.app；先 ./build.sh
+AURA_APP=build/debug/Aura.app python3 Tests/<名字>.py
+                                          # 对调试档：省掉一次 release 构建，
+                                          # 改界面时默认用这条
+./Tests/AddressRegression/run.sh          # 解析类回归（swiftc 单编，秒级）
+./Tests/HistoryRegression/run.sh          # 历史条目的身份
 
 # 交付：合并 → 需要时构建 → 清场
 ./deliver.sh <slug> [--wait 600]           # 一棵树
@@ -72,7 +80,8 @@ plutil -lint Resources/*/Localizable.strings
 ./tree.sh <session> [task]                # 会话树：一单一个分支，.build 留热
 git worktree add ../Aura-<slug> -b feat/<slug>   # 一次性任务也可以单独开树
 git worktree remove ../Aura-<slug>        # 收尾再 git branch -d feat/<slug>
-./hooks.sh [on|off]                       # 机械卡点：主仓检出拒收直接提交
+./guard.sh                                # 主仓有未提交的 app 改动就拒绝编译
+./hooks.sh [on|off]                       # 机械卡点：主仓拒收直接提交、拒收不是 deliver.sh 的合并
 gitleaks git --pre-commit --staged        # 提交前扫密钥（.gitleaks.toml）
 
 # 发版与外部动作 —— 只在用户明确要求时
@@ -97,6 +106,7 @@ gitleaks git --pre-commit --staged        # 提交前扫密钥（.gitleaks.toml�
 
 - **一个会话一棵树，一单一个分支**：`./tree.sh <session>` 建树、`./tree.sh <session> <task>` 换分支——`.build` 留热，第二单起编译是秒级（新树每次从零：debug 44 秒、测试再一分钟）。树名只按会话区分，隔离照样有。
 - **主仓不承接活，但别让分支攒着**：活全在树里。主仓被别的会话占着时，`./deliver.sh` 允许**文件不重叠**的合并先落地（重叠就拒），这次不构建——产物会把那份活编进去。**不许替别人 stash**（教训：为合 `feat/facade` 把 15 个文件的活收起来四分钟，那次构建的产物因此不含那份活）。索引里有 staged 改动时 `git merge` 一律拒收，先让它 unstage。
+- **主仓不许攒活，这条是机械卡住的**：`./guard.sh` 在主仓检出里发现 `Sources/`、`Resources/`、`Engine/`、`Package.swift`、`VERSION` 有未提交改动就拒绝编译，`./check.sh` 与 `./build.sh` 开头都调它——想直接在主仓改再编译，第一步就被打回，去 `./tree.sh` 开树。**也不许在主仓 `git reset --hard` / `git checkout -- .` / `git clean`**：那会连别人四个小时的活一起清掉，清场只有 `./deliver.sh` 做完的那一次。
 - **一棵树一个测试世界**：`./fresh.sh` 与 `./bench --test` 用固定的 `test` 世界，两棵树同时用会抢同一个 socket；并行时 `AURA_PROBE=<slug> ./fresh.sh` 配 `./bench --world <slug>`。`Tests/*.py` 按检出路径自己分世界，不用管。
 - **`../aura-pages` 不是任务树**：那是 `gh-pages` 的检出，`publish.sh` 认这个路径。
 - **新树的 `.build/` 是冷的**：第一次 `swift build` 从头编译，属正常；别在两棵树间共享构建目录。
@@ -105,11 +115,12 @@ gitleaks git --pre-commit --staged        # 提交前扫密钥（.gitleaks.toml�
 
 - **合并在锁上排队，排队是脚本的事**：`./deliver.sh <slug>` 抢 `.git/deliver.lock`（所有树共享一把）；第二个**自己等**（默认 300 秒，`--wait 600` 等更久），每 10 秒说一次谁在跑。**不要用 `sleep` 轮询交付**——一轮 30 分钟的体检里大半时间都花在这种轮询上。
 - **锁的进程死了就被接管**：`who` 里记着 pid，拿锁的进程已经不在了就当场接管（被杀的交付不该把所有人都挡住）；确认没在跑才手工 `rm -rf .git/deliver.lock`。
+- **主仓的合并只有 deliver.sh 能发起**：`.git-hooks/pre-merge-commit` 认 `AURA_DELIVER=1`（`deliver.sh` 自己 export 的），别的 `git merge` 在主仓一律被拒——手打合并绕过了锁和 `merge-tree` 预演，两个会话同时合就是互相盖。真要手动合（合上游之后）：`git merge --no-verify <ref>`。
 - **冲突在树里解决**：`git -C ../Aura-<slug> merge main`，在树里解冲突、构建、验证，再交付。`deliver.sh` 用 `git merge-tree` 预演，会冲突就直接拒——主仓永远不出现要人工解的合并。
 - **能合就一次合完**：`./deliver.sh --ready` 把当前所有"树干净、与 main 不冲突、不撞主仓 WIP"的分支在一个锁窗口里合掉，然后**只构建一次**、只清一次场。三个任务从 ~600 秒降到 ~200 秒。
 - **产物戳决定要不要重建**：`.git/artifact` 记着 `build/` 是哪个提交构建的；自那以后没有 `Sources/`、`Resources/`、`Engine/`、`Package.swift`、`VERSION` 的改动就不重建（实测跳过时整次交付 0.6 秒）。`./deliver.sh --status` 直接告诉你覆盖没覆盖 HEAD。
 - **`CHANGELOG.md` 走 union 合并**（`.gitattributes`）：两条任务在同一天、同一处加一行是常态，union 把两行都留下，不为这一处互相挡；别的文件没有这个待遇。
-- **构建失败就撤回合并**（`reset --hard ORIG_HEAD`），树与分支留着；清场失败（树里又长出新东西）一样停下，绝不 `--force` 盖别人的活。
+- **构建失败就撤回合并，撤回不碰别人的活**：先用 `git reset --keep`——合并期间别的会话往工作区写的东西，它一概保住（真冲突就拒绝撤回）；被拒绝时才把这些改动存进 `.git/parked/<时间>/`（跟踪文件存成 git 对象、未跟踪文件原样复制），把 `git stash apply <sha>` 交回来，再硬撤。**没有一份活会静默消失**（教训：会话说自己的 SideBand 改动被交付清了，从此工作区在撤回路径上必须可恢复）。清场失败（树里又长出新东西）一样停下，绝不 `--force`。
 - **一个检出同时只跑一个 `./build.sh`**：SwiftPM 会让后来者等锁，但 `build/Aura.app` 与签名会互相盖；两棵树各有 `.build`，各跑各的没问题。
 - **锁只拦交付，不拦手**：锁在时主仓是施工区，谁都不许在里面做手工 git 操作；确认没有交付在跑才 `rm -rf .git/deliver.lock`，永远别删 `index.lock`。
 
@@ -153,7 +164,7 @@ gitleaks git --pre-commit --staged        # 提交前扫密钥（.gitleaks.toml�
 
 ## 已知遗留（实测，别踩）
 
-- **改名遗留**：`Tests/AddressRegression/run.sh`、`Tests/HistoryRegression/run.sh`、`Tests/DuskHarness.swift`、`Tests/popup_gesture_script.js`、`Tests/ExtensionWorkerRecovery/run.js` 仍写 `Sources/Search/…`，源码已在 `Sources/Aura/` —— 直接跑报 `No such file`。修脚本，**不要**建兼容目录。
+- **`Tests/popup_gesture_script.js` 没人跑了**：它读 `PopupGesture.swift` 的源码做文本检查，路径已修，但仓库里没有任何脚本或套件调用它——要么接进一个跑器，要么删掉。
 - **引擎命名两套**：源码是 `Engine/aura-ai-engine.cpp`，`engine.sh` 产物是 `aura-ai-engine-<arch>`，运行时找的下载程序叫 `search-ai-engine`；以 `engine.sh` 与 `AIEngine.swift` 为准。
 - `AI.shipped = false` 是 AI 附加功能的总闸（1.0.5 起收起）：动 AI 代码前先读这一行。
 - **译文表有既有缺口**（2026-10-25：662/707，缺 45、未用 282）：`./Tools/i18n.py check` 因此恒红，当诊断用，不当门槛；`./check.sh` 只报数字。

@@ -1,0 +1,33 @@
+#!/bin/sh
+# 主仓只从 ./deliver.sh 收合并。它拿着那把锁、先用 merge-tree 预演过冲突、
+# 构建失败会把这批合并撤回；手打 git merge 三样都没有，两个会话同时合并就会
+# 互相盖，构建也会把别人没提交的活编进产物（AGENTS.md「并行交付」）。
+#
+# 树里的合并一律放行：在树里 merge main 解冲突正是该做的事。
+set -eu
+
+main_tree=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
+here=$(git rev-parse --show-toplevel)
+[ "$here" = "$main_tree" ] || exit 0
+
+# deliver.sh 自己带这个变量；它是唯一该在主仓合并的人。
+[ "${AURA_DELIVER:-}" = "1" ] && exit 0
+
+cat >&2 <<'MSG'
+主仓的合并只从 ./deliver.sh 走：这次 git merge 被拒了。
+
+  ./deliver.sh <slug>        合一个分支（等锁、预演冲突、需要时构建一次）
+  ./deliver.sh --ready       能合的都合，一次窗口一次构建
+
+  确实要手动合（例如合上游之后）：
+      git merge --no-verify <ref>
+  AGENTS.md「并行交付」是这条规矩的家。
+
+  这次合并已经动过工作区：git merge --abort 退回去，或者按上面用
+  --no-verify 再来一次。
+MSG
+
+# 只 exit 1，不在这里替人 ---abort：git 跑钩子时正握着索引锁，钩子里的
+# git merge --abort 改不动索引（实测 exit 0 但 MERGE_HEAD 还在）。所以把
+# 「退回去」写进上面的话里，由手来做，一行就够。
+exit 1

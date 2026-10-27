@@ -305,7 +305,7 @@ private final class DuskHarness: NSObject, NSApplicationDelegate, WKScriptMessag
 
     private static func constant(_ name: String, in file: String) -> String {
         let here = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-        let source = (try? String(contentsOf: here.appendingPathComponent("../Sources/Search/" + file), encoding: .utf8)) ?? ""
+        let source = (try? String(contentsOf: here.appendingPathComponent("../Sources/Aura/" + file), encoding: .utf8)) ?? ""
         guard let start = source.range(of: name + " = #\"\"\"\n"),
               let end = source.range(of: "\"\"\"#", range: start.upperBound..<source.endIndex) else {
             print("FAIL no \(name) in \(file)"); exit(1)
