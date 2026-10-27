@@ -3,8 +3,18 @@ import Darwin
 import Foundation
 import WebKit
 
-/// Search's own world, as the app defines it (Web.swift).
-enum Web { @MainActor static let world = WKContentWorld.world(name: "Search") }
+// The matching engine alone (PageFind.swift), on pages made to hold matches in
+// every awkward place — 62 checks, in a window that is never shown:
+//
+//     swiftc -parse-as-library Tests/PageFindHarness.swift \
+//         Sources/Aura/PageFind.swift -o .build/page-find-harness
+//     .build/page-find-harness
+//
+// Where the find bar sits in the column is FindStageTests'; this is the
+// engine underneath it (found, wrapped, highlighted, scrolled into view).
+
+/// Aura's own world, as the app defines it (Tab.swift, Web.world).
+enum Web { @MainActor static let world = WKContentWorld.world(name: "Aura") }
 
 @MainActor
 private final class PageFindHarness: NSObject, NSApplicationDelegate {
