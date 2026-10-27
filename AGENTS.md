@@ -45,11 +45,12 @@ AURA_ARCH=x86_64 ./build.sh release dmg   # Intel 档，出 build/intel/
 # 快速腿 —— 默认这条：文案、译文、注释、文档、脚本、样式微调
 ./check.sh                                # 编译＋零新增警告＋译文表语法＋缺口计数，秒级
 
-# 窄腿 —— 改了行为时的默认这条：./test.sh
-./test.sh                                 # 逻辑腿：10 个重套件之外的 400 例，约 21 秒
+# 窄腿 —— 梯子，从便宜的一端上：changed → 套件 → 逻辑腿 → all
+./test.sh changed                         # 按这次改的文件挑套件，约 2-10 秒
 ./test.sh ExtensionWorkerPortTests        # 一个套件，约 2 秒
+./test.sh                                 # 逻辑腿：10 个重套件之外的 400 例，约 21 秒
 ./test.sh heavy                           # 只有那 10 个重套件，约 214 秒
-./test.sh all                             # 全量 492 例，约 243 秒；交付前跑这条
+./test.sh all                             # 全量 492 例，约 243 秒；交付前跑这条，一轮只跑一次
 ./test.sh --list                          # 这套是怎么分的
 
 # 全量 —— 只在跨模块、动契约、交付前才跑（就是 ./test.sh all）
@@ -99,7 +100,9 @@ gitleaks git --pre-commit --staged        # 提交前扫密钥（.gitleaks.toml�
 ## 完成的定义：快速 → 全量 → 交付
 
 - **默认 `./check.sh`，别默认全量**：文案、译文、注释、文档、脚本、样式微调，编译通过加零新增警告就够（秒级）。全量是最贵的动作，不是稳妥的选择。
-- **什么才算行为改动**：`Sources/Aura` 里除注释与文案字面量之外的改动、`Resources/Shield` 的生成物、`Engine/`、`Package.swift`。这时先窄后全：改了 `X.swift` 而 `Tests/AuraTests/XTests.swift` 在 → `./test.sh XTests`（热态 2 秒）；没有同名套件 → `./test.sh`（逻辑腿，约 21 秒，400 例）；跨模块或动契约、以及交付前 → `./test.sh all`。
+- **什么才算行为改动**：`Sources/Aura` 里除注释与文案字面量之外的改动、`Resources/Shield` 的生成物、`Engine/`、`Package.swift`。这时走梯子：`./test.sh changed`（改到 `X.swift` 而 `Tests/AuraTests/XTests.swift` 在，就只跑它；挑不出来它自己退回逻辑腿）→ 绿了再往上加一格 → 跨模块、动契约、交付前才 `./test.sh all`。
+- **全量一轮只跑一次，而且放在最后**：红了要修的是那个套件（`./test.sh <套件>`，2 秒），把全量再跑一遍只为找错误输出是最后的手段。有一轮会话在同一份代码上跑了四次全量，93 分钟里光这一项占 11 分钟。`./test.sh all` 替你记着这条：上一次全量绿了、之后 `Sources/`/`Tests/` 没动过，它跳过并说明白（真要再跑：`--again`）。
+- **后台等全量的时候别空转**：等的四五分钟拿去做别的（注释、`CHANGELOG`、下一个问题的取证），或者干脆放到交付前最后一步。
 - **一轮改动的三种腿，量过的**：文案/注释/译文 `./check.sh` ≈2 秒；逻辑 `./test.sh` ≈21 秒；界面 `AURA_OUT=build/debug ./build.sh debug`（改一行约 20-38 秒）＋ `AURA_APP=build/debug/Aura.app python3 Tests/<名字>.py`（一个探针 16-25 秒）≈40-50 秒。30 秒的量级到逻辑腿为止，界面那一腿省不掉探针自己的十几秒。
 - **自证不跑 release**：`./build.sh` 是一次整模块的 release 编译（~200 秒，改一行也一样）。自证用 `swift build`，要看界面就 `AURA_OUT=build/debug ./build.sh debug`（探针加 `--app build/debug/Aura.app`）；release 只在交付、或用户要看时构建一次。
 - **测试纪律**：一条命令一次跑完；同一轮最多重跑两次，仍红就带着输出停下报告；探针先确认世界在答（`./bench --test tabs`）再等它。
