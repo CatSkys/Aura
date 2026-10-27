@@ -731,6 +731,9 @@
 "After ten minutes away." = "离开十分钟后。";
 "Rename “{1}”…" = "重命名“{1}”…";
 "Rename Space" = "重命名空间";
+"Change Space Icon…" = "更改空间图标…";
+"Edit Theme Colour…" = "编辑主题颜色…";
+"Manage Spaces…" = "管理空间…";
 "Move Left" = "左移";
 "Move Right" = "右移";
 "Downloads to “{1}”…" = "下载到“{1}”…";

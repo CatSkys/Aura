@@ -396,7 +396,7 @@ final class Bench {
             // Now rather than after half an hour, but past every other check
             // a tab has to clear — the answer says which one kept it awake.
             guard let tab = find(request, in: browser) else { answer(missing(request)); return }
-            browser.sleep(tab) { said in answer(["said": said, "asleep": tab.asleep]) }
+            browser.sleep(tab) { said in answer(["said": said, "asleep": tab.asleep, "frozen": tab.isFrozen]) }
 
         case "openmark":
             // A bookmark opened as the bar opens one. Only on a AURA_PROBE run.
@@ -4217,6 +4217,9 @@ final class Bench {
             "atRest": AtRest.of(tab.restAddress)?.text ?? "",
             "atRestShown": browser.map { tab.id == $0.activeID && $0.editingTab != tab.id && AtRest.said(tab.restAddress, always: $0.prefs.showsAddress) != nil } ?? false,
             "asleep": tab.asleep,
+            // Asleep with its page still in memory (see Freeze.swift): the
+            // difference between waking in a frame and waking by loading.
+            "frozen": tab.isFrozen,
             "shy": tab.shy,
             "noisy": tab.noisy,
             "muted": tab.muted,

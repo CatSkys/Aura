@@ -1,13 +1,13 @@
 import AppKit
 import WebKit
 
-// Right-click on a block, with "Hide This Element" in the menu.
+// Right-click on a block: who is asked, and what names the block.
 //
 // WebKit's own page menu has no public hook — the same reason ImageMenu.swift
 // stands in for the image one — so the page's own menu is asked to step aside
 // for exactly the element a right-click landed on: the page's `contextmenu`
-// event is answered here, the element under the pointer is named, and this
-// app's menu is popped where the pointer already is.
+// event is answered here, the element under the pointer is named, and the menu
+// this app puts up in its place is PageMenu.swift's.
 //
 // What is deliberately left alone, because WebKit's menu is better at it and
 // taking it away would be a loss: a link, a picture, a text field, anything
@@ -83,33 +83,4 @@ final class ClosureMenuItem: NSMenuItem {
     required init(coder: NSCoder) { fatalError("not from a nib") }
 
     @objc private func fire() { run() }
-}
-
-extension Browser {
-    /// The menu a right-click on a block puts up: the one thing WebKit's own
-    /// menu cannot be given, beside the two things taking its place would
-    /// otherwise cost. Hiding is the same handing-over a click in pointing
-    /// mode makes, so a block hidden from here is hidden the same way, for
-    /// the same site, and back the same way.
-    func showBlockMenu(for tab: Tab, selector: String, label: String, note: String) {
-        guard let page = tab.built, let window = page.view.window else { return }
-        let view = page.view
-        let menu = NSMenu()
-        menu.autoenablesItems = false
-        menu.addItem(ClosureMenuItem("Hide This Element") {
-            tab.picked(selector: selector, label: label, note: note)
-        })
-        menu.addItem(.separator())
-        menu.addItem(ClosureMenuItem("Reload") { [weak self, weak tab] in
-            guard let self, let tab, tab === self.active else { return }
-            self.reload()
-        })
-        menu.addItem(ClosureMenuItem("Inspect Element") { [weak self, weak tab] in
-            guard let self, let tab, tab === self.active else { return }
-            self.toggleInspector()
-        })
-
-        let atWindow = window.convertPoint(fromScreen: NSEvent.mouseLocation)
-        menu.popUp(positioning: nil, at: view.convert(atWindow, from: nil), in: view)
-    }
 }
