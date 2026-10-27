@@ -88,14 +88,22 @@ enum Spaces {
 
     private static var file: URL { Store.file("spaces.json") }
 
-    /// Every space of every profile, the first one first — made on the
-    /// spot if there is no list yet.
+    /// Every space of every profile, in the order you put them in — the first
+    /// one included, which may sit anywhere — and made on the spot if there
+    /// is no list yet.
     static func read() -> [Space] {
-        let saved = (try? Data(contentsOf: file)).flatMap { try? JSONDecoder().decode([Space].self, from: $0) } ?? []
-        var first = saved.first(where: \.isFirst) ?? Space(id: Space.firstID, name: "Personal", colour: 0)
-        // The first space is Personal's, whatever a file says.
-        first.profile = nil
-        return [first] + saved.filter { !$0.isFirst }
+        var saved = (try? Data(contentsOf: file)).flatMap { try? JSONDecoder().decode([Space].self, from: $0) } ?? []
+        guard let at = saved.firstIndex(where: \.isFirst) else {
+            // The first space is Personal's, whatever a file says; a list
+            // without it gets one at the top, which is where a new one goes.
+            saved.insert(Space(id: Space.firstID, name: "Personal", colour: 0), at: 0)
+            return saved
+        }
+        // Put back where you carried it: the column used to put the first
+        // space first again on every redraw, so it jumped home as soon as it
+        // was moved away from the left (idea 398's neighbour, #731).
+        saved[at].profile = nil
+        return saved
     }
 
     /// One profile's spaces, its first space first: what a window of that

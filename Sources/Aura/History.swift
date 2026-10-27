@@ -25,6 +25,8 @@ struct Suggestion: Identifiable, Equatable {
         /// Words the engine itself suggested, from what was typed so far
         /// (Settings › General › Suggestions from your search engine).
         case suggested
+        /// A site you kept, offered before the places you have been.
+        case bookmark
         /// Not a place either: something the app itself does.
         case command(AddressCommand)
 
@@ -37,6 +39,10 @@ struct Suggestion: Identifiable, Equatable {
         if kind.isCommand { return "command " + key }
         if case .suggested = kind { return "suggested " + key }
         if case .visited = kind { return History.identity(for: url) }
+        // A bookmark of the same page as a place you have been is two rows
+        // with two identities, and two bookmarks called "Home" are two rows
+        // too: the address tells them apart, not the name.
+        if case .bookmark = kind { return "bookmark " + History.identity(for: url) }
         return key
     }
 

@@ -1947,6 +1947,8 @@ final class Browser: NSObject, ObservableObject {
         var batch: UUID? = nil
         /// Of a Clear's tabs, the one you were on, which comes back in front.
         var front = false
+        /// Silenced when it closed, so it comes back quiet (see Tab.muted).
+        var muted = false
 
         var label: String { title.isEmpty ? Address.pretty(url) : title }
     }
@@ -3035,7 +3037,10 @@ final class Browser: NSObject, ObservableObject {
                 // arrived at: quitting on it is leaving it.
                 touched: visibleTabIDs.contains(tab.id) ? Date() : tab.touched,
                 letGo: tab.pin == nil ? tab.letGo : nil,
-                listed: tab.pin != nil && tab.listed ? true : nil
+                listed: tab.pin != nil && tab.listed ? true : nil,
+                // Written only when it is on: a tab that was never muted is
+                // a nil, and a file from before the field reads the same.
+                muted: tab.muted ? true : nil
             ))
         }
         // The tab you were on isn't kept — a private one: the one kept just
@@ -3570,7 +3575,7 @@ final class Browser: NSObject, ObservableObject {
         if launching { dismiss(); return }
         if peekTab != nil { closePeek() }
         else if closePanel() { return }
-        else if let tab = active { close(tab) }
+        else if let tab = active { close(tab, puttingAway: true) }
     }
 
     /// ⇧⌘W: the whole window, its tabs with it, as the red button closes it.
@@ -3590,7 +3595,9 @@ final class Browser: NSObject, ObservableObject {
 
     /// ⌘W, or the cross on the tab. Closing the last one leaves a blank tab
     /// behind; closing that blank tab closes the window.
-    func close(_ tab: Tab) {
+    /// `puttingAway`: ⌘W's own press, the only one that leaves a grouped
+    /// tab's row behind (see the group branch below).
+    func close(_ tab: Tab, puttingAway: Bool = false) {
         guard let index = tabs.firstIndex(where: { $0.id == tab.id }) else { return }
         let pair = split(for: tab)
         let partner = pair.flatMap { pair in tabs.first { $0.id == pair.partner(of: tab.id) } }
@@ -3607,6 +3614,24 @@ final class Browser: NSObject, ObservableObject {
         // it. Left alone, the window would go on holding a page belonging to a
         // tab that no longer exists.
         if floating == tab.id { land(covering: false) }
+
+        // ⌘W on a tab in a group puts it away rather than closing it, as Arc
+        // keeps a folder's tabs (idea 398): its page is let go, its row stays
+        // in the group, and a click opens it again at the page it was on. The
+        // cross, the middle button, Close Other Tabs, Close Tabs Below, Clear
+        // and Close Group close for good, as they always did.
+        if puttingAway, group(of: tab) != nil, tab.address != nil {
+            tab.rest()
+            let others = tabs.filter { $0.id != tab.id && !$0.asleep }
+            let loose = others.filter { $0.pin == nil }
+            if let back = (loose.isEmpty ? others : loose).max(by: { $0.touched < $1.touched }) {
+                select(back)
+            } else {
+                newTab()
+            }
+            writeSession(now: true)
+            return
+        }
 
         // A pinned tab is not closed by ⌘W — it is put down. The letter keeps
         // its place, the page is let go, and you land on whatever you were
@@ -3713,6 +3738,23 @@ final class Browser: NSObject, ObservableObject {
             close(tab)
         }
         select(keep)
+    }
+
+    /// Close Tabs Below, in a tab's menu: every tab under it in the row, the
+    /// tabs of a group below included, each closed as ⌘W closes it. The
+    /// clicked tab stays, and so does everything above it and every pin; a
+    /// page in Split View keeps its other half. All of it is remembered as
+    /// one, so a single ⇧⌘T puts them back (see reopen(batch:)).
+    func closeBelow(_ keep: Tab) {
+        guard let at = tabs.firstIndex(where: { $0.id == keep.id }) else { return }
+        let partner = split(for: keep).flatMap { $0.partner(of: keep.id) }
+        let going = tabs[at...].filter { $0.pin == nil && $0.id != keep.id && $0.id != partner && !$0.bench }
+        guard !going.isEmpty else { return }
+        closingTogether { _ in
+            for tab in going where !visibleTabIDs.contains(tab.id) { close(tab) }
+            for tab in going where visibleTabIDs.contains(tab.id) { close(tab) }
+        }
+        if let front = activeID, going.contains(where: { $0.id == front }) { select(keep) }
     }
 
     /// Arc's Clear, on the line above the tabs that come and go: each of
@@ -3850,6 +3892,8 @@ final class Browser: NSObject, ObservableObject {
             tab.groupID = group.id
             regrouped = regrouped || group.back
             tab.restore(url: ghost.url, title: ghost.title)
+            // Quiet before its page is built, as one from last session is.
+            tab.muted = ghost.muted
             tabs.insert(tab, at: safeInsertionIndex(ghost.index))
             if let was = ghost.was { back[was] = tab }
             if ghost.front { front = tab }
@@ -3887,6 +3931,7 @@ final class Browser: NSObject, ObservableObject {
         activeID = tab.id
         editing = false
         typed = ""
+        tab.muted = ghost.muted
         tab.go(to: ghost.url)
         // Back into its pair, if the page it was beside is still alone.
         if let id = ghost.partner, let partner = tabs.first(where: { $0.id == id }),
@@ -3915,7 +3960,8 @@ final class Browser: NSObject, ObservableObject {
     private func remember(_ tab: Tab, at index: Int, partner: Tab.ID? = nil, onLeft: Bool = false) {
         guard !tab.shy, let url = tab.address else { return }
         ghosts.append(Ghost(url: url, title: tab.title, index: index, groupID: tab.groupID,
-                            partner: partner, onLeft: onLeft, was: tab.id, batch: batching))
+                            partner: partner, onLeft: onLeft, was: tab.id, batch: batching,
+                            muted: tab.muted))
         // Twelve steps back, a Clear counting as one: its tabs come back
         // together or not at all, however many there were.
         var steps = Set<UUID>()
@@ -4198,6 +4244,24 @@ final class Browser: NSObject, ObservableObject {
         tabGroups[index].collapsed.toggle()
         writeSession(now: true)
     }
+
+    /// Fold All Groups and Unfold All Groups, as in Arc (idea 398's
+    /// neighbour): every group of the space at once, each keeping its tabs
+    /// and its place. A folded group still shows the tab you are on when it
+    /// is one of its own (see visibleTabs(in:)).
+    func foldAllGroups(_ folded: Bool) {
+        var changed = false
+        for index in tabGroups.indices where tabGroups[index].collapsed != folded {
+            tabGroups[index].collapsed = folded
+            changed = true
+        }
+        guard changed else { return }
+        writeSession(now: true)
+    }
+
+    /// Whether there is anything for those two to do.
+    var hasGroupsToFold: Bool { tabGroups.contains { !$0.collapsed } }
+    var hasGroupsToUnfold: Bool { tabGroups.contains { $0.collapsed } }
 
     func removeTabGroup(_ id: UUID) {
         guard tabGroups.contains(where: { $0.id == id }) else { return }
@@ -4921,6 +4985,46 @@ final class Browser: NSObject, ObservableObject {
         }
     }
 
+    /// File › Save Page As…: the page as one web archive, as Safari's Save As
+    /// leaves it — the page with its pictures and styles in the one file,
+    /// which opens again here or in Safari, offline too.
+    func savePage() {
+        guard let tab = active, tab.isWeb, let window = tab.web.window ?? self.window else { return }
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.webArchive]
+        panel.canCreateDirectories = true
+        let title = tab.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let stem = (title.isEmpty ? tab.pageAddress?.host() ?? "Page" : title)
+            .replacingOccurrences(of: "/", with: "-")
+            .replacingOccurrences(of: ":", with: "-")
+        panel.nameFieldStringValue = stem.lowercased().hasSuffix(".webarchive") ? stem : stem + ".webarchive"
+        panel.directoryURL = downloadsFolder
+        panel.beginSheetModal(for: window) { [weak self] answer in
+            guard answer == .OK, let file = panel.url else { return }
+            self?.savePage(tab, to: file)
+        }
+    }
+
+    /// Keep the tab the save panel was opened for, as `exportPDF` does; the
+    /// bench passes the tab without a panel.
+    func savePage(_ tab: Tab, to file: URL, finished: ((Bool) -> Void)? = nil) {
+        guard tab.isWeb else {
+            finished?(false)
+            return
+        }
+        tab.web.webKit.createWebArchiveData { [weak self] result in
+            do {
+                let data = try result.get()
+                try data.write(to: file, options: .atomic)
+                self?.announce(Localized("Saved \(file.lastPathComponent)"), file: file)
+                finished?(true)
+            } catch {
+                self?.announce("Couldn't save page")
+                finished?(false)
+            }
+        }
+    }
+
     /// ⌘P. The system's print sheet, where a paginated PDF can also be saved.
     func printPage() {
         guard let tab = active, tab.isWeb, let window = NSApp.keyWindow else { return }
@@ -4983,6 +5087,10 @@ final class Browser: NSObject, ObservableObject {
             // Never later than now: a clock set wrong once would keep the tab forever.
             if let touched = entry.touched { tab.touch(at: min(touched, Date())) }
             tab.letGo = entry.letGo.map { min($0, Date()) }
+            // Quiet before its page is built, so a tab that was silenced
+            // makes no first sound: a tab woken from here is asleep, and its
+            // view takes the mute as it is built (see Tab.build).
+            tab.muted = entry.muted == true
             tab.pin = entry.pin
             tab.pinID = entry.pin == nil ? nil : entry.pinID
             tab.listed = entry.pin != nil && entry.listed == true
@@ -5591,9 +5699,16 @@ final class Browser: NSObject, ObservableObject {
         let open = openPages(matching: typed)
         list += open
 
+        // A site you kept comes before a place you have only been: the
+        // bookmark is the address you said you wanted back (idea 417).
+        var seen = Set(open.map { History.identity(for: $0.url) })
+        for kept in bookmarkOffers(for: typed, avoiding: seen) {
+            seen.insert(History.identity(for: kept.url))
+            list.append(kept)
+        }
+
         // Where you have been, and never somewhere already in the list under
         // another name.
-        var seen = Set(open.map { History.identity(for: $0.url) })
         for offer in history.suggestions(for: typed, limit: 3) {
             let key = History.identity(for: offer.url)
             guard !seen.contains(key) else { continue }
@@ -5619,6 +5734,24 @@ final class Browser: NSObject, ObservableObject {
         let ending = command != nil ? nil
             : history.completion(for: typed, among: list.filter { $0.kind != .open && !$0.kind.isCommand })
         return (list, ending)
+    }
+
+    /// The sites kept as bookmarks that answer what is typed: by their name
+    /// or their address, the words in any order, from two letters on — the
+    /// rule `Bookmarks.matches` keeps, being Chrome's bookmarks search. Three
+    /// at most, and never one already in the list under another name.
+    private func bookmarkOffers(for typed: String, avoiding seen: Set<String>) -> [Suggestion] {
+        let needle = typed.trimmingCharacters(in: .whitespaces)
+        guard needle.count >= 2 else { return [] }
+        var out: [Suggestion] = []
+        for hit in bookmarks.matches(needle) {
+            guard !hit.node.isFolder, let url = hit.node.address else { continue }
+            let key = History.identity(for: url)
+            guard !seen.contains(key), !out.contains(where: { History.identity(for: $0.url) == key }) else { continue }
+            out.append(Suggestion(key: hit.node.label, title: Address.pretty(url), url: url, kind: .bookmark))
+            if out.count == 3 { break }
+        }
+        return out
     }
 
     /// What is open, most recently looked at first, filtered by what has been

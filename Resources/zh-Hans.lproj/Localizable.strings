@@ -132,6 +132,7 @@
 "Close Window" = "关闭窗口";
 "Share…" = "共享…";
 "Export as PDF…" = "导出为 PDF…";
+"Save Page As…" = "存储页面为…";
 "Print…" = "打印…";
 "Find on Page…" = "在页面上查找…";
 "Find Next" = "查找下一个";
@@ -178,6 +179,9 @@
 "Copy as Markdown Link" = "拷贝为 Markdown 链接";
 "Paste and Go" = "粘贴并前往";
 "Close Other Tabs" = "关闭其他标签页";
+"Close Tabs Below" = "关闭下方标签页";
+"Fold All Groups" = "折叠所有分组";
+"Unfold All Groups" = "展开所有分组";
 "Stop Sound in Tab" = "停止标签页声音";
 "Show Bookmarks…" = "显示书签…";
 "Show Bookmarks Bar" = "显示书签栏";
@@ -484,6 +488,7 @@
 "A tab that keeps nothing" = "不保留任何内容的标签页";
 "Saved {1}" = "已存储 {1}";
 "Couldn't export page" = "无法导出页面";
+"Couldn't save page" = "无法存储页面";
 "Nothing is playing here" = "这里没有正在播放的内容";
 "Hidden on this page — ⌘Z puts it back" = "已在此页面隐藏——⌘Z 可恢复";
 "Hidden — ⌘Z puts it back" = "已隐藏——⌘Z 可恢复";

@@ -89,6 +89,9 @@ struct SearchApp: App {
                 Button("Share…") { browser.share() }
                     .shortcut("file.share")
                     .disabled(!(browser.active?.isWeb ?? false))
+                Button("Save Page As…") { browser.savePage() }
+                    .shortcut("file.savePage")
+                    .disabled(!(browser.active?.isWeb ?? false))
                 Button("Export as PDF…") { browser.exportPDF() }
                     .shortcut("file.exportPDF")
                     .disabled(!(browser.active?.isWeb ?? false))
@@ -304,6 +307,23 @@ struct SearchApp: App {
                 Button("Close Other Tabs") { if let tab = browser.active { browser.closeOthers(but: tab) } }
                     .shortcut("tabs.closeOthers")
                     .disabled(browser.tabs.count < 2)
+                Button("Close Tabs Below") {
+                    if let tab = browser.active { browser.closeBelow(tab) }
+                }
+                .shortcut("tabs.closeBelow")
+                .disabled(browser.active == nil)
+                // Every group at once, only while the space has any: a menu
+                // line that can't do anything is a line to read and skip.
+                if browser.prefs.usesTabGroups, !browser.tabGroups.isEmpty {
+                    Divider()
+                    Button("Fold All Groups") { browser.foldAllGroups(true) }
+                        .shortcut("tabs.foldAll")
+                        .disabled(!browser.hasGroupsToFold)
+                    Button("Unfold All Groups") { browser.foldAllGroups(false) }
+                        .shortcut("tabs.unfoldAll")
+                        .disabled(!browser.hasGroupsToUnfold)
+                }
+                Divider()
                 Button("Stop Sound in Tab") { browser.pauseMedia() }
                     .shortcut("tabs.mute")
             }
