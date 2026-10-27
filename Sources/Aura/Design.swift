@@ -283,14 +283,14 @@ enum Metrics {
     /// Back, forward and reload, at the far end of the row beside the
     /// bookmarks: three doors and the air before the next one.
     static let helm: CGFloat = 3 * 26 + 2 * 2 + 8
-    /// The same three doors again, in the sidebar, where they sit right of
-    /// the lights instead. The column already has 10 of horizontal padding
-    /// of its own before this even starts. 72 put the back door's box 3
-    /// points from the zoom button and its chevron 12, "a little tight"
-    /// (feedback, 22 Oct 2026): at 80 the chevron is 20 points clear of the
-    /// lights, about the 19 the window leaves on their left, as a toolbar's
-    /// first item sits in Safari. A column too narrow for that gives back
-    /// what it must (SideBar.lights), down to where it was.
+    /// The lights' corner in the sidebar: the room the window's three buttons
+    /// keep before the band's first door — the fold — begins. The column
+    /// already has 10 of horizontal padding of its own before this even
+    /// starts. 72 put that door's box 3 points from the zoom button and its
+    /// glyph 12, "a little tight" (feedback, 22 Oct 2026): at 80 the glyph is
+    /// 20 points clear of the lights, about the 19 the window leaves on their
+    /// left, as a toolbar's first item sits in Safari. A column too narrow for
+    /// that gives back what it must (SideBar.lights), down to where it was.
     static let sideLights: CGFloat = 80
     /// The three doors' own width, without the air after them.
     static let helmDoors: CGFloat = 3 * 26 + 2 * 4

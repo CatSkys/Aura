@@ -515,8 +515,8 @@ enum HelmDoor: CaseIterable, Hashable {
 
 /// Back, forward, reload. They watch the live tab, not the window: whether
 /// there is anywhere to go back to is the tab's to say, and it changes with
-/// every page. Used here and, beside the traffic lights instead of at the
-/// far end of the row, in the sidebar.
+/// every page. Used here and, at the far end of the band the lights sit in,
+/// in the sidebar.
 struct Helm: View {
     @ObservedObject var browser: Browser
     /// Which of the three, and the air between them: the column's band gives

@@ -81,22 +81,24 @@ struct SideBar: View {
             // is dragged by it and a double-click fills the screen with it,
             // everywhere but over the doors the band holds, which take their
             // own clicks. The lights are the title bar's own and answer first.
+            // The band's doors stand at its two ends, so the stretch between
+            // them — most of the row — is a strip like any other.
             HStack(spacing: 0) {
                 DragStrip()
-                    .frame(width: 10 + lights)
-                Color.clear
-                    .frame(width: band.width)
-                    .allowsHitTesting(false)
+                    .frame(width: 10 + lights + band.leading)
                 DragStrip()
+                Color.clear
+                    .frame(width: band.trailing)
+                    .allowsHitTesting(false)
             }
             .frame(height: Metrics.strip)
 
             VStack(alignment: .leading, spacing: 0) {
-                // The traffic lights' corner, with the column's own fold and
-                // back, forward and reload right of them — the same doors as
-                // the top bar, moved beside the lights since there's no far
-                // end of a row to put them at in this mode, and as many of
-                // them as the column is wide enough for (see SideBand).
+                // The traffic lights' corner, with the column's own fold beside
+                // them, and back, forward and reload out at the band's far end
+                // — the same doors as the top bar, at the end of the row it
+                // has here too — as many of them as the column is wide enough
+                // for (see SideBand).
                 SideBand(browser: browser, prefs: prefs, lights: lights)
                     .frame(height: Metrics.strip)
 
