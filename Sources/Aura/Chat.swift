@@ -133,6 +133,13 @@ final class Chat: ObservableObject, Identifiable {
     private let fence = AIPage.newFence()
     private var waiting: (ask: AIPage.Ask, tab: Tab?, shown: String)?
     private var task: Task<Void, Never>?
+    /// The window and the page this turn was started on. A turn acts on a page
+    /// — it clicks in it, fills its forms, opens tabs beside it — so it may
+    /// only go on while that window is open and that page is still there.
+    /// Closing the tab or the window ends the turn, which is the difference
+    /// between a conversation put away and a page taken away.
+    private var actingWindow: Browser?
+    private var actingTab: Tab?
 
     init(provider: AIProvider, model: String) {
         id = UUID()
@@ -292,10 +299,16 @@ final class Chat: ObservableObject, Identifiable {
                 return
             }
             do {
+                // Kept for the checks below and for `stop()`: what this turn
+                // is allowed to act on, and whether it still exists.
+                self.actingWindow = window
+                self.actingTab = acting
                 let added = try await AIToolLoop.run(messages: self.messages, provider: provider, model: model,
                                                      system: system, key: key, tools: tools,
                                                      browser: window, tab: acting,
-                                                     stopped: { Task.isCancelled },
+                                                     stopped: { [weak self] in
+                                                         Task.isCancelled || self?.wentAway == true
+                                                     },
                                                      check: { tool, arguments in
                                                          await AIToolRisk.weigh(tool: tool, arguments: arguments,
                                                                                 in: window, tab: acting)
@@ -370,6 +383,12 @@ final class Chat: ObservableObject, Identifiable {
             // the provider refuse this conversation from then on — and the
             // question stays, so the next thing said is said after it.
             rollBack(keepingQuestion: failed == nil)
+            // The steps go too. A turn that produced no answer cannot leave
+            // its working behind: a column of "read the page, read the page,
+            // read the page" and then nothing reads as though the assistant
+            // did the work and decided not to say what it found, when the
+            // truth is that the answer never arrived.
+            lines[index].steps = []
             if failed == nil { lines[index].failed = Localized("Nothing came back. Ask again, or try another model.") }
             return
         }
@@ -418,6 +437,22 @@ final class Chat: ObservableObject, Identifiable {
         let question = at < messages.count ? messages[at] : nil
         messages.removeSubrange(at...)
         if keepingQuestion, let question { messages.append(question) }
+    }
+
+    /// Whether this conversation is in the middle of a turn on that page.
+    /// The tab row reads it to say so without words: the page the assistant is
+    /// working in wears its own mark turning, so you can see which page it is
+    /// bound to — and see it stop the moment the turn does.
+    func isActing(in tab: Tab) -> Bool {
+        busy && actingTab?.id == tab.id
+    }
+
+    /// Whether the window this turn acts in, or the page it acts on, has gone
+    /// since it started. Either one ends the turn: its tools click and fill in
+    /// that page, and there is nothing left to click in.
+    private var wentAway: Bool {
+        guard let window = actingWindow, let tab = actingTab else { return true }
+        return !window.tabs.contains { $0.id == tab.id }
     }
 
     func stop() {
@@ -620,14 +655,21 @@ extension Browser {
 
     /// A conversation taken out of the list is taken off every tab that had
     /// it, so a tab cannot go on showing what was just forgotten.
+    ///
+    /// It is stopped first. Its tools act on a page — they click, fill forms,
+    /// open tabs — and a conversation nobody can see any more must not go on
+    /// doing that: closing the thing that shows a turn has to end the turn,
+    /// not just its picture.
     func forgetChat(_ chat: Chat) {
+        chat.stop()
         for tab in tabs where tab.chat?.id == chat.id { tab.chat = nil }
         if self.chat?.id == chat.id { self.chat = nil }
     }
 
     /// Forget All: every conversation this window's tabs had.
     func forgetChats() {
-        for tab in tabs { tab.chat = nil }
+        for tab in tabs { tab.chat?.stop(); tab.chat = nil }
+        chat?.stop()
         chat = nil
     }
 

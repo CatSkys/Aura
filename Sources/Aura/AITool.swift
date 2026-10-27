@@ -143,10 +143,10 @@ enum AITool {
             ),
             Definition(
                 name: "read",
-                description: "The words of the page as a person reading it would see them: its article, or the whole page when there is no article.",
-                schema: Schema(properties: [:]),
+                description: "The words of a page as a person reading it would see them: its article, or the whole page when there is no article. Reads the page in front unless an id is given.",
+                schema: Schema(properties: ["id": .init(.string, "A tab's id, to read that page instead of the one in front. Ids come from tabs list or from opening one.")]),
                 risk: .reading,
-                run: { _, context in await read(context) }
+                run: { arguments, context in await read(arguments, context) }
             ),
             Definition(
                 name: "tabs",
@@ -178,7 +178,7 @@ enum AITool {
         [
             Definition(
                 name: "navigate",
-                description: "Open an address in this tab. Only http and https: an address with any other scheme is refused.",
+                description: "Open an address in a new tab behind the one the person is reading, and keep reading it by the id that comes back. Only http and https: an address with any other scheme is refused.",
                 schema: Schema(
                     properties: [
                         "url": .init(.string, "The whole address, beginning https:// or http://. Take it from the page or from what you were asked — never make one up."),
@@ -319,9 +319,19 @@ enum AITool {
                    detail: snap.text)
     }
 
-    private static func read(_ context: Context) async -> Result {
-        guard let read = await AIPage.read(context.tab) else {
-            return .failed("There's nothing readable on this page.")
+    private static func read(_ arguments: AIToolArguments, _ context: Context) async -> Result {
+        // Which page: the one in front, or the one named. A page opened behind
+        // the one being read is not lost to the turn — from here on it is read
+        // by its id, which is what Dia's contentPaneID is for.
+        var tab = context.tab
+        if let id = arguments.string("id"), !id.isEmpty {
+            guard let named = context.browser.tabs.first(where: { Short.matches($0, id) }) else {
+                return .failed("There's no tab with the id “\(id)”. List them again with tabs list.")
+            }
+            tab = named
+        }
+        guard let read = await AIPage.read(tab) else {
+            return .failed("There's nothing readable on \(tab.id == context.tab.id ? "this page" : "that page").")
         }
         let head = "\(read.title)\n\(read.url?.absoluteString ?? "")\n\n"
         return .ok("Read the page “\(read.title)”.", detail: head + read.text)
@@ -389,14 +399,30 @@ enum AITool {
 
     // MARK: - going places, done
 
+    /// A page, in a tab of its own, behind the one you are reading.
+    ///
+    /// It does not take the page over. Dia's own tool for this is `open_tabs`,
+    /// and its description is exact about where the page goes: "Open new web
+    /// pages in tabs in the current browser window and profile" — a new tab,
+    /// in the window you are in. The one thing it never does is replace the
+    /// page in front of you, because the answer you were reading was there,
+    /// and a browser that navigates it away from under you is one you cannot
+    /// read while it works. Its `open_page` is the tool that has a
+    /// `switched_tab` in its result, and that is a different tool for a
+    /// different purpose: finding the tab you already have.
     private static func navigate(_ arguments: AIToolArguments, _ context: Context) async -> Result {
         let text = (arguments.string("url") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         guard let url = AIToolRisk.address(text) else {
             return .failed("Only http and https addresses can be opened. “\(text)” is not one.")
         }
-        context.tab.go(to: url)
-        let landed = await settle(context.tab, upTo: 15)
-        return .ok("Opened \(landed).")
+        let tab = context.browser.open(url, foreground: false)
+        // The page is loading behind the one in front, so what is waited for
+        // is that tab, not the one the conversation was asked on.
+        let landed = await settle(tab, upTo: 15)
+        // Its id, because the page is not in front: reading it, clicking in it
+        // or closing it means naming that tab, and Dia's own open_tabs works
+        // the same way — a tab is addressed by id, not by being on screen.
+        return .ok("Opened \(landed) in a new tab behind this one. Its id is \(Short.id(tab)).")
     }
 
     private static func history(back: Bool, _ context: Context) -> Result {

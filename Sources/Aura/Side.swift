@@ -1000,6 +1000,26 @@ private struct PinSquare: View {
     private var lit: Bool { hovering || browser.tabCard == tab.id }
 }
 
+/// A tab's mark, or the three dots that stand in for it while the assistant is
+/// working in that page.
+///
+/// A view of its own because the sign has two owners: the mark belongs to the
+/// tab, and whether a turn is going on belongs to the conversation. Held here
+/// as an `@ObservedObject`, the row redraws when the turn ends and the dots go
+/// back to being the page's own mark.
+private struct TabMark: View {
+    @ObservedObject var tab: Tab
+    let size: CGFloat
+
+    var body: some View {
+        if let chat = tab.chat, chat.busy, chat.isActing(in: tab) {
+            TabDots().frame(width: size, height: size)
+        } else {
+            Mark(icon: tab.icon, letter: tab.monogram, size: size)
+        }
+    }
+}
+
 /// One tab, as a line in the column.
 private struct SideRow: View {
     @Environment(\.greys) private var greys
@@ -1044,7 +1064,12 @@ private struct SideRow: View {
                         .frame(height: 16)
                 } else {
                     if prefs.glyph == .icons, !tab.isBlank {
-                        Mark(icon: tab.icon, letter: tab.monogram, size: prefs.roomyTabs ? 17 : 15)
+                        // A page the assistant is working in wears three dots
+                        // where its mark was, Dia's own sign for the tab row:
+                        // it says which page the turn is bound to, and it goes
+                        // back to being the page's mark the moment the turn
+                        // does. The size is kept so the row does not jump.
+                        TabMark(tab: tab, size: prefs.roomyTabs ? 17 : 15)
                     }
                     if tab.bench {
                         // A script's tab, not yours.

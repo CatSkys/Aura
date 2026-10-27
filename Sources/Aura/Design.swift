@@ -109,6 +109,11 @@ enum Palette {
         /// (`--dot-color` / `--dot-emphasized-color`). Far lighter than any
         /// grey in the column — at `chatFaint` they read as three full stops.
         static let chatDot = pair(0.82, 0.82)
+        /// The same three dots on a tab row, which are not the same colour:
+        /// Dia draws those at `#c7c7c7` with a `#aaa` top of the beat
+        /// (`.dots.tab`), because a row's ground is darker than the column's.
+        static let tabDot = pair(0.78, 0.28)
+        static let tabDotPulse = pair(0.67, 0.39)
 
         /// The resting traffic lights, drawn by hand when the app is behind.
         static let resting = pair(0.80, 0.30)
@@ -148,6 +153,9 @@ extension Palette {
         /// The waiting dots, lighter than any text: Dia draws them at 18% of
         /// the ink and they are meant to be barely there.
         static let dot = Color(nsColor: NS.chatDot)
+        /// The waiting dots on a tab row (see AIToolStep's `TabDots`).
+        static let tabDot = Color(nsColor: NS.tabDot)
+        static let tabDotPulse = Color(nsColor: NS.tabDotPulse)
     }
 }
 

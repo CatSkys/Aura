@@ -600,6 +600,41 @@ private struct PendingDots: View {
     }
 }
 
+/// The same three dots, on a tab row: a page the assistant is working in says
+/// so by wearing them instead of its own mark. Dia's are their own animation
+/// and not the column's —
+///
+///     .dots.tab { --dot-size: 3.45px; gap: 2.875px;
+///                 --dot-color: #c7c7c7; --dot-emphasized-color: #aaa }
+///     .tab .dot { animation: tab-dot-pulse 1.25s linear infinite }
+///     @keyframes tab-dot-pulse { 0%,64%,to { scale(1) } 32% { scale(1.45) } }
+///
+/// — smaller and tighter than the column's, and slower (1.25s linear against
+/// 0.8s ease-in-out), because a row is read at a glance rather than watched.
+/// The beat rests at full size for two thirds of it, which is what keeps them
+/// from reading as a spinner.
+struct TabDots: View {
+    @Environment(\.accessibilityReduceMotion) private var calm
+    @State private var lit = false
+
+    var body: some View {
+        HStack(spacing: 2.875) {
+            ForEach(0..<3, id: \.self) { index in
+                Circle()
+                    .fill(lit ? Palette.Chat.tabDotPulse : Palette.Chat.tabDot)
+                    .frame(width: 3.45, height: 3.45)
+                    .scaleEffect(lit ? 1.45 : 1)
+                    .animation(calm ? nil : .linear(duration: 1.25)
+                        .repeatForever(autoreverses: true)
+                        .delay(Double(index) * 0.1), value: lit)
+            }
+        }
+        .frame(height: 3.45 * 1.45)
+        .fixedSize()
+        .onAppear { if !calm { lit = true } }
+    }
+}
+
 /// Dia's fade at the foot of a folded list: opaque to 70%, then almost
 /// nothing. It is how a cut list says "there was more" without a second
 /// control for it.
