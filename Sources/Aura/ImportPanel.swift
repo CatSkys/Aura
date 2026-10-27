@@ -542,6 +542,7 @@ struct ImportPanel: View {
             .padding(.vertical, 9)
             .background(hovering ? Palette.hover : .clear)
             .contentShape(Rectangle())
+            .pressable(Motion.give)
             .onTapGesture(perform: pick)
             .onHover { hovering = $0 }
             .animation(Motion.quick, value: hovering)

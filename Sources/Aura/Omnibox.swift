@@ -83,7 +83,7 @@ struct Omnibox: View {
                 .onChange(of: browser.refusals) { _, _ in
                     shake = 0
                     refused = true
-                    withAnimation(.easeOut(duration: 0.5)) { shake = 1 }
+                    withAnimation(Motion.refuse) { shake = 1 }
                 }
                 .onChange(of: browser.typed) { _, _ in
                     withAnimation(Motion.quick) { refused = false }
@@ -160,6 +160,7 @@ struct Omnibox: View {
             if let site = browser.siteOffer {
                 SiteOfferRow(site: site)
                     .contentShape(Rectangle())
+                    .pressable(Motion.give)
                     .onTapGesture { _ = browser.lockSiteOffer() }
             }
             ForEach(Array(browser.offers.enumerated()), id: \.element.id) { index, offer in
@@ -171,6 +172,7 @@ struct Omnibox: View {
                     onHover: { over in pointing = over ? offer.id : nil }
                 )
                 .contentShape(Rectangle())
+                .pressable(Motion.give)
                 .onTapGesture { browser.take(offer) }
             }
         }

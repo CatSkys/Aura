@@ -689,7 +689,7 @@ final class Preferences: ObservableObject {
         customEngine = store.string(forKey: "search.custom") ?? ""
         keywords = store.data(forKey: "search.keywords")
             .flatMap { try? JSONDecoder().decode([Keyword].self, from: $0) } ?? []
-        tabsGive = store.bool(forKey: "tabs.give")
+        tabsGive = store.object(forKey: "tabs.give") as? Bool ?? true
         awakeSites = Set(store.stringArray(forKey: "tabs.awakeSites") ?? [])
         popupWindows = store.bool(forKey: "tabs.popupWindows")
         popupSites = Set(store.stringArray(forKey: "privacy.popupSites") ?? [])

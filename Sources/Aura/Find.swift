@@ -127,7 +127,7 @@ struct FindBar: View {
                 .frame(width: 24, height: 24)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Press())
         .accessibilityLabel(label)
         .accessibilityHint(help)
         .help(help)

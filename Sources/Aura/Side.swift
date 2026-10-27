@@ -841,7 +841,7 @@ private struct SideFoot: View {
             )
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Press())
         .help("Chat   ⌘⇧A")
     }
 
@@ -1222,7 +1222,7 @@ private struct SideRow: View {
         .onChange(of: browser.refusals) { _, _ in
             guard editing else { return }
             shake = 0
-            withAnimation(.easeOut(duration: 0.5)) { shake = 1 }
+            withAnimation(Motion.refuse) { shake = 1 }
         }
         .transition(.scale(scale: 0.94, anchor: .leading).combined(with: .opacity))
     }
@@ -1297,7 +1297,7 @@ struct Quiet: View {
             )
             .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Press())
         .onHover { hovering = $0 }
         .animation(Motion.quick, value: hovering)
     }
@@ -1335,7 +1335,7 @@ struct KeepLine: View {
                     .foregroundStyle(side.muted)
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(Press(dip: Motion.dipSmall))
                 .help("Close the tabs under the line. Pins and groups stay; ⇧⌘T brings them all back.")
                 .transition(.opacity)
             }
@@ -1367,7 +1367,7 @@ struct Speaker: View {
                 .background(side.ink.opacity(hovering ? 0.07 : 0), in: Circle())
                 .contentShape(Circle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Press(dip: Motion.dipSmall))
         .onHover { hovering = $0 }
         .help(tab.muted ? "Unmute Tab" : "Mute Tab")
         .animation(Motion.quick, value: hovering)
@@ -1405,7 +1405,7 @@ struct Door: View {
                 )
                 .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Press(dip: Motion.dipSmall))
         .simultaneousGesture(
             LongPressGesture(minimumDuration: 0.35).onEnded { _ in
                 guard let menu = held?() else { return }

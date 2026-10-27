@@ -230,13 +230,13 @@ struct WelcomePanel: View {
             Spacer()
             if page > 0 {
                 Button("Back") { forward = false; page -= 1 }
-                    .buttonStyle(.plain)
+                    .buttonStyle(Press())
                     .font(.system(size: 13))
                     .foregroundStyle(Palette.muted)
             }
             if page < pages - 1 {
                 Button("Skip") { finish() }
-                    .buttonStyle(.plain)
+                    .buttonStyle(Press())
                     .font(.system(size: 13))
                     .foregroundStyle(Palette.muted)
             }
@@ -350,7 +350,7 @@ struct WelcomePanel: View {
                     .background(filled ? Palette.ink : (hovering ? Palette.hover : Palette.wash), in: Capsule())
                     .contentShape(Capsule())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(Press())
             .onHover { hovering = $0 }
         }
     }
@@ -433,7 +433,7 @@ struct WelcomePanel: View {
                 )
                 .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(Press())
             .onHover { hovering = $0 }
             .animation(Motion.quick, value: hovering)
             .animation(Motion.settle, value: chosen)

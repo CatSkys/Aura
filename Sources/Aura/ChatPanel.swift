@@ -80,7 +80,7 @@ struct ChatThread: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .animation(.easeOut(duration: 0.2), value: chat.asking.card?.id)
+            .animation(Motion.crossfade, value: chat.asking.card?.id)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -208,7 +208,7 @@ struct ChatThread: View {
                 .frame(width: 18, height: 18)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Press())
     }
 
     /// Nothing asked yet: the two lines, and no card over them. Dia opens its
@@ -412,7 +412,7 @@ struct ChatComposer: View {
                         .frame(width: 28, height: 28)
                         .background(ready ? Palette.Chat.ink : Palette.Chat.faint, in: Circle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(Press())
                 .help(chat.busy ? Localized("Stop") : Localized("Send   ⏎"))
             }
         }
@@ -443,7 +443,7 @@ struct ChatComposer: View {
                 .frame(width: 22, height: 22)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Press())
         .help(help)
     }
 
@@ -512,7 +512,7 @@ struct ChatComposer: View {
                     .frame(width: 16, height: 16)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(Press())
             .help(Localized("Take This Off"))
         }
         .padding(.leading, 8)

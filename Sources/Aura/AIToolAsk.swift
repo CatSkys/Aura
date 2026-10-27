@@ -216,6 +216,6 @@ struct AIToolAskCard: View {
             .frame(height: Measure.row)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Press())
     }
 }

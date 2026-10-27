@@ -134,9 +134,14 @@ struct ChatsPanel: View {
                         .lineLimit(1)
                 }
                 Spacer(minLength: 0)
+                // The two doors used to appear whole, and the row's ground
+                // changed in one frame: a list that answers the pointer should
+                // answer it the way the rest of the app does.
                 if over == chat.id || chosen {
                     Door(icon: "pencil", help: Localized("Rename")) { begin(chat) }
+                        .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .trailing)))
                     Door(icon: "trash", help: Localized("Forget This Chat")) { forget(chat) }
+                        .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .trailing)))
                 }
             }
         }
@@ -147,10 +152,14 @@ struct ChatsPanel: View {
                 .fill(chosen ? Palette.ink.opacity(0.05) : (over == chat.id ? Palette.ink.opacity(0.03) : .clear))
         )
         .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .pressable(Motion.give)
         .onTapGesture { if renaming != chat.id { open(chat) } }
         .onHover { inside in
             if inside { over = chat.id } else if over == chat.id { over = nil }
         }
+        .animation(Motion.quick, value: over)
+        .animation(Motion.crossfade, value: chosen)
+        .animation(Motion.crossfade, value: renaming)
     }
 
     private var foot: some View {

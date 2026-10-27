@@ -586,7 +586,7 @@ struct ReaderLook: View {
                 } label: {
                     icon(for: each)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(Press())
                 .help(each == .system ? "As the window is" : each.title)
             }
         }

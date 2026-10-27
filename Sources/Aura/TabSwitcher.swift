@@ -583,7 +583,7 @@ struct TabSwitcherOverlay: View {
             .frame(width: width, height: height, alignment: .topLeading)
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Press())
         .background(GeometryReader { box in
             Color.clear.preference(key: CardFrames.self, value: [tab.id: box.frame(in: .global)])
         })
@@ -621,7 +621,7 @@ struct TabSwitcherOverlay: View {
             .animation(Motion.glide, value: selected)
             .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Press())
         .background(GeometryReader { box in
             Color.clear.preference(key: CardFrames.self, value: [tab.id: box.frame(in: .global)])
         })

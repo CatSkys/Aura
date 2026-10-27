@@ -140,6 +140,7 @@ private struct TabOffersList: View {
                     onHover: { over in pointing = over ? offer.id : nil }
                 )
                 .contentShape(Rectangle())
+                .pressable(Motion.give)
                 .onTapGesture { browser.takeTabOffer(offer) }
             }
         }

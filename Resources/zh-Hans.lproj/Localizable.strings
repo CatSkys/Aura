@@ -1000,7 +1000,8 @@
 "Tabs show" = "标签页显示";
 "Reading progress" = "阅读进度";
 "The tab you're on fills with grey as you scroll down." = "向下滚动时，当前标签页逐渐填满灰色。";
-"Press feedback on tabs" = "标签页按压反馈";
+"Press feedback" = "按压反馈";
+"Buttons and tabs give a little under the click." = "按钮和标签页被按下时会略微回弹。";
 "Show the bookmarks bar" = "显示书签栏";
 "Bookmarks" = "书签";
 "Off, the button, the menu, the list and the bar go. What is kept stays in the file and comes back with this on." = "关闭后，书签按钮、菜单、列表与书签栏一并隐藏。已保存的书签仍留在文件中，重新开启即恢复。";

@@ -317,7 +317,7 @@ struct SiteCard: View {
                     .frame(width: 44)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(Press())
             .help("Actual Size   ⌘0")
             Step(symbol: "plus", help: "Zoom In   ⌘+") { browser.zoom(by: 1.1) }
         }
@@ -621,7 +621,7 @@ struct SiteCard: View {
                     )
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(Press())
             .onHover { hovering = $0 }
             .help(help)
         }

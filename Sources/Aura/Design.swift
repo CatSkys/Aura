@@ -360,9 +360,88 @@ enum Motion {
         reduced ? nil : .easeOut(duration: 0.14)
     }
 
+    // MARK: - What a press does
+
+    // Arc's own numbers, read out of its binary rather than guessed: of the
+    // 128 springs it writes inline, half are underdamped — 0.28/0.63 and
+    // 0.30/0.60 most often — and its easings cluster on 0.10–0.18 s. So a
+    // press goes down on an easing, because the answer has to be instant, and
+    // comes back on an underdamped spring, because that is the part you feel.
+    // Anything damped all the way, as glide and settle are, reads as
+    // "finished" rather than as "released".
+
+    /// Going down: quick, and with nothing to overshoot — the click is
+    /// answered on the frame it happens.
+    static var pressed: Animation? {
+        reduced ? nil : light ? .easeOut(duration: 0.10) : .easeOut(duration: 0.12)
+    }
+
+    /// Coming back up: Arc's most used spring, a little past where it lands.
+    static var released: Animation? {
+        reduced ? nil : light ? .easeOut(duration: 0.16) : .spring(response: 0.28, dampingFraction: 0.63)
+    }
+
+    /// On and off — a switch's knob, a segment's pill. Softer than a press
+    /// (0.25/0.70), since a knob travels rather than snaps.
+    static var toggled: Animation? {
+        reduced ? nil : light ? .easeOut(duration: 0.16) : .spring(response: 0.25, dampingFraction: 0.70)
+    }
+
+    /// A thing picked out of a row of them, as Stage's swipe disc lands: quick,
+    /// and damped all the way, since two frames of bounce on a thumbnail reads
+    /// as a glitch rather than as weight.
+    static var picked: Animation? {
+        reduced ? nil : .spring(response: 0.22, dampingFraction: 0.9)
+    }
+
+    /// A thing crossing from one plain state to another (a colour, a shadow,
+    /// a glyph): no travel, so no spring, and short.
+    static var crossfade: Animation? {
+        reduced ? nil : .easeOut(duration: 0.12)
+    }
+
+    /// Something that will not move, saying so: the field that shivers.
+    static var refuse: Animation? {
+        reduced ? nil : .easeOut(duration: 0.5)
+    }
+
+    /// A move that is neither a spring nor a crossfade, at the length its
+    /// place was tuned for: an entering page's cover, a pull, a meter. The
+    /// same easing Aura has always used there, now with the two ways of
+    /// turning motion off actually applied — Reduce Motion, and Low Power
+    /// Mode, which is what `light` is for.
+    static func ease(_ duration: Double) -> Animation? {
+        reduced ? nil : light ? .easeOut(duration: min(duration, 0.16)) : .easeOut(duration: duration)
+    }
+
+    /// The same, for the moves eased at both ends.
+    static func easeBoth(_ duration: Double) -> Animation? {
+        reduced ? nil : light ? .easeOut(duration: min(duration, 0.16)) : .easeInOut(duration: duration)
+    }
+
     /// How far a tab gives while it is pressed (see Give): enough to feel
     /// under the pointer, about 3 points on a pill and 7 on a column row.
     static let give: CGFloat = 0.97
+
+    /// And how far a button gives (see Press): a pill, a door, a capsule in
+    /// Settings — the things that answer a click rather than carry a drag.
+    /// Pressing a button is most of what there is to do in Aura, and until
+    /// now it answered in colour alone.
+    static let dip: CGFloat = 0.96
+
+    /// The small square icons — a door in the row, a tool in Extensions —
+    /// give a little further, since a shape that small needs it to be seen.
+    static let dipSmall: CGFloat = 0.92
+
+    /// Whether anything at all gives under the press (Settings › Tabs › Press
+    /// feedback). Read where something is pressed, so it follows the switch
+    /// without a restart. On unless turned off, and a choice already stored
+    /// stands either way.
+    static var presses: Bool {
+        (Store.settings.object(forKey: pressKey) as? Bool) ?? true
+    }
+
+    nonisolated static let pressKey = "tabs.give"
 
     /// The folded column or strip coming out over the page, and going back.
     /// On glide it was slow both ways, next to Arc and Dia timed frame by

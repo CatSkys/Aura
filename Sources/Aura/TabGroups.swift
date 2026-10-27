@@ -106,7 +106,8 @@ struct GroupHeading: View {
         .background(RoundedRectangle(cornerRadius: 9, style: .continuous)
             .fill(dropping ? greys.wash : (hovering ? greys.hover : .clear)))
         .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-        .onTapGesture { if !editing { browser.toggleTabGroup(group.id) } }
+        .pressable(Motion.give)
+        .onTapGesture { if !editing { withAnimation(Motion.settle) { browser.toggleTabGroup(group.id) } } }
         .background {
             if let dragSpace {
                 GeometryReader { geometry in
@@ -116,6 +117,10 @@ struct GroupHeading: View {
             }
         }
         .onHover { hovering = $0 }
+        // The chevron used to snap round and the group's rows blink open and
+        // shut: this file had no animation in it at all.
+        .animation(Motion.quick, value: hovering)
+        .animation(Motion.toggled, value: group.collapsed)
         .onChange(of: editing) { _, now in
             if now {
                 draft = group.name
@@ -145,7 +150,9 @@ struct GroupHeading: View {
         .onDrag { NSItemProvider(object: Localized("search-group:\(group.id.uuidString)") as NSString) }
         .contextMenu {
             Button("Rename Group") { browser.editingGroupID = group.id }
-            Button(group.collapsed ? "Expand Group" : "Collapse Group") { browser.toggleTabGroup(group.id) }
+            Button(group.collapsed ? "Expand Group" : "Collapse Group") {
+                withAnimation(Motion.settle) { browser.toggleTabGroup(group.id) }
+            }
             // The whole group into another space, still a group there: Arc's
             // folders came in wherever Arc had them.
             if browser.prefs.usesSpaces, browser.spaces.count > 1 {

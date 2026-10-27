@@ -647,7 +647,7 @@ struct FetchDoor: View {
                             .trim(from: 0, to: max(0.02, fraction))
                             .stroke(Palette.ink.opacity(0.7), style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
                             .rotationEffect(.degrees(-90))
-                            .animation(.easeOut(duration: 0.2), value: fraction)
+                            .animation(Motion.ease(0.2), value: fraction)
                     } else {
                         // No size given: turning, on Core Animation's time.
                         Ring(size: 12)
@@ -661,7 +661,7 @@ struct FetchDoor: View {
                 )
                 .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(Press())
             .onHover { hovering = $0 }
             .help("Downloads (⇧⌘J)")
             .transition(.scale(scale: 0.6).combined(with: .opacity))

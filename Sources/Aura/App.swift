@@ -568,6 +568,10 @@ struct ContentView: View {
                             .transition(.move(edge: .top).combined(with: .opacity))
                     }
                 }
+                // The find bar's transition had never run: it carried one, and
+                // nothing ever animated the state under it, so ⌘F dropped the
+                // bar in and took it away whole.
+                .animation(Motion.settle, value: browser.finding)
                 .overlay(alignment: .topLeading) {
                     if let asked = browser.suggesting, asked.tab == tab.id {
                         AccountList(browser: browser, asked: asked)
@@ -695,6 +699,11 @@ struct ContentView: View {
             .padding(sideOnRight ? .leading : .trailing, farGap)
             .frame(maxWidth: .infinity, maxHeight: .infinity,
                    alignment: sideOnRight ? .topLeading : .topTrailing)
+            // In and out on a spring rather than in one frame: it is the page's
+            // neighbour, and the page gives up its room at once for the reason
+            // `make(room:after:)` explains — a web view laid out again on every
+            // frame of a slide judders along its edge.
+            .animation(Motion.settle, value: panelUp)
             .transition(.opacity)
     }
 
@@ -1904,7 +1913,7 @@ private struct ImportProgress: View {
                     .frame(height: 22)
                     .background(Palette.ink.opacity(0.07), in: Capsule())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(Press())
             .disabled(job.cancelling)
         }
     }

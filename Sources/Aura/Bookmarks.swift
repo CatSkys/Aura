@@ -937,6 +937,7 @@ struct BookmarkOutline: View {
             }
             .contentShape(Rectangle())
             .opacity(dragging ? 0.35 : 1)
+            .pressable(Motion.give)
             .onTapGesture { open?() ?? toggle?() }
             .onHover { hovering = $0 }
             .contextMenu {
@@ -1249,6 +1250,7 @@ struct BookmarksDropdown: View {
             .padding(.vertical, 6)
             .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(hovering ? Palette.wash : .clear))
             .contentShape(Rectangle())
+            .pressable(Motion.give)
             .onTapGesture(perform: act)
             .onHover { hovering = $0 }
         }
@@ -1406,6 +1408,7 @@ struct BookmarksPanel: View {
             .padding(.vertical, 9)
             .background(hovering ? Palette.hover : .clear)
             .contentShape(Rectangle())
+            .pressable(Motion.give)
             .onTapGesture { open?() ?? show() }
             .onHover { hovering = $0 }
             .contextMenu {

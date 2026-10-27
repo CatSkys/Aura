@@ -220,7 +220,7 @@ final class SpaceSwipe {
         let away: CGFloat = target > here ? -1 : 1
         browser.spaceStep = target > here ? 1 : -1
         resting = Date().addingTimeInterval(SpaceSwipe.rest)
-        withAnimation(.easeOut(duration: 0.22), completionCriteria: .removed) {
+        withAnimation(Motion.ease(0.22), completionCriteria: .removed) {
             browser.spaceSwipe = away * width
         } completion: {
             var still = Transaction()
@@ -326,7 +326,7 @@ struct NewSpaceCard: View {
                 .id(icon)
                 .transition(.opacity)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Press())
         .onHover { hovering = $0 }
         .help(inline ? "New space — choose its icon" : "Choose an icon")
         .popover(isPresented: $choosing, arrowEdge: .bottom) { icons }

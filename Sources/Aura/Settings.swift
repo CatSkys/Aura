@@ -218,7 +218,7 @@ struct SettingsPanel: View {
                             .font(.system(size: 11))
                             .foregroundStyle(Palette.faint)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(Press())
                 }
             }
             .padding(.horizontal, 9)
@@ -265,7 +265,7 @@ struct SettingsPanel: View {
                 )
                 .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(Press())
             .onHover { hovering = $0 }
             .animation(Motion.quick, value: hovering)
         }
@@ -419,7 +419,7 @@ struct SettingsPanel: View {
                     .padding(.leading, 2)
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(Press())
                 .help(Localized("Open \(group.page.title.localized) at \(group.title.localized)"))
                 Card { rows(byGroup[group.id] ?? [], searched: true) }
             }
@@ -849,7 +849,7 @@ struct SettingsPanel: View {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(Palette.faint)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(Press())
             }
             .font(.system(size: 12.5))
             .foregroundStyle(Palette.ink)
@@ -1198,7 +1198,7 @@ struct Pictures<Option: Hashable>: View {
                     }
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(Press())
                 .accessibilityLabel(title.localized)
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
@@ -1369,20 +1369,25 @@ struct Segmented<Option: Hashable>: View {
                         }
                     }
                     .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    .pressable(Motion.give)
                     .onTapGesture {
-                        withAnimation(Motion.settle) { selection = option }
+                        withAnimation(Motion.toggled) { selection = option }
                     }
             }
         }
         .padding(2)
         .background(Palette.wash, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-        .animation(Motion.settle, value: selection)
+        .animation(Motion.toggled, value: selection)
     }
 }
 
 /// On or off, in ink rather than in blue.
 struct Switch: View {
     @Binding var on: Bool
+    /// The knob gives as it goes and swells back after — a switch's own small
+    /// answer to the click, the way Arc's do. Nothing of it with Reduce Motion
+    /// on, and nothing at all with Press feedback turned off.
+    @State private var knob: CGFloat = 1
 
     var body: some View {
         Capsule()
@@ -1393,10 +1398,20 @@ struct Switch: View {
                     .fill(Palette.ground)
                     .shadow(color: .black.opacity(0.18), radius: 1.5, y: 1)
                     .padding(2)
+                    // Squashed flat across and stretched along while it
+                    // comes back: one state, read as two scales.
+                    .scaleEffect(x: knob, y: 2 - knob)
             }
             .contentShape(Capsule())
-            .onTapGesture { withAnimation(Motion.settle) { on.toggle() } }
-            .animation(Motion.settle, value: on)
+            .onTapGesture { withAnimation(Motion.toggled) { on.toggle() } }
+            .animation(Motion.toggled, value: on)
+            .onChange(of: on) { _, _ in
+                guard !Motion.reduced, Motion.presses else { return }
+                var still = Transaction()
+                still.disablesAnimations = true
+                withTransaction(still) { knob = 0.86 }
+                withAnimation(Motion.released) { knob = 1 }
+            }
     }
 }
 
@@ -1424,7 +1439,7 @@ struct Steps: View {
                     .frame(minWidth: 36)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(Press(dip: Motion.dipSmall))
             .help(Localized("Back to \(label(home))"))
             Step(icon: "plus", to: above) { value = $0 }
         }
@@ -1449,7 +1464,7 @@ struct Steps: View {
                     .background(hovering && to != nil ? Palette.hover : .clear, in: Circle())
                     .contentShape(Circle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(Press(dip: Motion.dipSmall))
             .disabled(to == nil)
             .onHover { hovering = $0 }
             .animation(Motion.quick, value: hovering)
@@ -1485,7 +1500,7 @@ struct Pill: View {
                 .overlay(Capsule().strokeBorder(filled ? .clear : Palette.hairline, lineWidth: 1))
                 .contentShape(Capsule())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Press())
         .onHover { hovering = $0 }
         .animation(Motion.quick, value: hovering)
     }
