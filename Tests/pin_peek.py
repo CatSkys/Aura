@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Settings › Spaces & Pins › Pins: a pin keeps its site (#577).
+"""A pin keeps its site (#577), and the peek a click out of one opens.
 
-Two switches, as Arc keeps this pair in its Links pane: Pins keep their site
-(the pin comes back to its page, and a link out of it opens beside it), and
-Open links from a pin in a peek (that link opens in a peek instead).
+Two switches: Pins keep their site, in Settings › Spaces & Pins › Pins (the pin
+comes back to its page, and a link out of it opens beside it), and Open links
+from a pin in a peek, on the Peek card in Settings › Tabs (that link opens in a
+peek instead).
 
 Build first (`./build.sh`), then `python3 Tests/pin_peek.py`. It uses the
 split suite's harness: started hidden, no window made or shown, everything
