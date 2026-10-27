@@ -19,12 +19,15 @@ struct SpaceSwitcher: View {
     /// Puts the card away (see SpaceCardOverlay).
     let close: () -> Void
 
-    @State private var page: Page = .spaces
+    @State private var page: SpaceCardPage
 
-    /// What the card is showing: the spaces, the space on screen's own
-    /// settings, the icons a space can wear, or its colour — Arc's Space
-    /// Style Editor, on a page of its own (see SpaceThemeEditor).
-    private enum Page: Equatable { case spaces, settings, icons, colour }
+    init(browser: Browser, close: @escaping () -> Void) {
+        _browser = ObservedObject(wrappedValue: browser)
+        self.close = close
+        // The page the column's right-click asked for — its icons, its
+        // colour — and the list of spaces when nothing did.
+        _page = State(initialValue: browser.spaceCardPage)
+    }
 
     /// The card's width — the column's own, as Arc's switcher is as wide as
     /// the sidebar it stands in — and the colour page's, whose 27 swatches
@@ -224,12 +227,8 @@ struct SpaceSwitcher: View {
     }
 
     private func rename() {
-        let name = here.name, id = here.id
-        afterwards {
-            Ask.name("Rename Space".localized, placeholder: name, initial: name, confirm: "Rename".localized) {
-                browser.renameSpace(id, to: $0)
-            }
-        }
+        let id = here.id
+        afterwards { browser.askRenameSpace(id) }
     }
 
     private func downloads() {
@@ -238,16 +237,17 @@ struct SpaceSwitcher: View {
     }
 
     private func remove() {
-        let name = here.name, id = here.id
-        afterwards {
-            Ask.sure(Localized("Delete “\(name)”?"),
-                     detail: "Its tabs close, and its cookies and sign-ins are erased from this Mac. History and bookmarks stay.".localized,
-                     confirm: "Delete".localized) {
-                browser.deleteSpace(id)
-            }
-        }
+        let id = here.id
+        afterwards { browser.askDeleteSpace(id) }
     }
 }
+
+/// What the card is showing, on the window that holds it (see
+/// `Browser.spaceCardPage`): the spaces, the space on screen's own settings,
+/// the icons a space can wear, or its colour — Arc's Space Style Editor, on a
+/// page of its own (see SpaceThemeEditor). The column's right-click opens the
+/// card on the one it names rather than drawing a picker of its own.
+enum SpaceCardPage: Equatable { case spaces, settings, icons, colour }
 
 // MARK: - the card over the window
 

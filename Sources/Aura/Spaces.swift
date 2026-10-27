@@ -530,7 +530,12 @@ struct SpaceDot: View {
     private var key: String { browser.makingSpace ? "new" : "\(browser.spaceID.uuidString)-\(browser.space.symbol)" }
 
     var body: some View {
-        Button { browser.spaceCardUp.toggle() } label: {
+        Button {
+            // A click is the list of spaces, whatever a right-click opened
+            // the card on last time.
+            browser.spaceCardPage = .spaces
+            browser.spaceCardUp.toggle()
+        } label: {
             ZStack {
                 SpaceIcon(symbol: shown?.symbol ?? symbol, size: 12, shade: hovering ? side.ink : side.muted)
                     .id(shown?.key ?? key)
@@ -550,6 +555,9 @@ struct SpaceDot: View {
         }
         .buttonStyle(Press())
         .onHover { hovering = $0 }
+        // A right-click is the column's own menu, about the space the dot
+        // stands for (see SideMenu); the left click is still the card.
+        .overlay { RightClick { SideMenu.menu(for: browser) } }
         .help("\(browser.space.name) — ⌃1–⌃9, or two fingers \(browser.prefs.sidebar ? "sideways" : "up or down") over the tabs, to switch")
         // Where the dot stands, for the card that opens over it: it is drawn
         // over the window, not hung from this button (see SpaceCardOverlay).
@@ -706,6 +714,27 @@ enum Ask {
 }
 
 extension Browser {
+    /// A space's new name, asked the same way from its card and from the
+    /// column's right-click menu (see SideMenu).
+    func askRenameSpace(_ id: UUID) {
+        guard let space = spaces.first(where: { $0.id == id }) else { return }
+        Ask.name("Rename Space".localized, placeholder: space.name, initial: space.name, confirm: "Rename".localized) {
+            self.renameSpace(id, to: $0)
+        }
+    }
+
+    /// Whether to delete it, and then gone: its tabs closed, and its cookies
+    /// and sign-ins erased from this Mac — what `deleteSpace` does, asked
+    /// from the card and from the column's menu alike.
+    func askDeleteSpace(_ id: UUID) {
+        guard let space = spaces.first(where: { $0.id == id }) else { return }
+        Ask.sure(Localized("Delete “\(space.name)”?"),
+                 detail: "Its tabs close, and its cookies and sign-ins are erased from this Mac. History and bookmarks stay.".localized,
+                 confirm: "Delete".localized) {
+            self.deleteSpace(id)
+        }
+    }
+
     /// A space deleted in another window: this window's row there goes.
     func forget(space id: UUID) {
         for tab in parked.removeValue(forKey: id)?.tabs ?? [] { tab.close() }

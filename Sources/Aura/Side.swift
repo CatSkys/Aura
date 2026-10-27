@@ -75,7 +75,12 @@ struct SideBar: View {
         ZStack(alignment: .top) {
             // Not under the card for a new space: it isn't made of views that
             // would take the click first.
-            DragStrip(reserved: 0, below: browser.makingSpace ? .greatestFiniteMagnitude : rowsEnd, onDoubleClick: browser.newTab)
+            // A right-click on the room under the rows is the column's own
+            // menu, about the space on screen (see SideMenu): this strip is
+            // the ground there, and it takes the click first.
+            DragStrip(reserved: 0, below: browser.makingSpace ? .greatestFiniteMagnitude : rowsEnd,
+                      onDoubleClick: browser.newTab,
+                      rightMenu: { SideMenu.menu(for: browser) })
 
             // The band the lights sit in is this mode's title bar: the window
             // is dragged by it and a double-click fills the screen with it,
@@ -1440,8 +1445,9 @@ struct Door: View {
 /// its own short of a context menu built when the view is drawn, which would
 /// list the pages as they were then. This view answers the hit test only for
 /// a right-click, so every other click and the hover fall through to the
-/// button beneath.
-private struct RightClick: NSViewRepresentable {
+/// button beneath. It hangs the column's menu on the doors that have one, and
+/// the space's dot has the same (SideMenu.swift).
+struct RightClick: NSViewRepresentable {
     let menu: () -> NSMenu?
 
     func makeNSView(context: Context) -> Catcher { Catcher() }
