@@ -647,6 +647,11 @@ struct DragStrip: NSViewRepresentable {
     /// the tabs, where a double-click opens a new tab instead of zooming the
     /// window.
     var onDoubleClick: (() -> Void)? = nil
+    /// What a right-click here offers. A strip is a real view over the ground
+    /// it stands for, so a context menu on that ground never sees the click:
+    /// the empty room under the column's rows answered a right-click with
+    /// nothing at all. Nil, and the click is AppKit's, as it was.
+    var rightMenu: (() -> NSMenu?)? = nil
 
     func makeNSView(context: Context) -> NSView { Strip() }
 
@@ -655,6 +660,7 @@ struct DragStrip: NSViewRepresentable {
         (view as? Strip)?.below = below
         (view as? Strip)?.trailing = trailing
         (view as? Strip)?.onDoubleClick = onDoubleClick
+        (view as? Strip)?.rightMenu = rightMenu
     }
 
     private final class Strip: NSView {
@@ -662,6 +668,7 @@ struct DragStrip: NSViewRepresentable {
         var below: CGFloat = 0
         var trailing: CGFloat = 0
         var onDoubleClick: (() -> Void)?
+        var rightMenu: (() -> NSMenu?)?
 
         private var pressed: NSEvent?
         private var moved = false
@@ -715,6 +722,13 @@ struct DragStrip: NSViewRepresentable {
         override func mouseDown(with event: NSEvent) {
             pressed = event
             moved = false
+        }
+
+        /// The strip's own right-click: the menu it was given, or the one
+        /// AppKit would have found, which is none.
+        override func rightMouseDown(with event: NSEvent) {
+            guard let menu = rightMenu?() else { return super.rightMouseDown(with: event) }
+            NSMenu.popUpContextMenu(menu, with: event, for: self)
         }
 
         /// Here the window is let go for the one drag, handed to the system's

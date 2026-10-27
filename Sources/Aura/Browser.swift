@@ -2000,6 +2000,9 @@ final class Browser: NSObject, ObservableObject {
     /// in the window — the card sits above it or below (see SpaceSwitcher).
     @Published var spaceCardUp = false
     @Published var spaceDotFrame: CGRect = .zero
+    /// The page it opens on: the list of spaces, unless the column's
+    /// right-click asked for the icons or the colour (see SideMenu).
+    @Published var spaceCardPage: SpaceCardPage = .spaces
     /// The tab whose card is up under the pointer, and where that tab stands
     /// in the window — beside the column, or under the strip (see TabHover).
     @Published var tabCard: Tab.ID?
@@ -5441,7 +5444,7 @@ final class Browser: NSObject, ObservableObject {
         tab.onPickEnd = { [weak self] _ in self?.veiling = false }
         tab.onImageMenu = { [weak self] tab, url in self?.showImageMenu(for: tab, at: url) }
         tab.onBlockMenu = { [weak self] tab, selector, label, note in
-            self?.showBlockMenu(for: tab, selector: selector, label: label, note: note)
+            self?.showPageMenu(for: tab, selector: selector, label: label, note: note)
         }
         tab.searchName = { [weak self] in self.map { $0.prefs.engine.name(custom: $0.prefs.customEngine) } }
         tab.onSearch = { [weak self] tab, text in
