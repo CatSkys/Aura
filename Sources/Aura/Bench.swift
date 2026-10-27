@@ -600,11 +600,19 @@ final class Bench {
             }
 
         case "quit":
-            // ⌘Q, on a test run: the app ends the way it does for you, the
-            // session and windows.json written on the way out.
+            // Quit, on a test run: the app ends as it does once ⌘Q has been
+            // held down, the session and windows.json written on the way out.
+            // The card that asks for the holding is passed over — a script is
+            // not a hand, and a script cannot hold a key.
             guard Store.testing else { answer(["error": "quit only works on a --test run"]); return }
             answer(["quitting": true])
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { NSApp.terminate(nil) }
+
+        case "quitting":
+            // The card ⌘Q brings up when Settings asks before quitting: up or
+            // not, and how much of the hold is done (see Quitting.swift).
+            guard Store.testing else { answer(["error": "quitting only works on a --test run"]); return }
+            answer(["card": Quitting.shared.showing, "progress": Quitting.shared.progress])
 
         case "windows":
             // The windows, oldest first, and what the tests do to them. Only
@@ -880,17 +888,27 @@ final class Bench {
             // none left, after the press.
             let types: [NSEvent.EventType] = request["letgo"] as? Bool == true
                 ? [.keyDown, .keyUp, .flagsChanged] : [.keyDown, .keyUp]
-            for type in types {
+            // "hold": the key kept down this many seconds before it is let go.
+            // What a press means can be how long it lasts — ⌘Q's card counts
+            // the holding (see Quitting.swift) — and a tap cannot say that.
+            let hold = request["hold"] as? Double ?? 0
+            func post(_ type: NSEvent.EventType) {
                 guard let event = NSEvent.keyEvent(
                     with: type, location: .zero, modifierFlags: type == .flagsChanged ? [] : flags,
                     timestamp: ProcessInfo.processInfo.systemUptime,
                     windowNumber: number, context: nil,
                     characters: chars, charactersIgnoringModifiers: chars,
                     isARepeat: repeats && type == .keyDown, keyCode: UInt16(code)
-                ) else { continue }
+                ) else { return }
                 NSApp.postEvent(event, atStart: false)
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            for type in types where hold == 0 || type != .keyUp { post(type) }
+            if hold > 0 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + hold) {
+                    for type in types where type != .keyDown { post(type) }
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + hold + 0.4) {
                 answer(["active": browser.active.map { String($0.id.uuidString.prefix(8)).lowercased() } ?? ""])
             }
 
@@ -3585,7 +3603,7 @@ final class Bench {
 
         default:
             answer(["error": "unknown command “\(verb)”", "commands": [
-                "tabs", "open", "go", "openmark", "close", "wait", "sleep", "select", "text", "nowplaying", "eval", "click", "type", "submit", "shot", "probe", "key", "textcheck", "resize", "hit", "film", "float", "window", "pages", "picture", "pdf", "place", "group", "tospace", "field", "bookmark", "marks", "menu", "keyeq", "fill", "pin", "middle", "hover", "windows", "quit", "towindow", "news", "pull", "magnify", "wheel", "space", "split", "strip", "column", "tabcard", "fold", "consent", "update", "site", "little", "ui", "import", "import-preview", "import-file", "import-file-start", "import-file-status", "import-file-cancel", "remove-folder", "passwords", "accounts", "find", "answer", "visible", "ai", "notifications", "popups", "suggest", "translate", "profile", "settings",
+                "tabs", "open", "go", "openmark", "close", "wait", "sleep", "select", "text", "nowplaying", "eval", "click", "type", "submit", "shot", "probe", "key", "textcheck", "resize", "hit", "film", "float", "window", "pages", "picture", "pdf", "place", "group", "tospace", "field", "bookmark", "marks", "menu", "keyeq", "fill", "pin", "middle", "hover", "windows", "quit", "quitting", "towindow", "news", "pull", "magnify", "wheel", "space", "split", "strip", "column", "tabcard", "fold", "consent", "update", "site", "little", "ui", "import", "import-preview", "import-file", "import-file-start", "import-file-status", "import-file-cancel", "remove-folder", "passwords", "accounts", "find", "answer", "visible", "ai", "notifications", "popups", "suggest", "translate", "profile", "settings",
             ]])
         }
     }

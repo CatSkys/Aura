@@ -16,7 +16,8 @@
     ./bench textcheck ID [NAME]        test run: text replacement, smart quotes and dashes — the Mac's, the
                                        page's, Edit › Substitutions' ticks; NAME (quotes|dashes|replacement)
                                        switches one, only in a copy under its own bundle id
-    ./bench press CODE CHARS [MODS…]   press a key on the whole app (cmd shift ctrl opt, repeat) — --test runs only
+    ./bench press CODE CHARS [MODS…]   press a key on the whole app (cmd shift ctrl opt, repeat; hold SECONDS
+                                       keeps it down that long before letting go) — --test runs only
     ./bench tap ID SELECTOR [MODS…]    a real mouse click on an element (or text=Words), shift/cmd/opt held — --test runs only
     ./bench text ID                    the page's text
     ./bench translate ID [LANG]        Translate Page on a tab → what it measured
@@ -118,7 +119,9 @@
                                        go at screen point X Y as a drag out of the row
     ./bench news PATH [notes] | on     test run: the card after an update, or every version's notes, to a
                                        PNG; on: the card in the window
-    ./bench quit                       test run: quit the app as ⌘Q does
+    ./bench quit                       test run: quit the app as holding ⌘Q does
+    ./bench quitting                   test run: the card that asks first — up or not, and how much of the
+                                       hold is done
     ./bench middle ID X Y              test run: the middle button clicked at X Y of a tab's page
     ./bench hover ID [on|off]          test run: the pointer come to a tab's row or gone from it → whether its card came up
     ./bench pin ID [off|home]          test run: pin a tab, unpin it, or double-click it (home)
@@ -308,8 +311,13 @@ def main(argv):
         request["id"] = args[0]
         request["path"] = args[1] if len(args) > 1 else ""
     elif verb == "press":
-        if len(args) < 2: sys.exit("usage: bench press KEYCODE CHARS [cmd] [shift] [ctrl] [opt]")
+        if len(args) < 2: sys.exit("usage: bench press KEYCODE CHARS [cmd] [shift] [ctrl] [opt] [repeat] [hold SECONDS]")
         request["code"], request["chars"], request["mods"] = int(args[0]), args[1], args[2:]
+        if "hold" in request["mods"]:
+            at = request["mods"].index("hold")
+            if at + 1 >= len(request["mods"]): sys.exit("usage: bench press KEYCODE CHARS [cmd] [shift] [ctrl] [opt] [repeat] [hold SECONDS]")
+            request["hold"] = float(request["mods"][at + 1])
+            del request["mods"][at:at + 2]
     elif verb == "textcheck":
         if not 1 <= len(args) <= 2: sys.exit("usage: bench textcheck ID [quotes|dashes|replacement]")
         request["id"] = args[0]
@@ -647,7 +655,7 @@ def main(argv):
     elif verb == "accounts":
         if len(args) not in (0, 1) or (args and not args[0].isdigit()): sys.exit("usage: bench accounts [ROW]")
         if args: request["pick"] = int(args[0])
-    elif verb not in ("tabs", "probe", "extensions", "import-preview", "quit"):
+    elif verb not in ("tabs", "probe", "extensions", "import-preview", "quit", "quitting"):
         sys.exit(f"unknown command “{verb}” — see bench help")
 
     answer = ask(os.path.join(folder(world), "bench.sock"), request)

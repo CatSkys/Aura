@@ -950,7 +950,7 @@
 "Undo" = "撤销";
 "Until Aura quits. Accounts show under sign-in boxes, marked Apple Passwords; macOS may ask for Touch ID before one is filled." = "直到 Aura 退出为止。账户会出现在登录框下方，标为 Apple Passwords；填入其中一个之前，macOS 可能会要求 Touch ID。";
 "Waiting for your Mac to show a code" = "正在等你 Mac 显示验证码";
-"Your windows and tabs will close." = "你的窗口和标签页会关闭。";
+"Hold ⌘Q to quit" = "按住 ⌘Q 退出";
 "\n\n—\nAura {1}, build {2}, macOS {3}" = "\n\n—\nAura {1}，构建 {2}，macOS {3}";
 "again to exit full screen" = "再按一次以退出全屏";
 "macOS isn't sharing your location with Aura" = "macOS 没有把你的位置共享给 Aura";
@@ -992,6 +992,7 @@
 "Bookmarks, history, passwords and extensions" = "书签、历史记录、密码与扩展";
 "From a browser on this Mac, or from a file it exported. Nothing leaves this Mac." = "来自这台 Mac 上的浏览器，或该浏览器导出的文件。数据不会离开这台 Mac。";
 "Confirm before quitting" = "退出前确认";
+"⌘Q asks with a card of Aura's own: hold the key a moment to quit, and let go to stay." = "⌘Q 用 Aura 自己的一张卡片来问：按住不放片刻即退出，松手则留下。";
 "Save to" = "存储位置";
 "Ask where to save each file" = "每次询问保存位置";
 "Always show the downloads button" = "始终显示下载按钮";

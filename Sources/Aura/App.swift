@@ -398,10 +398,8 @@ struct SearchApp: App {
 private struct QuitAndHelp: Commands {
     var body: some Commands {
         CommandGroup(replacing: .appTermination) {
-            Button("Quit Aura") {
-                if Links.shouldQuit() { NSApp.terminate(nil) }
-            }
-            .keyboardShortcut("q", modifiers: .command)
+            Button("Quit Aura") { Quitting.shared.ask() }
+                .keyboardShortcut("q", modifiers: .command)
         }
         CommandGroup(replacing: .help) {
             Button("Send Feedback…") { Links.writeFeedback() }
