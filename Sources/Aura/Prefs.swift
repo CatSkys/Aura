@@ -385,8 +385,8 @@ final class Preferences: ObservableObject {
     /// A plain click in a pinned tab, on a link to another site, opens it in a
     /// peek so the pin stays where it was (see Peek.swift). Arc keeps this as
     /// a switch of its own beside the modified-click one, and notes under it
-    /// that it only affects pins: Settings › Spaces & Pins › Pins has it as a
-    /// row of its own. Off, that click opens a tab beside the pin.
+    /// that it only affects pins: Settings › Tabs › Peek has the pair. Off,
+    /// that click opens a tab beside the pin.
     @Published var pinsPeek: Bool {
         didSet { store.set(pinsPeek, forKey: "pins.peek") }
     }

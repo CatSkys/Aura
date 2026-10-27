@@ -557,6 +557,16 @@ struct SettingsPanel: View {
             .pickerStyle(.menu)
             .fixedSize()
         case "tabs.newAfterLast": Switch(on: $prefs.newTabAfterLast)
+        case "links.peek":
+            Picker("Peek at a link", selection: $prefs.peekChoice) {
+                ForEach(PeekChoice.allCases) { choice in
+                    Text(choice.title.localized).tag(choice)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+            .fixedSize()
+        case "pins.peek": Switch(on: $prefs.pinsPeek)
         case "tabs.lazy": Switch(on: $prefs.lazyTabs)
         case "tabs.popupWindows": Switch(on: $prefs.popupWindows)
         case "tabs.sleep":
@@ -656,7 +666,6 @@ struct SettingsPanel: View {
         case "spaces": Switch(on: $prefs.usesSpaces)
         case "profiles": Pill("New Profile…") { ProfileMenu.askNew() }
         case "pins.keep": Switch(on: $prefs.pinsGoHome)
-        case "pins.peek": Switch(on: $prefs.pinsPeek)
         case "pins.list": Switch(on: $prefs.listsPins)
         case "newtab.floating": Switch(on: $prefs.floatingNewTab)
         case "commandbar": Switch(on: $prefs.commandBar)
@@ -690,15 +699,6 @@ struct SettingsPanel: View {
     @ViewBuilder
     private func otherControl(_ id: String) -> some View {
         switch id {
-        case "links.peek":
-            Picker("Peek at a link", selection: $prefs.peekChoice) {
-                ForEach(PeekChoice.allCases) { choice in
-                    Text(choice.title.localized).tag(choice)
-                }
-            }
-            .labelsHidden()
-            .pickerStyle(.menu)
-            .fixedSize()
         case "autoscroll": Switch(on: $prefs.autoScroll)
         case "swipe.history": Switch(on: $prefs.holdsHistory)
         case "note.switcher": Always()

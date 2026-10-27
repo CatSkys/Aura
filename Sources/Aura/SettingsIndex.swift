@@ -73,6 +73,10 @@ enum SettingsIndex {
         .init(id: "newtabs", page: .tabs, title: "New Tabs", icon: "plus.square"),
         .init(id: "memory", page: .tabs, title: "Memory", icon: "moon.zzz"),
         .init(id: "tabbar", page: .tabs, title: "Tab Bar", icon: "number"),
+        // The peek's two ways in, together on one card, as Arc keeps its pair
+        // in Settings › Links: a modified click, from any tab, and a plain
+        // click in a pin on a link to another site (Drice, 27 Oct 2026).
+        .init(id: "peek", page: .tabs, title: "Peek", icon: "eye"),
 
         .init(id: "search", page: .browsing, title: "Search", icon: "magnifyingglass"),
         .init(id: "links", page: .browsing, title: "Links", icon: "link"),
@@ -116,7 +120,7 @@ enum SettingsIndex {
             return Palette.tilePurple
         case "window", "arc":
             return Palette.tileOrange
-        case "tablook", "links", "permissions":
+        case "tablook", "links", "permissions", "peek":
             return Palette.tileTeal
         case "motion", "video":
             return Palette.tilePink
@@ -241,6 +245,18 @@ enum SettingsIndex {
               more: "The site in place of the title; the title returns under the pointer. Look-alike names show as they are, and plain http says Not secure.",
               keys: ["tabs.address"], words: ["url", "domain", "security", "address bar"]),
 
+        // Peek, Arc's two ways in on the one card (see Peek.swift). The first
+        // is a modified click from any tab; the second is the pins' alone,
+        // with Arc's own note under it (Drice, 27 Oct 2026).
+        .init(id: "links.peek", group: "peek", icon: "hand.point.up.left",
+              title: "Peek at a link", detail: "",
+              more: "The page opens in a panel over the one you're reading. Escape puts it away; the other button keeps it as a tab.",
+              keys: ["links.peek", "links.peekClick"], words: ["preview", "shift click", "peek", "click"]),
+        .init(id: "pins.peek", group: "peek", icon: "pin.circle",
+              title: "Open links from a pin in a peek", detail: "Only a click on a link to another site",
+              more: "The page opens in the panel over the pin, which stays where it was. Off, that click opens a tab beside the pin instead. Links within the site go in the pin as they always have.",
+              keys: ["pins.peek"], words: ["peek", "preview", "pinned tabs", "click"]),
+
         // Browsing
         .init(id: "search.engine", group: "search", icon: "magnifyingglass",
               title: "Search engine", detail: "",
@@ -309,16 +325,6 @@ enum SettingsIndex {
               title: "Pins keep their site", detail: "",
               more: "A pin closed with ⌘W, or left open when Aura quits, comes back at the page it was pinned at.",
               keys: ["pins.home"], words: ["pinned tabs", "go home", "reset pin"]),
-        // Arc's second peek switch, with Arc's note under it (Links › Peek):
-        // the plain click is the pin's alone, and a tab in the row is left to
-        // navigate as it always did. A row of its own rather than half of
-        // "Pins keep their site", which is where it could be neither found
-        // nor turned off without taking ⌘W's way home with it (Drice, 27 Oct
-        // 2026).
-        .init(id: "pins.peek", group: "pins", icon: "eye",
-              title: "Open links from a pin in a peek", detail: "Only a click on a link to another site",
-              more: "The page opens in the panel over the pin, which stays where it was. Off, that click opens a tab beside the pin instead. Links within the site go in the pin as they always have.",
-              keys: ["pins.peek"], words: ["peek", "preview", "pinned tabs", "click"]),
         .init(id: "pins.list", group: "pins", icon: "list.bullet.rectangle",
               title: "Pinned rows", detail: "",
               more: "Pins as rows under the squares, and a line with Clear over the rest. Right-click a tab to pin it as a row.",
@@ -384,10 +390,6 @@ enum SettingsIndex {
               title: "Cache", detail: "Only what was fetched to draw pages", words: ["clear cache"]),
 
         // Keyboard & Mouse
-        .init(id: "links.peek", group: "mouse", icon: "eye",
-              title: "Peek at a link", detail: "",
-              more: "The page opens in a panel over the one you're reading. Escape puts it away; the other button keeps it as a tab.",
-              keys: ["links.peek", "links.peekClick"], words: ["preview", "shift click", "peek"]),
         .init(id: "autoscroll", group: "mouse", icon: "arrow.up.and.down.circle",
               title: "Scroll with the middle button", detail: "",
               more: "Click the wheel, then move the mouse to scroll.",

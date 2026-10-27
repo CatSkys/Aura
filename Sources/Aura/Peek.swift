@@ -8,13 +8,13 @@ import WebKit
 // was underneath is what comes back. Its other button keeps it, as a tab
 // beside this one, loaded as it is.
 //
-// Two clicks open one, as Arc's own Links pane has two switches: the modified
-// click, from any tab (Settings › Keyboard & Mouse › Mouse and Trackpad › Peek
-// at a link, Shift-click unless changed), and a plain click in a pin on a link
-// to another site (Settings › Spaces & Pins › Pins › Open links from a pin in a
-// peek). The second is the pins' alone — Arc notes under its own switch that
-// it affects favourites and pinned tabs — so a tab in the row keeps navigating
-// on a plain click.
+// Two clicks open one, and they are the two rows of Settings › Tabs › Peek, as
+// Arc keeps its pair on one card in its Links pane: the modified click, from
+// any tab (Peek at a link, Shift-click unless changed), and a plain click in a
+// pin on a link to another site (Open links from a pin in a peek). The second
+// is the pins' alone — Arc notes under its own switch that it affects
+// favourites and pinned tabs — so a tab in the row keeps navigating on a plain
+// click.
 //
 // The page is a tab of its own, only not in the row: keeping it is moving
 // it there, with nothing loaded twice.
