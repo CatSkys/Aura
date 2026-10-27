@@ -17,10 +17,11 @@ import SwiftUI
 /// makes it so, and the page's card stays the one opaque thing in the window.
 ///
 /// The window's glass is tinted with the space's own colour (see
-/// SpaceTheme.swift) and carries a whisper of grain — Arc's window background,
-/// which is a gradient and a texture tinted by the space's theme
-/// (`WindowTheme`'s `intensityFactor`, `overlay`: grain, sand, denim, tweed),
-/// rather than a clean sheet of blur.
+/// SpaceTheme.swift) — a wash laid over it, whose solidity is the space's own
+/// `opacity` — and carries a whisper of grain: Arc's window background, which is
+/// a gradient and a texture tinted by the space's theme (`WindowTheme`'s
+/// `intensityFactor`, `overlay`: grain, sand, denim, tweed), rather than a
+/// clean sheet of blur.
 final class GlassBacking: NSView {
     /// The system's liquid glass, on 26 and later; nil before it, where the
     /// vibrancy view below carries the window instead.
@@ -50,10 +51,6 @@ final class GlassBacking: NSView {
     /// Over the vibrancy material: paler than glass, and wants a firmer hand.
     private static let darkTint = NSColor(srgbRed: 14 / 255, green: 14 / 255, blue: 16 / 255, alpha: 0.84)
     private static let lightTint = NSColor(srgbRed: 0.918, green: 0.918, blue: 0.929, alpha: 0.86)
-    /// A themed tint is Arc's own background: opaque enough to read as the
-    /// window's material, with the desktop still moving behind it.
-    private static let themedLight: CGFloat = 0.85
-    private static let themedDark: CGFloat = 0.82
     /// The grain a window with no theme wears — the neutral glass's whisper.
     private static let lightGrain: CGFloat = 0.05
     private static let darkGrain: CGFloat = 0.07
@@ -109,9 +106,11 @@ final class GlassBacking: NSView {
             // not the one" even when it is.
             material.state = .active
             fill(material)
-            tint.wantsLayer = true
-            fill(tint)
         }
+        // Over both: the space's own wash, and the neutral one a window with
+        // no space wears (see `applyTint`).
+        tint.wantsLayer = true
+        fill(tint)
         fill(grain)
         applyTint()
     }
@@ -140,18 +139,27 @@ final class GlassBacking: NSView {
 
     private func applyTint() {
         let dark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
-        var colour: NSColor
         if let theme {
-            colour = (dark ? SpacePalette.dark(theme) : SpacePalette.light(theme))
-                .withAlphaComponent(dark ? Self.themedDark : Self.themedLight)
+            // A space's colour is a wash of our own over the glass rather than
+            // a word to the system's tint: how much of the desk behind the
+            // window shows through it is the space's number, and at 100 the
+            // colour is the ground with nothing behind it. Liquid glass blends
+            // a `tintColor` with what lies under it in a way of its own, which
+            // is how a space asked for white came out the colour of the
+            // wallpaper — and a white space was not white.
+            let colour = (dark ? SpacePalette.dark(theme) : SpacePalette.light(theme))
+                .withAlphaComponent(CGFloat(theme.opacity / 100))
+            tint.layer?.backgroundColor = colour.withAlphaComponent(colour.alphaComponent * calm).cgColor
+            if #available(macOS 26.0, *), let glass = glass as? NSGlassEffectView {
+                glass.tintColor = .clear
+            }
+        } else if #available(macOS 26.0, *), let glass = glass as? NSGlassEffectView {
+            let colour = dark ? Self.darkGlassTint : Self.lightGlassTint
+            glass.tintColor = colour.withAlphaComponent(colour.alphaComponent * calm)
+            tint.layer?.backgroundColor = NSColor.clear.cgColor
         } else {
-            colour = dark ? Self.darkTint : Self.lightTint
-        }
-        colour = colour.withAlphaComponent(colour.alphaComponent * calm)
-        if #available(macOS 26.0, *), let glass = glass as? NSGlassEffectView {
-            glass.tintColor = colour
-        } else {
-            tint.layer?.backgroundColor = colour.cgColor
+            let colour = dark ? Self.darkTint : Self.lightTint
+            tint.layer?.backgroundColor = colour.withAlphaComponent(colour.alphaComponent * calm).cgColor
         }
         grain.alphaValue = theme.map { SpacePalette.grain($0) } ?? (dark ? Self.darkGrain : Self.lightGrain)
     }

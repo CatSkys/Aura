@@ -1,10 +1,10 @@
 import AppKit
 
 /// A space's colour, as Arc's Space Style Editor keeps one: a hue, how much of
-/// it there is, and how much grain lies over the window's glass. One theme
-/// gives both appearances — pale in a light window, deep in a dark one — the
-/// way Arc's `WindowTheme` carries a light and a dark semantic palette from a
-/// single seed (see `arc-rea/REPORT.md` §2–3).
+/// it there is, how solid the window's ground is, and how much grain lies over
+/// its glass. One theme gives both appearances — pale in a light window, deep
+/// in a dark one — the way Arc's `WindowTheme` carries a light and a dark
+/// semantic palette from a single seed (see `arc-rea/REPORT.md` §2–3).
 ///
 /// The bands the two tints are made in are Arc's own, read off its spaces:
 /// `tintedLight` keeps 2–9% saturation near 97% brightness, `shadedDark` 53–88%
@@ -12,6 +12,12 @@ import AppKit
 /// Aura keeps one number — how saturated the space is — and slides along those
 /// bands with it, which is enough to tell one space's sidebar from another's
 /// without ever making the rows unreadable.
+///
+/// That saturation is the space's and nothing else: a white space is white in
+/// every window and a grey one is grey. The tint used to keep a floor of its
+/// own (2% of the hue, and a little of it in every ink), so a space asked for
+/// white came out the palest mint — a colour nobody chose, and one the wall
+/// behind the glass made louder than the colour that had been chosen.
 struct SpaceTheme: Codable, Equatable {
     /// 0–360.
     var hue: Double
@@ -24,18 +30,29 @@ struct SpaceTheme: Codable, Equatable {
     var value: Double
     /// 0–100: the grain over the glass (Arc's `intensityFactor`).
     var grain: Double
+    /// 0–100: how much of the window's ground the colour covers. At 0 the
+    /// ground is the glass the window has without a colour and the desktop
+    /// shows through it; at 100 the colour is the ground, flat, with nothing
+    /// behind it. The desk behind a window is not the space's to wear, so a
+    /// white space under a mint wallpaper reads as white only when this is up.
+    var opacity: Double
 
     /// Arc's spaces sit around a third of the way up its noise slider.
     static let grainDefault: Double = 35
     /// A colour with no lightness of its own: the middle of the band.
     static let valueDefault: Double = 62
+    /// As solid as the window's ground was before the space could ask: the
+    /// glazed look, with the desktop still moving behind the column.
+    static let opacityDefault: Double = 85
 
     init(hue: Double, sat: Double, value: Double = SpaceTheme.valueDefault,
-         grain: Double = SpaceTheme.grainDefault) {
+         grain: Double = SpaceTheme.grainDefault,
+         opacity: Double = SpaceTheme.opacityDefault) {
         self.hue = (hue.truncatingRemainder(dividingBy: 360) + 360).truncatingRemainder(dividingBy: 360)
         self.sat = min(max(sat, 0), 100)
         self.value = min(max(value, 0), 100)
         self.grain = min(max(grain, 0), 100)
+        self.opacity = min(max(opacity, 0), 100)
     }
 
     /// A colour picked anywhere — Arc's presets, the system's colour panel, one
@@ -57,13 +74,15 @@ struct SpaceTheme: Codable, Equatable {
     }
 
     /// A space coloured before there was a `value` in the file reads as the
-    /// middle of the band, which is where the old glass was.
+    /// middle of the band, which is where the old glass was; one from before
+    /// the ground could be made solid reads as solid as that glass was.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         hue = (try container.decodeIfPresent(Double.self, forKey: .hue) ?? 0)
         sat = try container.decodeIfPresent(Double.self, forKey: .sat) ?? 0
         value = try container.decodeIfPresent(Double.self, forKey: .value) ?? Self.valueDefault
         grain = try container.decodeIfPresent(Double.self, forKey: .grain) ?? Self.grainDefault
+        opacity = try container.decodeIfPresent(Double.self, forKey: .opacity) ?? Self.opacityDefault
     }
 }
 
@@ -74,9 +93,15 @@ enum SpacePalette {
     /// that black rows read on it and the desktop still shows through. The
     /// shade follows the colour's own lightness inside the band, so a white
     /// preset and a black one are not the same glass.
+    ///
+    /// How much of the hue shows is the space's own number, from none at all to
+    /// the top of Arc's band: the presets are mostly 10–30% saturated colours,
+    /// and the flat 2–9% this used to hand them left every one of them within a
+    /// few points of white. A space asked for white is white, and a space asked
+    /// for Arc's deep purple is the pale one Arc shows in a light window.
     static func light(_ theme: SpaceTheme) -> NSColor {
         let s = theme.sat / 100, v = theme.value / 100
-        return NSColor(hue: theme.hue / 360, saturation: 0.02 + 0.07 * s,
+        return NSColor(hue: theme.hue / 360, saturation: 0.34 * s,
                        brightness: 0.84 + 0.14 * v, alpha: 1)
     }
 
@@ -99,11 +124,14 @@ enum SpacePalette {
     /// each theme its title and secondary colours: near-black and steeped in
     /// the space's hue on the pale glass, near-white and barely hued on the
     /// deep one (Arc's light title #2A141B, its dark one #EEE3E6).
+    ///
+    /// Steeped in proportion to the space, though: an ink kept a few percent of
+    /// the hue by its own account, which on white read as a grey gone off.
     static func title(_ theme: SpaceTheme, dark: Bool) -> NSColor {
         let s = theme.sat / 100
         return dark
-            ? NSColor(hue: theme.hue / 360, saturation: 0.02 + 0.10 * s, brightness: 0.96, alpha: 1)
-            : NSColor(hue: theme.hue / 360, saturation: 0.05 + 0.55 * s, brightness: 0.16, alpha: 1)
+            ? NSColor(hue: theme.hue / 360, saturation: 0.10 * s, brightness: 0.96, alpha: 1)
+            : NSColor(hue: theme.hue / 360, saturation: 0.55 * s, brightness: 0.16, alpha: 1)
     }
 
     /// What a row's icon and a quiet sentence wear: darker than Aura's own
@@ -112,16 +140,16 @@ enum SpacePalette {
     static func secondary(_ theme: SpaceTheme, dark: Bool) -> NSColor {
         let s = theme.sat / 100
         return dark
-            ? NSColor(hue: theme.hue / 360, saturation: 0.03 + 0.12 * s, brightness: 0.72, alpha: 1)
-            : NSColor(hue: theme.hue / 360, saturation: 0.04 + 0.40 * s, brightness: 0.40, alpha: 1)
+            ? NSColor(hue: theme.hue / 360, saturation: 0.12 * s, brightness: 0.72, alpha: 1)
+            : NSColor(hue: theme.hue / 360, saturation: 0.40 * s, brightness: 0.40, alpha: 1)
     }
 
     /// The quietest step: a placeholder, a disabled line.
     static func tertiary(_ theme: SpaceTheme, dark: Bool) -> NSColor {
         let s = theme.sat / 100
         return dark
-            ? NSColor(hue: theme.hue / 360, saturation: 0.04 + 0.14 * s, brightness: 0.54, alpha: 1)
-            : NSColor(hue: theme.hue / 360, saturation: 0.03 + 0.30 * s, brightness: 0.55, alpha: 1)
+            ? NSColor(hue: theme.hue / 360, saturation: 0.14 * s, brightness: 0.54, alpha: 1)
+            : NSColor(hue: theme.hue / 360, saturation: 0.30 * s, brightness: 0.55, alpha: 1)
     }
 
     /// Arc's 27: three pages of nine in its Space Style Editor, read off the
