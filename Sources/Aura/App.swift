@@ -824,11 +824,16 @@ struct ContentView: View {
                 // with the page says otherwise.
                 .padding(.leading, sidebar && !sideOnRight ? browser.prefs.sideWidth : 0)
                 .padding(.trailing, sidebar && sideOnRight ? browser.prefs.sideWidth : 0)
-                // Down from the window's top edge rather than grown in place.
-                // It had a transition before this — `scale(0.97)`, three per
-                // cent of a bar 560 points wide — which is a fade with extra
-                // steps: nothing about it said the bar had come down.
-                .transition(.move(edge: .top).combined(with: .opacity))
+                // In place, not from anywhere. Arc's binary keeps the bar's
+                // arrival as state of its own (CommandBar's
+                // `CommandBarPresentation`, `CommandBarPresentationAndPlacement`)
+                // rather than as a bar that slides: there is no address field
+                // for it to come out of. Aura's bar *is* the address field, so
+                // a travel transition reads as the field detaching and sliding,
+                // which is what both `scale(0.97)` and the `move(edge: .top)`
+                // after it looked like. A scale big enough to see, and the fade
+                // that carries it.
+                .transition(.scale(scale: 0.94, anchor: .top).combined(with: .opacity))
         }
     }
 
