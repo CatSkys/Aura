@@ -231,7 +231,8 @@ final class Preferences: ObservableObject {
         didSet { store.set(startsFresh, forKey: Preferences.freshKey) }
     }
     nonisolated static let freshKey = "start.fresh"
-    /// Ask before the Quit menu or ⌘Q closes the app. Off unless asked for.
+    /// Ask before the Quit menu or ⌘Q closes the app: the key has to be held
+    /// a moment (see Quitting.swift). Off unless asked for.
     @Published var confirmsQuit: Bool {
         didSet { store.set(confirmsQuit, forKey: Preferences.confirmQuitKey) }
     }

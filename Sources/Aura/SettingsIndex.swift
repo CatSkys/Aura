@@ -149,6 +149,7 @@ enum SettingsIndex {
               words: ["import", "chrome", "safari", "arc", "migrate"]),
         .init(id: "quit.confirm", group: "browser", icon: "power",
               title: "Confirm before quitting", detail: "",
+              more: "⌘Q asks with a card of Aura's own: hold the key a moment to quit, and let go to stay.",
               keys: ["quit.confirm"], words: ["quit", "cmd q"]),
         .init(id: "downloads.folder", group: "downloads", icon: "folder",
               title: "Save to", detail: "", keys: ["downloads"], words: ["download folder"]),
