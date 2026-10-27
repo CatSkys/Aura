@@ -11,6 +11,10 @@ in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+## 0.1.1 — 27 October 2026
+
+The assistant arrives, and the interface answers your hand: a conversation beside the page that can read it and act in it, buttons that give under the press, and tabs that sleep without being let go. What it says, and what it leaves out, is in [NOTES.md](NOTES.md).
+
 ### Added
 - The page's right-click menu on a block of the page is a page's menu now, as Safari's and Arc's are: Back, Forward, Reload (or Stop), then Save Page As…, Export as PDF…, Print… and Share…, then Translate Page where Translate is on and this page has it, then Hide This Element and Inspect Element — each row off where it does not apply, as a side panel's page is not the page that keeping and printing would act on. It was three rows and nothing else. Every row is a door Aura already had, reached from the menu instead of the menu bar: WebKit's own menu still answers a link, a picture, a field or a page with words selected, where it does those better.
 - A right-click on the column's own ground opens the space's menu, as Arc's sidebar has one: New Tab, then Change Space Icon…, Rename “…”, Edit Theme Colour…, Manage Spaces… and Delete “…” — the profile's first space, which stays, gets no Delete. The icon and the colour are chosen on the card the dot opens, so those two rows open it on the page they belong to rather than drawing a second picker of their own; the space's dot hangs the same menu, and so does the empty half of the row when the tabs are across the top.

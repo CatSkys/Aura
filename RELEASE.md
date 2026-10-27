@@ -6,19 +6,19 @@
 
 - **没有通行密钥权利**。`com.apple.developer.web-browser.public-key-credential` 要组织类型的开发者账号才能拿到（详见文末「为什么没有通行密钥」），Aura 是个人账号，所以构建里没有 `Aura.provisionprofile`。`build.sh` 的 ship 因此会拒发，发版时**必须**带上 `AURA_ALLOW_NO_PASSKEYS=1`。
 - **签名身份**是 `Developer ID Application: HANGBIN JIN (49LSZKN27V)`，与 `Updater.team` 一致；换证书等于换团队，所有人收不到更新。
-- **更新源**是 `https://catskys.github.io/Aura/appcast.json`（Intel 在 `/intel/`），由 `../aura-pages`（`gh-pages` 检出）提供。现在是占位 appcast（`0.0.0`，「No build has been published yet」）。
+- **更新源**是 `https://catskys.github.io/Aura/appcast.json`（Intel 在 `/intel/`），由 `../aura-pages`（`gh-pages` 检出）提供。站点上是四件东西：`Aura.dmg`、`Aura.zip`、`appcast.json`、`appcast.json.zip`，每次发版由 `./publish.sh` 覆盖；`appcast.json` 里记着当前发布的版本。
 
 ## 一次性准备
 
-逐项确认，缺哪项补哪项；括号里是 2026-10-25 的实测状态。
+逐项确认，缺哪项补哪项；括号里是 2026-10-27 的实测状态。
 
 | # | 需要的东西 | 现状 | 怎么做 |
 |---|---|---|---|
 | 1 | Developer ID Application 证书 | ✅ 有（2031/07/14 到期） | 钥匙串里已有；`security find-identity -v -p codesigning` 能看到 |
-| 2 | 公证凭据，keychain profile 名 `aura` | ❌ **没有** | `xcrun notarytool store-credentials "aura"`（见下） |
-| 3 | `../aura-pages` 检出（gh-pages） | ✅ 有，含占位 appcast 与 `intel/` | `git worktree add ../aura-pages gh-pages` |
-| 4 | GitHub 仓库能发 Release | 待确认 | tag `v<版本>`，附 `Aura.dmg` 与由 `build/intel/Aura.dmg` 改名的 `Aura-Intel.dmg` |
-| 5 | `python3` 与一次联网 | 待确认 | 首次 `release dmg` 会建 `.build/dmgbuild` 虚拟环境装 dmgbuild 1.6.7 |
+| 2 | 公证凭据，keychain profile 名 `aura` | ✅ 有（0.1.0 两次公证 Accepted） | `xcrun notarytool store-credentials "aura"`（见下） |
+| 3 | `../aura-pages` 检出（gh-pages） | ✅ 有，含 `appcast.json` 与 `intel/` | `git worktree add ../aura-pages gh-pages` |
+| 4 | GitHub 仓库能发 Release | ✅ 有（`v0.1.0` 已发） | tag `v<版本>`，附 `Aura.dmg` 与由 `build/intel/Aura.dmg` 改名的 `Aura-Intel.dmg` |
+| 5 | `python3` 与一次联网 | ✅ 有（0.1.0 的 DMG 由 dmgbuild 打出） | 首次 `release dmg` 会建 `.build/dmgbuild` 虚拟环境装 dmgbuild 1.6.7 |
 | 6 | Apple 开发者协议 | ⚠️ 有待接受的 PLAA（**2026-10-29** 前） | 开发者门户顶部提示里接受，本人点 |
 | 7 | 版本号 | `VERSION` 里是当前版本（发版时递增） | 规则见下：最后一位 +1，前两位由你定 |
 
@@ -191,6 +191,6 @@ Homebrew 仍旧暂缓；等要上架时，`./tap.sh` 会从**这个** Release �
 
 ## 与本项目无关但会被问到的
 
-- **AI 附加功能**：`AI.shipped = false`（1.0.5 起收起），所以 `./engine.sh` 构建的引擎不随 DMG 发；appcast 里的 `ai` 字段因此不会出现。
+- **AI 附加功能**：`AI.shipped = true`（0.1.1 起随 app 发），所以设置里会有 Settings › AI 一页，默认关。引擎仍然不发：`AURA_AI_ENGINE_VERSION` 不设，`build.sh` 就不往 feed 里写 `ai` 字段，Aura 也就不提供「下到本机跑」那一项——本机跑模型靠用户自己的 Ollama 或 LM Studio。要开始发引擎：`./engine.sh arm64` 编好 `build/engine/aura-ai-engine-arm64`，发版时带上 `AURA_AI_ENGINE_VERSION=<比上一版大的整数>`，产物会落到 `build/ai/`，`publish.sh` 之外的这一步得手工把 `ai/` 也拷进站点。
 - **图标**：用 Xcode 26 的 `actool` 打图时会有 "no Dark or Tinted style" 的提示，当前属于已知现象，不影响发版。
 - **Intel 档**：`AURA_ARCH=x86_64` 的产物在 `build/intel/`，一切命令都加这个变量即可；两档的 appcast 各自独立。

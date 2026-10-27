@@ -176,7 +176,7 @@ gitleaks git --pre-commit --staged        # 提交前扫密钥（.gitleaks.toml�
 - **`Tests/ExtensionWorkerRecovery/live.py` 还没真跑过一次**：它钉死的 `Search.app` 与进程名已收成 `APP_NAME = 'Aura'`、`--self-test` 56 条全过，但一次真跑要拉起 app 与 lldb（上限 504 秒）——这是唯一覆盖「真 WebKit worker 卸载/重载到真端口」的东西，改名之后值得跑一次把结论落下来。
 - **`Tests/popup_gesture_script.js` 没人跑了**：它读 `PopupGesture.swift` 的源码做文本检查，路径已修，但仓库里没有任何脚本或套件调用它——要么接进一个跑器，要么删掉。
 - **引擎命名两套**：源码是 `Engine/aura-ai-engine.cpp`，`engine.sh` 产物是 `aura-ai-engine-<arch>`，运行时找的下载程序叫 `search-ai-engine`；以 `engine.sh` 与 `AIEngine.swift` 为准。
-- `AI.shipped = false` 是 AI 附加功能的总闸（1.0.5 起收起）：动 AI 代码前先读这一行。
+- `AI.shipped = true` 是 AI 附加功能的总闸（0.1.1 起随 app 发，各项开关默认关）：动 AI 代码前先读这一行。引擎仍不发（`AURA_AI_ENGINE_VERSION` 不设），本机模型靠用户的 Ollama 或 LM Studio。
 - **译文表有既有缺口**（2026-10-25：662/707，缺 45、未用 282）：`./Tools/i18n.py check` 因此恒红，当诊断用，不当门槛；`./check.sh` 只报数字。
 - **测试世界里认按钮的用例必须走事件队列**：`window.sendEvent` 不设 `NSApp.currentEvent`，于是 `MiddleClick` 与菜单都"看不见"是哪个键，右键也会落到 SwiftUI 的按压手势上——`SidebarPressTests` 为此留了 `sendQueued`（`NSApp.postEvent` + 关键窗口）。用直接派发去断言按钮相关的行为，得到的是假信号。
 - 工作区常有其他会话未提交的活：提交前 `git status` 复核，只 `git add` 本轮文件。
