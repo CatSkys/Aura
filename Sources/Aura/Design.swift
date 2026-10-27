@@ -388,6 +388,13 @@ enum Motion {
         reduced ? nil : light ? .easeOut(duration: 0.16) : .spring(response: 0.25, dampingFraction: 0.70)
     }
 
+    /// A thing raised over the page — the command bar on ⌘K, a panel out of an
+    /// edge: arriving with a little weight behind it, so it reads as put there
+    /// rather than as a card that blinked on.
+    static var raised: Animation? {
+        reduced ? nil : light ? .easeOut(duration: 0.16) : .spring(response: 0.30, dampingFraction: 0.72)
+    }
+
     /// A thing picked out of a row of them, as Stage's swipe disc lands: quick,
     /// and damped all the way, since two frames of bounce on a thumbnail reads
     /// as a glitch rather than as weight.

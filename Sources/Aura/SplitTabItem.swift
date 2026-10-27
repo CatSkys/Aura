@@ -21,7 +21,6 @@ struct SplitTabItem: View {
     let live: Bool
     var focusedID: Tab.ID? = nil
     let interactive: Bool
-    let pill: Namespace.ID
 
     @State private var hovered: Tab.ID?
 
@@ -70,7 +69,6 @@ struct SplitTabItem: View {
             height: height,
             narrow: width.map { ($0 - 1) / 2 < 64 } ?? false,
             interactive: interactive,
-            pill: pill,
             hovered: $hovered
         )
         .frame(maxWidth: .infinity, maxHeight: stacked ? height : .infinity)
@@ -110,7 +108,6 @@ private struct SplitTabHalf: View {
     /// Too narrow for a title: the mark alone, as a narrow tab has.
     let narrow: Bool
     let interactive: Bool
-    let pill: Namespace.ID
     @Binding var hovered: Tab.ID?
     @State private var selectedOnPress = false
 
@@ -191,7 +188,7 @@ private struct SplitTabHalf: View {
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-            .matchedGeometryEffect(id: "live", in: pill)
+            .transition(.opacity)
         } else if browser.selectedTabIDs.contains(tab.id) {
             RoundedRectangle(cornerRadius: 9, style: .continuous).fill(greys.wash)
         } else if hovering {
