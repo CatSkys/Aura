@@ -1065,7 +1065,10 @@
 "Separate sign-ins, history and bookmarks" = "独立的登录状态、历史记录与书签";
 "Each in windows of its own. Extensions, passwords and settings are shared." = "各有独立窗口；扩展、密码与设置共用。";
 "Pins keep their site" = "固定标签页留在原网站";
-"A link from a pin to another site opens in a peek over it. A pin closed with ⌘W, or left open when Aura quits, comes back at the page it was pinned at." = "固定标签页前往其他网站的链接会在其上方以预览打开；用 ⌘W 关闭、或在 Aura 退出时仍开着的固定标签页，下次回到固定的那一页。";
+"A pin closed with ⌘W, or left open when Aura quits, comes back at the page it was pinned at." = "用 ⌘W 关闭、或在 Aura 退出时仍开着的固定标签页，下次回到固定的那一页。";
+"Open links from a pin in a peek" = "固定标签页里点到别的网站时开预览";
+"Only a click on a link to another site" = "只对点到其他网站的链接生效";
+"The page opens in the panel over the pin, which stays where it was. Off, that click opens a tab beside the pin instead. Links within the site go in the pin as they always have." = "网页在上方面板中打开，固定标签页留在原页。关闭后，这样的点击改为在固定标签页旁边开一个新标签页；站内的链接照旧在固定标签页里前往。";
 "Pinned rows" = "固定行";
 "Pins as rows under the squares, and a line with Clear over the rest. Right-click a tab to pin it as a row." = "固定标签页在方块下方以行显示，其余项上方有一条带「清除」的分隔线。右键标签页可将其固定为一行。";
 "New tab in a floating field" = "新标签页使用浮动地址栏";
@@ -1214,7 +1217,7 @@
 "Find the previous match." = "找上一处。";
 "Its windows close, its spaces go with their tabs and pins, and its cookies, sign-ins, history and bookmarks are erased from this Mac." = "它的窗口会关掉，它的空间连同标签页和固定项一起消失，它的 cookie、登录状态、历史记录和书签都从这台 Mac 上抹掉。";
 "Keep beside this page (⌥⌘↩)" = "留在这一页旁边（⌥⌘↩）";
-"Links elsewhere open in a peek, and ⌘W takes a pin back to its page, as in Arc." = "去别处的链接在预览里打开，⌘W 让固定标签页回到它那一页，如同 Arc。";
+"Links elsewhere open beside it, and ⌘W takes a pin back to its page, as in Arc." = "去别处的链接开在它旁边的标签页里，⌘W 让固定标签页回到它那一页，如同 Arc。";
 "Open as a tab (⌘↩)" = "作为标签页打开（⌘↩）";
 "Open in a Tab" = "在标签页中打开";
 "Pair once with a code from your Mac" = "用你 Mac 上的一次性码配对";

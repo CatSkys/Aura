@@ -307,8 +307,18 @@ enum SettingsIndex {
               words: ["profile", "accounts", "work", "personal"]),
         .init(id: "pins.keep", group: "pins", icon: "pin.circle",
               title: "Pins keep their site", detail: "",
-              more: "A link from a pin to another site opens in a peek over it. A pin closed with ⌘W, or left open when Aura quits, comes back at the page it was pinned at.",
-              keys: ["pins.home", "pins.peek"], words: ["pinned tabs", "go home", "reset pin"]),
+              more: "A pin closed with ⌘W, or left open when Aura quits, comes back at the page it was pinned at.",
+              keys: ["pins.home"], words: ["pinned tabs", "go home", "reset pin"]),
+        // Arc's second peek switch, with Arc's note under it (Links › Peek):
+        // the plain click is the pin's alone, and a tab in the row is left to
+        // navigate as it always did. A row of its own rather than half of
+        // "Pins keep their site", which is where it could be neither found
+        // nor turned off without taking ⌘W's way home with it (Drice, 27 Oct
+        // 2026).
+        .init(id: "pins.peek", group: "pins", icon: "eye",
+              title: "Open links from a pin in a peek", detail: "Only a click on a link to another site",
+              more: "The page opens in the panel over the pin, which stays where it was. Off, that click opens a tab beside the pin instead. Links within the site go in the pin as they always have.",
+              keys: ["pins.peek"], words: ["peek", "preview", "pinned tabs", "click"]),
         .init(id: "pins.list", group: "pins", icon: "list.bullet.rectangle",
               title: "Pinned rows", detail: "",
               more: "Pins as rows under the squares, and a line with Clear over the rest. Right-click a tab to pin it as a row.",
@@ -566,6 +576,11 @@ extension Preferences {
         }
     }
 
+    /// Both halves of a pin that keeps its site at once: ⌘W's way home
+    /// (`pins.home`) and the peek a plain click out to another site opens
+    /// (`pins.peek`). Settings shows them as two rows and this is neither of
+    /// them; it is what Set Up Like Arc turns on, what undo puts back, and
+    /// what the bench reads as "pins.keep".
     var pinsKeepSite: Bool {
         get { pinsGoHome || pinsPeek }
         set { pinsGoHome = newValue; pinsPeek = newValue }

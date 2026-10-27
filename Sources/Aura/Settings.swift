@@ -655,7 +655,8 @@ struct SettingsPanel: View {
                 .opacity(arcHere ? 1 : 0.4)
         case "spaces": Switch(on: $prefs.usesSpaces)
         case "profiles": Pill("New Profile…") { ProfileMenu.askNew() }
-        case "pins.keep": Switch(on: $prefs.pinsKeepSite)
+        case "pins.keep": Switch(on: $prefs.pinsGoHome)
+        case "pins.peek": Switch(on: $prefs.pinsPeek)
         case "pins.list": Switch(on: $prefs.listsPins)
         case "newtab.floating": Switch(on: $prefs.floatingNewTab)
         case "commandbar": Switch(on: $prefs.commandBar)
