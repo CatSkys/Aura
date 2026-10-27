@@ -352,7 +352,7 @@ struct SideBar: View {
                     }
                 }
                 // Under the groups, as on screen.
-                if showsLine(listed: listed.count, loose: rest.count) {
+                if showsLine(pins: pins.count, listed: listed.count, loose: rest.count, groups: groups.count) {
                     KeepLine(clears: false) {}
                 }
                 ForEach(rest) { tab in
@@ -382,7 +382,8 @@ struct SideBar: View {
         let listed = browser.listedPins.count
         let ungrouped = displayed.filter { $0.pin == nil && (!prefs.usesTabGroups || browser.group(of: $0) == nil) }.count
         let listBlock = CGFloat(listed) * (rowHeight + SideBar.gap) + (listed > 0 ? SideBar.gap : 0)
-            + (showsLine(listed: listed, loose: ungrouped) ? KeepLine.height + SideBar.gap : 0)
+            + (showsLine(pins: browser.squarePins.count, listed: listed, loose: ungrouped,
+                         groups: browser.tabGroups.count) ? KeepLine.height + SideBar.gap : 0)
         let rows = prefs.usesTabGroups
             ? displayed.filter { $0.pin == nil && browser.group(of: $0) == nil }
                 + browser.tabGroups.flatMap { browser.visibleTabs(in: $0) }
@@ -426,11 +427,21 @@ struct SideBar: View {
     }
 
     /// The line between what is kept and what comes and goes, with the
-    /// pinned rows on: over the tabs Clear would close, or under rows with
-    /// nothing below them yet. Not with the rows off, nor with nothing on
-    /// either side of it.
-    private func showsLine(listed: Int, loose: Int) -> Bool {
-        prefs.showsPinRows && listed + loose > 0
+    /// pinned rows on.
+    private func showsLine(pins: Int, listed: Int, loose: Int, groups: Int) -> Bool {
+        SideBar.showsLine(pins: pins, listed: listed, loose: loose, groups: groups,
+                          rows: prefs.showsPinRows)
+    }
+
+    /// That line's rule, apart from the drawing of it so it can be asked on
+    /// its own: with the pinned rows on, over the tabs Clear would close or
+    /// under rows with nothing below them yet. It comes with the first pin or
+    /// the first group, since those are what it keeps apart from the clearing —
+    /// a space of loose tabs alone had a rule drawn over the top of them, which
+    /// separated nothing from nothing (idea 444). Not with the rows off, and
+    /// not with nothing on either side of it.
+    nonisolated static func showsLine(pins: Int, listed: Int, loose: Int, groups: Int, rows: Bool) -> Bool {
+        rows && pins + listed + groups > 0 && listed + loose > 0
     }
 
     /// How many squares go in each row: at most four — fewer only when the
@@ -560,7 +571,8 @@ struct SideBar: View {
             let loose = looseTabs
             // Under the groups: Clear keeps them, as it keeps the pins, so
             // everything above the line is what stays.
-            if showsLine(listed: browser.listedPins.count, loose: loose.count) {
+            if showsLine(pins: browser.squarePins.count, listed: browser.listedPins.count,
+                         loose: loose.count, groups: browser.tabGroups.count) {
                 KeepLine(clears: !loose.isEmpty) { browser.clearTabs() }
             }
             let ghost: Int? = if case .loose(let at)? = crossing?.target { at } else { nil }

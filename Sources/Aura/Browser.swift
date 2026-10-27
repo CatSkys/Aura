@@ -3620,7 +3620,9 @@ final class Browser: NSObject, ObservableObject {
         // in the group, and a click opens it again at the page it was on. The
         // cross, the middle button, Close Other Tabs, Close Tabs Below, Clear
         // and Close Group close for good, as they always did.
-        if puttingAway, group(of: tab) != nil, tab.address != nil {
+        // A row already put away has no page left to let go: ⌘W on it closes
+        // it for good, as the cross does.
+        if puttingAway, group(of: tab) != nil, tab.address != nil, !tab.asleep {
             tab.rest()
             let others = tabs.filter { $0.id != tab.id && !$0.asleep }
             let loose = others.filter { $0.pin == nil }
