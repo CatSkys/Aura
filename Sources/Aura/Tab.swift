@@ -275,6 +275,13 @@ final class Tab: ObservableObject, Identifiable {
     /// twenty web views and their processes fighting the first frame.
     var web: any PageSurface {
         if let built { return built }
+        // A page kept in memory comes back through `wake()` and nothing else:
+        // anything that reaches for a page directly is given a fresh view, and
+        // the kept one is let go of — a tab is never two pages.
+        if let kept = frozen {
+            frozen = nil
+            disconnect(kept)
+        }
         let view = build()
         built = view
         return view
@@ -797,6 +804,17 @@ final class Tab: ObservableObject, Identifiable {
     private var memory: Any?
     /// The last picture of that page, compressed, for the moment it wakes.
     private var picture: Data?
+    /// The page itself, kept while the tab sleeps: aside in WebKit's hands
+    /// rather than thrown away, so coming back to it is a frame's work and
+    /// not a page's (see Freeze.swift). Nil for a tab that slept the old way,
+    /// and for one that never had a page.
+    private var frozen: PageView?
+    /// The page's own scroll offset, in pixels, as it last said: put back for a
+    /// page coming out of memory (see `putBackScroll`).
+    private var scrolledTo: Double = 0
+    /// When it was put aside: the kept pages let go of first are the ones
+    /// kept longest (see Sleep.swift).
+    private(set) var frozenAt = Date()
     /// That picture, over the stage while the page is rebuilt underneath it:
     /// coming back to a tab that slept starts from what you left, not white.
     @Published private(set) var cover: NSImage?
@@ -959,6 +977,28 @@ final class Tab: ObservableObject, Identifiable {
         if muted { Muter.set(true, on: web) }
         arm(hiding: veils)
 
+        follow(web)
+
+        relay.tab = self
+        veils_.tab = self
+        forms.tab = self
+        images.tab = self
+        elements.tab = self
+        media.tab = self
+        shop.tab = self
+        iconChanges.tab = self
+        middles.tab = self
+        dusk.tab = self
+        translateRelay.tab = self
+        return web
+    }
+
+    /// What the tab hears from its page while it has one: what the page is
+    /// called, where it went, how far along it is, whether it makes noise —
+    /// and the page's own full screen. Called again for a page that comes
+    /// back out of memory rather than being built (see `wake`), which is why
+    /// it is a method of its own.
+    private func follow(_ web: PageView) {
         watch = [
             web.observe(\.title, options: [.new]) { [weak self] _, _ in
                 MainActor.assumeIsolated { self?.title = self?.built?.title ?? "" }
@@ -1021,20 +1061,7 @@ final class Tab: ObservableObject, Identifiable {
                 }
             },
         ]
-
-        relay.tab = self
-        veils_.tab = self
-        forms.tab = self
-        images.tab = self
-        elements.tab = self
-        media.tab = self
-        shop.tab = self
-        iconChanges.tab = self
-        middles.tab = self
-        dusk.tab = self
-        translateRelay.tab = self
         ears.watch(web) { [weak self] on in self?.heard(on) }
-        return web
     }
 
     /// Between two fifths and three times, which is as far as a page is worth
@@ -1427,6 +1454,14 @@ final class Tab: ObservableObject, Identifiable {
     /// True for a tab that has a place and an address but is holding no page —
     /// brought back from the last session, or put down with ⌘W while pinned.
     var asleep: Bool { pending != nil }
+    /// Asleep with its page still in memory rather than let go of: woken in a
+    /// frame, at the memory the page was using. See Freeze.swift.
+    var isFrozen: Bool { frozen != nil }
+    /// Whether this page could be kept that way, on this Mac's WebKit and with
+    /// the page it has now: asked before a tab is put aside, since a Mac whose
+    /// WebKit has no way of doing it should not have kept pages let go of for
+    /// nothing.
+    var canFreeze: Bool { (built as? PageView).map { Freeze.available($0.webKit) } ?? false }
 
     /// ⌘W on a pinned tab. The letter keeps its place in the row and the
     /// address is remembered; everything the page was holding is let go, so a
@@ -1471,6 +1506,78 @@ final class Tab: ObservableObject, Identifiable {
         stale = false
         pull = nil
         discard()
+    }
+
+    /// Nobody has looked at this page for a while, and WebKit is asked to put
+    /// it aside whole rather than let it go. Waking it then costs a frame, not
+    /// a page's boot — which on a site that takes three seconds to start is
+    /// the whole difference. It costs the memory the page was using, so
+    /// `Sleep.swift` decides how many tabs are worth that and lets the oldest
+    /// go when one too many is asked for.
+    ///
+    /// Answers false where this WebKit has no way of doing it, leaving the tab
+    /// exactly as it was, for the caller to sleep the old way.
+    func freeze(picture: Data?, done: @escaping (Bool) -> Void) {
+        guard let view = built as? PageView, let url = address, Freeze.available(view.webKit) else {
+            return done(false)
+        }
+        // Its place in the frame, asked while it can still answer: WebKit's way
+        // of putting a page aside keeps the document and not where the frame was
+        // scrolled to, so the page would come back at the top (see
+        // `putBackScroll`).
+        view.evaluateInSearch("Math.round(window.scrollY || document.documentElement.scrollTop || 0)") { [weak self] value in
+            guard let self else { return done(false) }
+            self.scrolledTo = (value as? NSNumber)?.doubleValue ?? 0
+            self.keep(picture: picture, of: view, at: url)
+            done(true)
+        }
+    }
+
+    /// The last of `freeze(picture:done:)`: everything a page going gives up,
+    /// short of the page itself, and then the page set aside.
+    private func keep(picture: Data?, of view: PageView, at url: URL) {
+        // The same list `discard()` stops, so a tab asleep either way has
+        // nothing of its own still running.
+        popupGesture.clear()
+        if !blockedPopups.isEmpty { blockedPopups = [] }
+        translationGone(sleeping: true)
+        watch = []
+        ears.stop()
+        quiet?.invalidate()
+        quiet = nil
+        media.forget()
+        // Silent before it goes: WebKit's player can outlive the page that
+        // started it, and this is the last thing asked of a page that is about
+        // to be one nothing may touch.
+        view.webKit.setAllMediaPlaybackSuspended(true, completionHandler: nil)
+        // Kept for the one way back that needs it — a page the system took
+        // while it was aside comes back as a load, at the same place.
+        memory = view.interactionState
+        self.picture = picture
+        pending = url
+        stale = false
+        pull = nil
+        built = nil
+        frozen = view
+        frozenAt = Date()
+        Freeze.suspend(view.webKit)
+    }
+
+    /// A page kept in memory, let go of without being looked at: the one too
+    /// many, or memory running short. It sleeps the old way from here — its
+    /// history and its picture are what is left of it (see `sleep`).
+    func unfreeze() {
+        guard let view = frozen else { return }
+        frozen = nil
+        disconnect(view)
+    }
+
+    /// Where the page was scrolled to, put back — WebKit's way of putting a page
+    /// aside keeps the document and not the frame's place in it, so a page out
+    /// of memory comes back at the top unless it is told.
+    private func putBackScroll(_ web: any PageSurface) {
+        guard scrolledTo > 0 else { return }
+        web.evaluateInSearch("window.scrollTo(0, \(scrolledTo))")
     }
 
     /// A page moved to another space must use that space's cookies. WebKit
@@ -1713,6 +1820,37 @@ final class Tab: ObservableObject, Identifiable {
             uncover(after: 4)
         }
         picture = nil
+        // A page kept in memory: back as it was, nothing fetched — the reason
+        // a tab that slept comes back in a frame instead of loading (see
+        // Freeze.swift). A WebKit with nothing to give back, or a page whose
+        // process went while it was aside, falls through to loading it.
+        if let view = frozen {
+            frozen = nil
+            built = view
+            follow(view)
+            painted = true
+            steps()
+            // The picture is only here to cover the moment the page's own
+            // layers come back, which is a frame or two, not a load.
+            uncover(after: 0.25)
+            Freeze.resume(view.webKit) { [weak self, weak view] ok in
+                guard let self, let view else { return }
+                guard ok else {
+                    // Nothing to give back — the page was pruned while it was
+                    // aside, or its process went. It becomes a load, which is
+                    // what every other waking tab does.
+                    self.built = nil
+                    self.disconnect(view)
+                    self.loadAndVerify(url, state: state)
+                    return
+                }
+                // Its sound may start again, now that it is a page WebKit will
+                // take a question from: asked before the resume it raises.
+                view.webKit.setAllMediaPlaybackSuspended(false, completionHandler: nil)
+                self.putBackScroll(view)
+            }
+            return true
+        }
         loadAndVerify(url, state: state)
         return true
     }
@@ -1886,6 +2024,14 @@ final class Tab: ObservableObject, Identifiable {
         quiet?.invalidate()
         quiet = nil
         media.forget()
+        // A page kept in memory only ever goes one of two ways: given back, or
+        // gone with its view. Nothing above applies to one — it gave all that
+        // up when it was put aside, and asking it anything now raises.
+        if let view = frozen {
+            frozen = nil
+            disconnect(view)
+            return
+        }
         guard let web = built else { return }
         // A page filling the screen has its view inside WebKit's own window,
         // which holds it: let go there, the page keeps its picture and its
@@ -1903,8 +2049,28 @@ final class Tab: ObservableObject, Identifiable {
         // suspended, which nothing on the page can undo before it goes.
         Muter.set(true, on: web.webKit)
         web.webKit.setAllMediaPlaybackSuspended(true, completionHandler: nil)
-        (delegate as? Browser)?.cancelDisplay(for: web.webKit)
         built = nil
+        halt(web)
+        disconnect(web)
+    }
+
+    /// A page still awake, told to stop what it is doing before its view goes:
+    /// a load on its way, a camera, a microphone. Never asked of a page kept
+    /// aside — WebKit allows two things done to one of those, giving it back
+    /// and destroying it, and this is neither.
+    private func halt(_ web: any PageSurface) {
+        web.stopLoading()
+        // Detaching a view doesn't end capture while something still holds it.
+        web.setCameraCaptureState(.none, completionHandler: nil)
+        web.setMicrophoneCaptureState(.none, completionHandler: nil)
+    }
+
+    /// Everything Aura put on a page it is letting go of, taken back off, and
+    /// its view let go of. Split out of `discard()` for the other way a page
+    /// goes: a kept one, which is already quiet and which may not be touched
+    /// while it is aside (see `unfreeze`).
+    private func disconnect(_ web: any PageSurface) {
+        (delegate as? Browser)?.cancelDisplay(for: web.webKit)
         Passkeys.shared.forget(web.webKit)
         let controller = web.configuration.userContentController
         Web.release(controller)
@@ -1924,10 +2090,6 @@ final class Tab: ObservableObject, Identifiable {
         web.translating = nil
         web.onTranslate = nil
         web.onSearch = nil
-        web.stopLoading()
-        // Detaching a view doesn't end capture while something still holds it.
-        web.setCameraCaptureState(.none, completionHandler: nil)
-        web.setMicrophoneCaptureState(.none, completionHandler: nil)
         web.navigationDelegate = nil
         web.uiDelegate = nil
         web.view.removeFromSuperview()

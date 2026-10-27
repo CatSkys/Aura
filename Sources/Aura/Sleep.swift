@@ -6,10 +6,18 @@ import WebKit
 // A page open in a tab keeps its whole content process — a hundred to three
 // hundred megabytes, running its timers, holding its sockets — for as long as
 // the tab exists. Twenty tabs is two or three gigabytes spent on the nineteen
-// nobody is looking at. So a tab left alone for half an hour gives its page
-// back, and keeps what it takes to come back exactly where it was: its
-// history, its scroll position, and a picture to show while the page is
-// rebuilt underneath (see Tab.sleep).
+// nobody is looking at. So a tab left alone for half an hour is put aside, in
+// one of two ways.
+//
+// The first few are kept: WebKit sets the page itself aside, JavaScript heap
+// and all, and gives it back without a request being made — coming back to one
+// of those is a frame's work, which is what a tab that was asleep should feel
+// like (see Freeze.swift). Five of them, because a kept page is a page still
+// costing its memory; past that, and when memory runs short, a tab gives its
+// page back and keeps only what it takes to load it again where it was: its
+// history, its scroll position, and a picture to show while it is rebuilt
+// underneath (see Tab.sleep). That is the order Chrome keeps its tabs in —
+// freeze, and discard only when the memory is needed.
 //
 // Some tabs never sleep, because waking them couldn't give back what they
 // were doing: the one on screen, pinned tabs (those are put down by hand,
@@ -24,7 +32,8 @@ import WebKit
 // two hours (Later) or ten minutes (Sooner).
 //
 // When macOS says memory is short, the wait shrinks, whatever was chosen: to
-// five minutes on a warning, to nothing when it is critical.
+// five minutes on a warning, to nothing when it is critical — and the pages
+// kept in memory are let go of first.
 
 /// How soon tabs sleep, as chosen in Settings. Three levels rather than
 /// numbers: what someone decides is how much a waking tab bothers them, not
@@ -76,6 +85,14 @@ extension Browser {
         return set > 0 ? set : SleepPace.chosen.wait
     }
 
+    /// Whether a tab that sleeps keeps its page in memory rather than giving it
+    /// back — a frame to come back to instead of a load (see Freeze.swift).
+    /// `sleep.freeze` in defaults turns it off: for a measurement that wants
+    /// the old way, and for a Mac where the memory matters more than the wait.
+    static var keepsPages: Bool {
+        Store.settings.object(forKey: "sleep.freeze") as? Bool ?? true
+    }
+
     /// Started once, at launch. The same look closes the tabs left alone
     /// longest, when tabs close themselves (see Closing.swift).
     func watchForSleep() {
@@ -94,11 +111,21 @@ extension Browser {
         source.setEventHandler { [weak self] in
             MainActor.assumeIsolated {
                 guard let self, let event = self.pressure?.data else { return }
+                // Memory first, and the pages kept in memory are the first of
+                // it: they go without being looked at, and sleep the old way
+                // from there.
+                for tab in self.frozenTabs { tab.unfreeze() }
                 self.sleepIdle(within: event.contains(.critical) ? 0 : 5 * 60)
             }
         }
         source.resume()
         pressure = source
+    }
+
+    /// The pages kept in memory while their tabs sleep, the one kept longest
+    /// first: the first to be let go of when room is needed.
+    var frozenTabs: [Tab] {
+        (tabs + parkedTabs).filter(\.isFrozen).sorted { $0.frozenAt < $1.frozenAt }
     }
 
     /// Every tab that has gone long enough without being looked at, the one
@@ -185,6 +212,11 @@ extension Browser {
     /// Asks the page whether it holds anything typed, pictures it, then lets
     /// it go — looking again at each step, since each takes a moment and you
     /// may have gone back to the tab in the meantime.
+    ///
+    /// Kept in memory rather than let go of, while there is room for it: waking
+    /// a kept page is a frame's work, waking one that was let go of is a load
+    /// (see Freeze.swift). The page kept longest makes room, and sleeps the
+    /// old way from there.
     func sleep(_ tab: Tab, done: ((String) -> Void)? = nil) {
         if let reason = awake(because: tab) {
             done?(reason)
@@ -204,6 +236,17 @@ extension Browser {
                 guard let self, let tab else { return }
                 if let reason = self.awake(because: tab) {
                     done?(reason)
+                    return
+                }
+                if Browser.keepsPages, tab.canFreeze {
+                    while frozenTabs.count >= Freeze.budget, let oldest = frozenTabs.first {
+                        oldest.unfreeze()
+                    }
+                    tab.freeze(picture: picture) { [weak tab] kept in
+                        guard let tab else { return }
+                        if !kept { tab.sleep(picture: picture) }
+                        done?("asleep")
+                    }
                     return
                 }
                 tab.sleep(picture: picture)
