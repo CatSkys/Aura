@@ -115,7 +115,7 @@ gitleaks git --pre-commit --staged        # 提交前扫密钥（.gitleaks.toml�
 
 - **合并在锁上排队，排队是脚本的事**：`./deliver.sh <slug>` 抢 `.git/deliver.lock`（所有树共享一把）；第二个**自己等**（默认 300 秒，`--wait 600` 等更久），每 10 秒说一次谁在跑。**不要用 `sleep` 轮询交付**——一轮 30 分钟的体检里大半时间都花在这种轮询上。
 - **锁的进程死了就被接管**：`who` 里记着 pid，拿锁的进程已经不在了就当场接管（被杀的交付不该把所有人都挡住）；确认没在跑才手工 `rm -rf .git/deliver.lock`。
-- **主仓的合并只有 deliver.sh 能发起**：`.git-hooks/pre-merge-commit` 认 `AURA_DELIVER=1`（`deliver.sh` 自己 export 的），别的 `git merge` 在主仓一律被拒——手打合并绕过了锁和 `merge-tree` 预演，两个会话同时合就是互相盖。真要手动合（合上游之后）：`git merge --no-verify <ref>`。
+- **主仓的合并只有 deliver.sh 能发起**：`.git-hooks/pre-merge-commit` 认两样——`AURA_DELIVER=1`（`deliver.sh` 自己 export），或者顺着这次合并的进程祖先找到正好是 `.git/deliver.lock/who` 里那个 pid（也就是拿着锁的那个 `deliver.sh`）。别的 `git merge` 在主仓一律被拒：手打合并绕过了锁和 `merge-tree` 预演，两个会话同时合就是互相盖。**被拒时它已经把合并写进工作区了**，照它说的 `git merge --abort` 退回去（钩子替不了这一步：git 跑钩子时握着索引锁）；真要手动合（合上游之后）：`git merge --no-verify <ref>`。
 - **冲突在树里解决**：`git -C ../Aura-<slug> merge main`，在树里解冲突、构建、验证，再交付。`deliver.sh` 用 `git merge-tree` 预演，会冲突就直接拒——主仓永远不出现要人工解的合并。
 - **能合就一次合完**：`./deliver.sh --ready` 把当前所有"树干净、与 main 不冲突、不撞主仓 WIP"的分支在一个锁窗口里合掉，然后**只构建一次**、只清一次场。三个任务从 ~600 秒降到 ~200 秒。
 - **产物戳决定要不要重建**：`.git/artifact` 记着 `build/` 是哪个提交构建的；自那以后没有 `Sources/`、`Resources/`、`Engine/`、`Package.swift`、`VERSION` 的改动就不重建（实测跳过时整次交付 0.6 秒）。`./deliver.sh --status` 直接告诉你覆盖没覆盖 HEAD。

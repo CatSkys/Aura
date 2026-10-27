@@ -3,6 +3,8 @@
 # 构建失败会把这批合并撤回；手打 git merge 三样都没有，两个会话同时合并就会
 # 互相盖，构建也会把别人没提交的活编进产物（AGENTS.md「并行交付」）。
 #
+# 认的是发起者，不是变量：见下面顺着进程祖先找 deliver.sh 的那段。
+#
 # 树里的合并一律放行：在树里 merge main 解冲突正是该做的事。
 set -eu
 
@@ -10,8 +12,25 @@ main_tree=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
 here=$(git rev-parse --show-toplevel)
 [ "$here" = "$main_tree" ] || exit 0
 
-# deliver.sh 自己带这个变量；它是唯一该在主仓合并的人。
+# deliver.sh 自己带这个变量。
 [ "${AURA_DELIVER:-}" = "1" ] && exit 0
+
+# 也认「这次合并是 deliver.sh 发起的」：它拿锁时把 pid 写进 .git/deliver.lock/who，
+# 顺着合并的进程祖先找，找到的正好是那个 pid 才算数。认进程不认变量，是因为老
+# 版本的 deliver.sh、被 bash 增量读进来的脚本副本都不带 AURA_DELIVER，而它们确实
+# 是 deliver.sh——闸门不该把自己的引导卡死；认 pid 而不是命令行里的字符串，是因为
+# "deliver.sh" 出现在谁的命令行里都容易，出现在锁里只有一个进程。
+lock="$(git rev-parse --absolute-git-dir)/deliver.lock"
+if [ -d "$lock" ]; then
+  holder="$(awk 'NR==1{print $1}' "$lock/who" 2>/dev/null || true)"
+  pid=$$
+  step=0
+  while [ -n "$holder" ] && [ -n "$pid" ] && [ "$pid" -gt 1 ] && [ "$step" -lt 5 ]; do
+    [ "$pid" = "$holder" ] && exit 0
+    pid="$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ' || true)"
+    step=$((step + 1))
+  done
+fi
 
 cat >&2 <<'MSG'
 主仓的合并只从 ./deliver.sh 走：这次 git merge 被拒了。
