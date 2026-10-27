@@ -22,6 +22,10 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+# 主仓唯一该合并的地方：.git-hooks/pre-merge-commit 认这个变量，别的
+# git merge 在主仓都会被拒（AGENTS.md「并行交付」）。
+export AURA_DELIVER=1
+
 app_paths='^(Sources/|Resources/|Engine/|Package\.swift$|VERSION$)'
 git_dir="$(git rev-parse --absolute-git-dir)"
 lock="$git_dir/deliver.lock"
@@ -58,6 +62,33 @@ touch_apps() {
 }
 
 since_stamp() { cat "$stamp" 2>/dev/null || true; }
+
+# 构建要跑几分钟，这期间别的会话可能正往主仓工作区写东西。撤回这次合并时
+# 那些改动就成了要丢的：先存进 .git/parked，把恢复用的命令交回去，不替谁
+# 做主（存成 git 对象不动工作区，也就不用替谁 stash）。
+park_work() {
+  local dir sha path
+  dir="$git_dir/parked/$(date +%Y%m%d-%H%M%S)"
+  mkdir -p "$dir"
+  git status --porcelain > "$dir/status.txt"
+  sha="$(git stash create "交付撤回前的工作区 $(date '+%F %T')" 2>/dev/null || true)"
+  [ -n "$sha" ] && echo "$sha" > "$dir/tracked.sha"
+  while IFS= read -r path; do
+    [ -e "$path" ] || continue
+    mkdir -p "$dir/untracked/$(dirname "$path")"
+    cp -R "$path" "$dir/untracked/$path" 2>/dev/null || true
+  done < <(git status --porcelain | sed -n 's/^?? //p')
+  echo "$dir"
+}
+
+# 存下来的东西怎么取回去：跟踪文件的改动用 stash apply，未跟踪的复制回原位。
+parked_note() {
+  local dir="$1" sha=""
+  [ -f "$dir/tracked.sha" ] && sha="$(cat "$dir/tracked.sha")"
+  echo "  这次交付之外、构建期间出现的改动已存进 $dir（改了哪些见 status.txt）" >&2
+  [ -n "$sha" ] && echo "    跟踪文件的改动：git stash apply $sha" >&2
+  [ -d "$dir/untracked" ] && echo "    未跟踪的文件：cp -R '$dir/untracked/.' ." >&2
+}
 
 tree_of() {
   git worktree list --porcelain | awk -v b="refs/heads/$1" '
@@ -219,7 +250,14 @@ elif [ -n "$dirty" ]; then
   echo "不重建：主仓还有别人的活（$(printf '%s\n' "$dirty" | wc -l | tr -d ' ') 项），产物会把那份活编进去；主仓干净后跑 ./build.sh"
 else
   if ! ./build.sh; then
+    # 撤回只撤这次合并。--keep 会为别的会话的改动拒绝撤回；真被挡下时先把那些
+    # 改动存起来再硬撤，绝不静默丢掉。
+    if git reset --keep "$before" 2>/dev/null; then
+      refuse "构建失败，这批合并已撤回（main 回到 $(git rev-parse --short HEAD)）；树与分支都留着"
+    fi
+    parked="$(park_work)"
     git reset --hard "$before"
+    parked_note "$parked"
     refuse "构建失败，这批合并已撤回（main 回到 $(git rev-parse --short HEAD)）；树与分支都留着"
   fi
   git rev-parse HEAD > "$stamp"

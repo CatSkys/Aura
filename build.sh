@@ -49,6 +49,7 @@
 set -euo pipefail
 
 cd "$(dirname "$0")"
+./guard.sh
 CONFIG="${1:-release}"
 STEP="${2:-app}"
 ARCH="${AURA_ARCH:-$(uname -m)}"

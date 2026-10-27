@@ -62,6 +62,12 @@ enum Disk {
         try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
         try? data.write(to: file, options: .atomic)
     }
+
+    /// Gone, right now — the write above is synchronous here for the same
+    /// reason: the runner looks at the disk the moment it asks.
+    static func remove(_ file: URL) {
+        try? FileManager.default.removeItem(at: file)
+    }
 }
 
 /// Address.swift names Search's own pages' scheme (see InternalPages.swift).
