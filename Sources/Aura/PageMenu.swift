@@ -13,11 +13,22 @@ import AppKit
 // from the menu bar: the same Save Page As (⌘S), Export as PDF, Print (⌘P),
 // Share and Translate, and the Web Inspector.
 
+extension NSMenu {
+    /// A context menu this app builds for a right-click on a page, as opposed
+    /// to the one WebKit builds for a link, a picture or a field. Which menu it
+    /// is matters because `willOpenMenu` — AppKit's own hook on the view a
+    /// menu is shown from, which PageView overrides to add the page's rows to
+    /// WebKit's menu — is called for ours too, and added a second Translate
+    /// Page to a menu that already had one.
+    static let auraContextMenu = NSUserInterfaceItemIdentifier("AuraContextMenu")
+}
+
 extension Browser {
     func showPageMenu(for tab: Tab, selector: String, label: String, note: String) {
         guard let page = tab.built, let window = page.view.window else { return }
         let view = page.view
         let menu = NSMenu()
+        menu.identifier = NSMenu.auraContextMenu
         // Every row says for itself whether it may be pressed: without this,
         // AppKit asks the responder chain, which knows none of them.
         menu.autoenablesItems = false

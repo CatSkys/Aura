@@ -2274,6 +2274,11 @@ final class PageView: WKWebView {
     /// page in it itself; Aura adding them again showed each one twice.
     override func willOpenMenu(_ menu: NSMenu, with event: NSEvent) {
         super.willOpenMenu(menu, with: event)
+        // AppKit hands this hook every menu shown from this view, and that
+        // includes the ones Aura builds for itself — PageMenu's and
+        // ImageMenu's. Those already carry the page's rows, so adding them a
+        // second time showed Translate Page twice in the same menu.
+        guard menu.identifier != NSMenu.auraContextMenu else { return }
         // WebKit names it for a window, but a new window's page arrives here
         // as a new tab (Browser's createWebViewWith), so it says so. The tab
         // stays behind this one, as in Safari and Chrome, and as a ⌘-click's
