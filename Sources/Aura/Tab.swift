@@ -2070,7 +2070,10 @@ final class Tab: ObservableObject, Identifiable {
     /// goes: a kept one, which is already quiet and which may not be touched
     /// while it is aside (see `unfreeze`).
     private func disconnect(_ web: any PageSurface) {
-        (delegate as? Browser)?.cancelDisplay(for: web.webKit)
+        // Asked by tab rather than by view: a page let go of has already
+        // stopped holding `built` (see `discard`), and asked that way the
+        // screen's question matched nothing and was never answered.
+        (delegate as? Browser)?.cancelDisplay(of: self)
         Passkeys.shared.forget(web.webKit)
         let controller = web.configuration.userContentController
         Web.release(controller)
