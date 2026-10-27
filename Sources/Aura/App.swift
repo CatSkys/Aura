@@ -833,7 +833,7 @@ struct ContentView: View {
                 // which is what both `scale(0.97)` and the `move(edge: .top)`
                 // after it looked like. A scale big enough to see, and the fade
                 // that carries it.
-                .transition(.scale(scale: 0.94, anchor: .top).combined(with: .opacity))
+                .transition(.scale(scale: 0.90, anchor: .top).combined(with: .opacity))
         }
     }
 
@@ -962,7 +962,7 @@ struct ContentView: View {
             // The field comes up with a little weight behind it (Motion.raised)
             // and goes quickly: once Return is pressed the page is on its way,
             // and the field is not what there is to watch.
-            .animation(browser.fieldShowing ? Motion.raised : Motion.quick, value: browser.fieldShowing)
+            .animation(browser.fieldShowing ? Motion.arrive : Motion.quick, value: browser.fieldShowing)
             .background(windowSetup)
             .onChange(of: browser.prefs.sidebar) { _, _ in
                 DispatchQueue.main.async { Lights.refresh(window); measureLights() }

@@ -415,14 +415,14 @@ struct TabSwitcherOverlay: View {
                 guard !Task.isCancelled else { return }
                 switcher.capturePreviews(of: tab, current: current)
             }
-            .transition(.opacity.combined(with: .scale(scale: 0.94)))
+            .transition(.opacity.combined(with: .scale(scale: 0.90)))
         }
         }
         // Outside the `if`, for the reason the space card had to learn: a view
         // a condition inserts cannot animate its own arrival. The switcher had
         // no entrance at all -- ⌃Tab put the grid on the dimmed window in one
         // frame.
-        .animation(Motion.released, value: switcher.visible)
+        .animation(Motion.arrive, value: switcher.visible)
     }
 
     /// The planet: the tabs, five to a row.

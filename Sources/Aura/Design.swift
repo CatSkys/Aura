@@ -395,6 +395,15 @@ enum Motion {
         reduced ? nil : light ? .easeOut(duration: 0.16) : .spring(response: 0.30, dampingFraction: 0.72)
     }
 
+    /// And the ones that have to *land*: 0.52 damping is a 15 per cent overshoot
+    /// of whatever moved, which is the difference between a spring nobody can
+    /// see and one they can. A 3.8 per cent overshoot of a 6 per cent scale is a
+    /// fifth of one per cent — 1.3 points on a bar 560 wide — and that is
+    /// exactly why the first version of this read as no elasticity at all.
+    static var arrive: Animation? {
+        reduced ? nil : light ? .easeOut(duration: 0.16) : .spring(response: 0.34, dampingFraction: 0.52)
+    }
+
     /// A thing picked out of a row of them, as Stage's swipe disc lands: quick,
     /// and damped all the way, since two frames of bounce on a thumbnail reads
     /// as a glitch rather than as weight.
