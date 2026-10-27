@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Settings › Tabs › Pins stay on their site (#577).
+"""Settings › Spaces & Pins › Pins: a pin keeps its site (#577).
+
+Two switches, as Arc keeps this pair in its Links pane: Pins keep their site
+(the pin comes back to its page, and a link out of it opens beside it), and
+Open links from a pin in a peek (that link opens in a peek instead).
 
 Build first (`./build.sh`), then `python3 Tests/pin_peek.py`. It uses the
 split suite's harness: started hidden, no window made or shown, everything
@@ -45,7 +49,7 @@ def peek(): return sv.cmd({"do": "probe"})["peek"]
 def close(): sv.cmd({"do": "peek", "url": "close"}); time.sleep(0.5)
 
 try:
-    sv.setup(sidebar=True, **{"pins.peek": True, "pins.list": True}); sv.launch()
+    sv.setup(sidebar=True, **{"pins.home": True, "pins.peek": True, "pins.list": True}); sv.launch()
     a = sv.page("home"); pin(a); sv.sp("select", id=a); time.sleep(0.5)
 
     follow(a, f"{OTHER}/out")
@@ -127,6 +131,8 @@ try:
     follow(b, f"{OTHER}/away")
     t.ok("a tab that isn't a pin goes as before", peek() == "" and sv.url(sv.sp("state"), b).endswith("/away"), (peek(), sv.url(sv.sp("state"), b)))
 
+    # Its own switch, off: the pin keeps its site, so the link opens beside it
+    # rather than in it, and rather than in a peek.
     sv.quit()
     subprocess.run(["defaults", "write", sv.SUITE, "pins.peek", "-bool", "false"])
     sv.launch(); time.sleep(0.5)
@@ -134,9 +140,26 @@ try:
     p = next(x["id"] for x in st["tabs"] if x["id"] in st["pins"])
     sv.sp("select", id=p); time.sleep(1.5)
     follow(p, f"{OTHER}/off")
-    t.ok("switched off: the pin follows the link", peek() == "" and sv.url(sv.sp("state"), p).endswith("/off"), (peek(), sv.url(sv.sp("state"), p)))
+    st = sv.sp("state")
+    t.ok("switched off: the link opens in a tab beside the pin",
+         peek() == "" and any(x["url"].endswith("/off") for x in st["tabs"]),
+         (peek(), [x["url"] for x in st["tabs"]]))
+    t.ok("…and the pin stays on its page", sv.url(st, p).endswith("/home"), sv.url(st, p))
+    for x in [x["id"] for x in st["tabs"] if x["url"].endswith("/off")]: sv.sp("close", id=x)
     sv.sp("close", id=p); time.sleep(0.5)
-    t.ok("…and ⌘W puts it down where it was", sv.url(sv.sp("state"), p).endswith("/off"), sv.url(sv.sp("state"), p))
+    t.ok("…and ⌘W still puts it down where it was", sv.url(sv.sp("state"), p).endswith("/home"), sv.url(sv.sp("state"), p))
+
+    # And with a pin keeping no site at all, it follows the link as any tab.
+    sv.quit()
+    subprocess.run(["defaults", "write", sv.SUITE, "pins.home", "-bool", "false"])
+    sv.launch(); time.sleep(0.5)
+    st = sv.sp("state")
+    p = next(x["id"] for x in st["tabs"] if x["id"] in st["pins"])
+    sv.sp("select", id=p); time.sleep(1.5)
+    follow(p, f"{OTHER}/followed")
+    t.ok("a pin that keeps no site follows the link, in no peek",
+         peek() == "" and sv.url(sv.sp("state"), p).endswith("/followed"),
+         (peek(), sv.url(sv.sp("state"), p)))
 except Exception:
     import traceback; traceback.print_exc(); t.failed += 1
 finally:

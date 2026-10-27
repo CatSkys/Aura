@@ -6214,19 +6214,30 @@ extension Browser: WKNavigationDelegate, WKUIDelegate {
             DispatchQueue.main.async { [weak self] in self?.peek(url, from: from) }
             return
         }
-        // A plain click in a pin, on a link to another site: a peek too, when
-        // Settings says so (see peeksFromPin). Links into the page's frames
-        // are the page's own business. A link the site sends out by way of
-        // itself, as Google's results go by google.com/goto, is asked about
-        // again at the redirect, still as a click — by then webView.url is
-        // already where it is going, so the page it was on is the one in the
-        // history.
+        // A plain click in a pin, on a link to another site: a peek, or a tab
+        // beside the pin, as Settings says (see pinClick). Links into the
+        // page's frames are the page's own business. A link the site sends out
+        // by way of itself, as Google's results go by google.com/goto, is
+        // asked about again at the redirect, still as a click — by then
+        // webView.url is already where it is going, so the page it was on is
+        // the one in the history.
         if action.navigationType == .linkActivated, action.targetFrame?.isMainFrame == true,
            action.modifierFlags.intersection([.shift, .command, .option, .control]).isEmpty,
-           let from = tab(for: webView), peeksFromPin(url, in: from, on: webView.backForwardList.currentItem?.url) {
-            decisionHandler(.cancel)
-            DispatchQueue.main.async { [weak self] in self?.peek(url, from: from) }
-            return
+           let from = tab(for: webView) {
+            switch pinClick(url, in: from, on: webView.backForwardList.currentItem?.url) {
+            case .peek:
+                decisionHandler(.cancel)
+                DispatchQueue.main.async { [weak self] in self?.peek(url, from: from) }
+                return
+            case .beside:
+                // In front, beside the pin: the click said where it wanted to
+                // go, and the pin is the thing that stays behind.
+                decisionHandler(.cancel)
+                DispatchQueue.main.async { [weak self] in self?.open(url, foreground: true, from: from) }
+                return
+            case .follow:
+                break
+            }
         }
         if action.navigationType == .other, action.targetFrame?.isMainFrame == true,
            let from = tab(for: webView), followsPeek(url, in: from) {

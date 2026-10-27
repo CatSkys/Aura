@@ -125,7 +125,10 @@ def case_explicit(t):
     sv.quit(); time.sleep(0.5)
     sv.setup(**{"pins.peek": True, "pins.home": False}); sv.launch()
     v = settings()["values"]
-    t.ok("either pin key on: on, both kept in step", v["pins.keep"] and v["pins.home"] and v["pins.peek"], v)
+    # Two switches since 27 Oct 2026: each key is read on its own, so an off
+    # on the way home stays off rather than being carried by the peek's.
+    t.ok("either pin key on: the peek stays on, the way home stays off",
+         v["pins.keep"] and v["pins.peek"] and not v["pins.home"], v)
 
 
 def case_merged(t):

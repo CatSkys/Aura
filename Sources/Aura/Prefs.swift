@@ -382,10 +382,11 @@ final class Preferences: ObservableObject {
     @Published var peeksLinks: Bool {
         didSet { store.set(peeksLinks, forKey: "links.peek") }
     }
-    /// Pins as in Arc: a link from a pinned tab to another site opens in a
-    /// peek, so the pin stays on its page (see Peek.swift), and ⌘W takes it
-    /// back to the page it was pinned at. Half of "Pins keep their site"
-    /// (Preferences.pinsKeepSite), on unless turned off.
+    /// A plain click in a pinned tab, on a link to another site, opens it in a
+    /// peek so the pin stays where it was (see Peek.swift). Arc keeps this as
+    /// a switch of its own beside the modified-click one, and notes under it
+    /// that it only affects pins: Settings › Spaces & Pins › Pins has it as a
+    /// row of its own. Off, that click opens a tab beside the pin.
     @Published var pinsPeek: Bool {
         didSet { store.set(pinsPeek, forKey: "pins.peek") }
     }
@@ -536,10 +537,13 @@ final class Preferences: ObservableObject {
     @Published var listsPins: Bool {
         didSet { store.set(listsPins, forKey: "pins.list") }
     }
-    /// A pin goes back to the page it was pinned at when it is closed with
-    /// ⌘W and when Aura opens again, as Arc's pins do, rather than keeping
-    /// wherever it was taken since. The other half of "Pins keep their
-    /// site", on unless turned off.
+    /// A pin stays on the site it was pinned at: closed with ⌘W, or left open
+    /// when Aura opens again, it comes back at the page it was pinned at, and
+    /// a link out of it to another site opens beside it rather than in it, as
+    /// Arc's pins do. Settings › Spaces & Pins › Pins › Pins keep their site;
+    /// on unless turned off. Whether that link opens as a peek is
+    /// `pinsPeek`'s question, and this switch alone decides that the pin does
+    /// not follow it.
     @Published var pinsGoHome: Bool {
         didSet { store.set(pinsGoHome, forKey: "pins.home") }
     }
@@ -756,14 +760,15 @@ final class Preferences: ObservableObject {
         welcomed = store.bool(forKey: "welcomed") || store.object(forKey: "glyph") != nil
         usesSpaces = store.bool(forKey: "spaces")
         listsPins = store.bool(forKey: "pins.list")
-        // "Pins keep their site" is one switch over two keys (see
-        // SettingsIndex): on when either was on, on by default when neither
-        // was ever touched (Drice, 24 Oct 2026), off when one was turned
-        // off and the other never set. Nothing is written here.
+        // Two switches now, so each key is read on its own: "Pins keep their
+        // site" used to be one switch over both, and the value written then is
+        // the only sign of what that person wanted on the other side — so an
+        // unset one takes the other's answer, and both are on for someone who
+        // never touched either (Drice, 24 Oct 2026; split 27 Oct 2026).
+        // Nothing is written here.
         let home = store.object(forKey: "pins.home") as? Bool
         let peek = store.object(forKey: "pins.peek") as? Bool
-        let keepsSite = home == nil && peek == nil ? true : (home ?? false) || (peek ?? false)
-        pinsGoHome = keepsSite
+        pinsGoHome = home ?? peek ?? true
         ai = AI.shipped && store.bool(forKey: "ai")
         aiProvider = store.string(forKey: "ai.provider").flatMap(AIProvider.init(rawValue:))
         aiModels = store.dictionary(forKey: "ai.models") as? [String: String] ?? [:]
@@ -797,7 +802,7 @@ final class Preferences: ObservableObject {
         installsUpdates = store.object(forKey: Updater.installKey) as? Bool ?? true
         peeksLinks = store.object(forKey: "links.peek") as? Bool ?? true
         peekClick = store.string(forKey: "links.peekClick").flatMap(PeekClick.init(rawValue:)) ?? .shift
-        pinsPeek = keepsSite
+        pinsPeek = peek ?? home ?? true
         readsTwins = store.bool(forKey: "reader.twins")
         readerFollowsLook = store.bool(forKey: "reader.follows")
         littleLinks = store.bool(forKey: "links.little")

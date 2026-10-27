@@ -8,8 +8,13 @@ import WebKit
 // was underneath is what comes back. Its other button keeps it, as a tab
 // beside this one, loaded as it is.
 //
-// Settings › General turns peeking off; Settings › Shortcuts chooses the
-// click, Shift-click unless changed.
+// Two clicks open one, as Arc's own Links pane has two switches: the modified
+// click, from any tab (Settings › Keyboard & Mouse › Mouse and Trackpad › Peek
+// at a link, Shift-click unless changed), and a plain click in a pin on a link
+// to another site (Settings › Spaces & Pins › Pins › Open links from a pin in a
+// peek). The second is the pins' alone — Arc notes under its own switch that
+// it affects favourites and pinned tabs — so a tab in the row keeps navigating
+// on a plain click.
 //
 // The page is a tab of its own, only not in the row: keeping it is moving
 // it there, with nothing loaded twice.
@@ -63,17 +68,23 @@ extension Browser {
         }
     }
 
-    /// A plain click in a pin, on a link to another site, with Settings ›
-    /// Tabs › Open links from pins in a peek on: Arc's way, the link opens
-    /// in a peek and the pin stays the page it was pinned for. Links within
-    /// the site go as they always have, so moving about Gmail or Notion
-    /// stays in the pin.
-    func peeksFromPin(_ url: URL, in tab: Tab, on page: URL?) -> Bool {
-        guard prefs.pinsPeek, tab.pin != nil, peekTab == nil, Browser.peekable(url),
+    /// Where a plain click in a pin goes, on a link to another site. Arc asks
+    /// this twice over in Settings › Links: a peek when the pin's own switch
+    /// is on, and a tab beside the pin when it is not — a pin keeps the page
+    /// it was pinned at either way, and only "Pins keep their site" off lets
+    /// it follow the link like any tab. Links within the site are not this
+    /// question at all, so moving about Gmail or Notion stays in the pin.
+    enum PinClick {
+        case peek, beside, follow
+    }
+
+    func pinClick(_ url: URL, in tab: Tab, on page: URL?) -> PinClick {
+        guard prefs.pinsGoHome, tab.pin != nil, peekTab == nil, Browser.peekable(url),
               let there = url.host()?.lowercased(),
-              let here = page?.host()?.lowercased()
-        else { return false }
-        return there != here && Vault.registrable(there) != Vault.registrable(here)
+              let here = page?.host()?.lowercased(),
+              there != here, Vault.registrable(there) != Vault.registrable(here)
+        else { return .follow }
+        return prefs.pinsPeek ? .peek : .beside
     }
 
     /// What a pin may open in a peek: a web page, never about:blank, data:,
