@@ -115,7 +115,7 @@ struct TabBar: View {
                                 .frame(width: run(in: geo.size.width))
                                 .onAppear { reveal(reader, in: geo.size.width) }
                                 .onChange(of: overflowing(in: geo.size.width)) { _, _ in reveal(reader, in: geo.size.width) }
-                                .onChange(of: browser.activeID) { _, _ in reveal(reader, in: geo.size.width, gliding: true) }
+                                .onChange(of: browser.activeID) { _, _ in reveal(reader, in: geo.size.width) }
                             }
                                 .offset(y: browser.spaceSwipe)
                         }
@@ -282,7 +282,7 @@ struct TabBar: View {
     /// Brings the tab you are on into view once the run scrolls: at once
     /// when the window first shows it, on the strip's spring when you pick
     /// another. A turn of the run loop later, so the run has been laid out.
-    private func reveal(_ reader: ScrollViewProxy, in strip: CGFloat, gliding: Bool = false) {
+    private func reveal(_ reader: ScrollViewProxy, in strip: CGFloat) {
         guard overflowing(in: strip), let activeID = browser.activeID else { return }
         let id: Tab.ID
         if browser.prefs.splitView, let active = browser.tabs.first(where: { $0.id == activeID }) {
@@ -290,13 +290,11 @@ struct TabBar: View {
         } else {
             id = activeID
         }
-        DispatchQueue.main.async {
-            if gliding {
-                withAnimation(Motion.glide) { reader.scrollTo(id) }
-            } else {
-                reader.scrollTo(id)
-            }
-        }
+        // Not on a spring, and not on anything: picking a tab used to scroll
+        // the run to it over 0.34 seconds, which reads as the row sliding
+        // under your hand every time you change tabs. A tab already in view
+        // costs nothing here; one out of view snaps into the room it needs.
+        DispatchQueue.main.async { reader.scrollTo(id) }
     }
 
     /// `each`: every loose tab's width (see `width(in:)`), worked out once

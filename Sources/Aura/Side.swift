@@ -277,10 +277,13 @@ struct SideBar: View {
                                 .padding(.trailing, -10)
                                 // The tab you go to is the tab you see — ⌘1–⌘9,
                                 // ⇧⌘], a link opening beside the one on screen.
+                                // Snapped, not glided: sliding the column to
+                                // the row you picked is a movement you did not
+                                // ask for on every single click (see
+                                // TabBar.reveal).
                                 .onChange(of: browser.activeID) { _, id in
                                     guard let id else { return }
-                                    let representative = browser.activeSplit?.left ?? id
-                                    withAnimation(Motion.glide) { proxy.scrollTo(representative) }
+                                    proxy.scrollTo(browser.activeSplit?.left ?? id)
                                 }
                                 // A turn of the run loop later, as the row across
                                 // the top does it (TabBar.reveal): the folded

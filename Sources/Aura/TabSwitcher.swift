@@ -378,6 +378,10 @@ struct TabSwitcherOverlay: View {
         return 0.6 + 0.4 * CGFloat(min(1, max(0, log2(screens) / 4)))
     }
 
+    /// Whether the cards have grown into place: the scrim fades in on its own,
+    /// and scaling it with them made the mask look like the thing opening.
+    @State private var grown = false
+
     var body: some View {
         Group {
         if switcher.visible, host == nil || switcher.home == host {
@@ -400,6 +404,10 @@ struct TabSwitcherOverlay: View {
                         grid(width: width, previewHeight: previewHeight, cardHeight: cardHeight)
                         if moonColumns > 0 { moons(width: width * Self.moonScale, columns: moonColumns) }
                     }
+                    // The cards grow; the scrim only fades. Scaling the whole
+                    // overlay scaled the dimming mask with them, so the mask
+                    // itself looked like the thing that had opened.
+                    .scaleEffect(grown ? 1 : 0.90)
                     // The grid's cards and the moons' both.
                     .onPreferenceChange(CardFrames.self) { frames in
                         MainActor.assumeIsolated { switcher.cardFrames = frames }
@@ -415,7 +423,12 @@ struct TabSwitcherOverlay: View {
                 guard !Task.isCancelled else { return }
                 switcher.capturePreviews(of: tab, current: current)
             }
-            .transition(.opacity.combined(with: .scale(scale: 0.90)))
+            .transition(.opacity)
+            .onAppear {
+                grown = false
+                withAnimation(Motion.arrive) { grown = true }
+            }
+            .onDisappear { grown = false }
         }
         }
         // Outside the `if`, for the reason the space card had to learn: a view
