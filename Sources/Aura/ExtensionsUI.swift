@@ -251,6 +251,7 @@ struct StoreOffer: View {
         @ObservedObject var extensions: Extensions
 
         var body: some View {
+            Group {
             // Only where the page's own "Add to Aura" isn't in place — a
             // store that has changed its markup still gets a way in.
             if let url = tab.address, let id = Crx.storeID(of: url),
@@ -282,6 +283,11 @@ struct StoreOffer: View {
                 .shadow(color: .black.opacity(0.12), radius: 20, y: 6)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
+            }
+            // It carried a transition from the day it was written with nothing
+            // to run it, so the offer arrived whole the moment the store page
+            // finished loading.
+            .animation(Motion.settle, value: tab.storePlaced)
         }
     }
 

@@ -86,6 +86,9 @@ struct Omnibox: View {
                 // trailed behind the field.
                 .animation(Motion.quick, value: rows)
                 .animation(Motion.settle, value: refused)
+                // The sheet under the bar arrives when a blank tab becomes a
+                // page; its transition ran on nothing.
+                .animation(Motion.crossfade, value: over)
                 .onChange(of: browser.refusals) { _, _ in
                     shake = 0
                     refused = true
