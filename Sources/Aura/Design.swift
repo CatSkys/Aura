@@ -371,9 +371,10 @@ enum Motion {
     // "finished" rather than as "released".
 
     /// Going down: quick, and with nothing to overshoot — the click is
-    /// answered on the frame it happens.
+    /// answered on the frame it happens. 0.10 s rather than 0.12: the first
+    /// round of this was too slow to read as "the button took the click".
     static var pressed: Animation? {
-        reduced ? nil : light ? .easeOut(duration: 0.10) : .easeOut(duration: 0.12)
+        reduced ? nil : .easeOut(duration: 0.10)
     }
 
     /// Coming back up: Arc's most used spring, a little past where it lands.
@@ -426,12 +427,15 @@ enum Motion {
     /// And how far a button gives (see Press): a pill, a door, a capsule in
     /// Settings — the things that answer a click rather than carry a drag.
     /// Pressing a button is most of what there is to do in Aura, and until
-    /// now it answered in colour alone.
-    static let dip: CGFloat = 0.96
+    /// now it answered in colour alone. 0.94, not 0.96: four per cent of a
+    /// 26-point door is a point, which is not a thing anyone feels.
+    static let dip: CGFloat = 0.94
 
     /// The small square icons — a door in the row, a tool in Extensions —
-    /// give a little further, since a shape that small needs it to be seen.
-    static let dipSmall: CGFloat = 0.92
+    /// give further still, since a shape that small needs it to be seen. And
+    /// the further the dip, the more the return spring has to travel, which
+    /// is the only part of this that reads as bounce.
+    static let dipSmall: CGFloat = 0.85
 
     /// Whether anything at all gives under the press (Settings › Tabs › Press
     /// feedback). Read where something is pressed, so it follows the switch
