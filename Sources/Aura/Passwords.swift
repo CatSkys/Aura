@@ -123,6 +123,7 @@ struct PasswordsPanel: View {
                 .padding(.vertical, 10)
                 .background(open ? Palette.wash.opacity(0.6) : (hovering ? Palette.hover : .clear))
                 .contentShape(Rectangle())
+                .pressable(Motion.give)
                 .onTapGesture(perform: toggle)
                 .onHover { hovering = $0 }
                 .animation(Motion.quick, value: hovering)

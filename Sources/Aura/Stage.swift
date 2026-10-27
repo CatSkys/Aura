@@ -94,8 +94,8 @@ struct Page: View {
         .animation(Motion.quick, value: tab.failure)
         .animation(Motion.quick, value: tab.floating)
         .animation(Motion.quick, value: tab.reader)
-        .animation(.easeOut(duration: 0.2), value: tab.cover == nil)
-        .animation(.easeOut(duration: 0.16), value: tab.pull == nil)
+        .animation(Motion.ease(0.2), value: tab.cover == nil)
+        .animation(Motion.ease(0.16), value: tab.pull == nil)
     }
 }
 
@@ -193,7 +193,7 @@ private struct Disc: View {
         .offset(x: (pull.back ? 1 : -1) * (Self.inset + Self.press * grown + (pull.going ? 10 : 0)))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: pull.back ? .leading : .trailing)
         .allowsHitTesting(false)
-        .animation(.easeOut(duration: 0.22), value: pull.going)
+        .animation(Motion.ease(0.22), value: pull.going)
     }
 }
 
@@ -242,8 +242,8 @@ private struct HistoryList: View {
         .offset(x: (pull.back ? 1 : -1) * (10 + reach * 0.2), y: slide)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: pull.back ? .leading : .trailing)
         .allowsHitTesting(false)
-        .animation(.spring(response: 0.22, dampingFraction: 0.9), value: pull.picked)
-        .animation(.easeOut(duration: 0.26), value: pull.going)
+        .animation(Motion.picked, value: pull.picked)
+        .animation(Motion.ease(0.26), value: pull.going)
     }
 
     @ViewBuilder
@@ -583,7 +583,7 @@ struct Trouble: View {
                 .font(.system(size: 14))
                 .foregroundStyle(Palette.ink)
             Button("Try again", action: retry)
-                .buttonStyle(.plain)
+                .buttonStyle(Press())
                 .font(.system(size: 12))
                 .foregroundStyle(Palette.muted)
         }

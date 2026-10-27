@@ -540,7 +540,7 @@ struct SpaceDot: View {
             )
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Press())
         .onHover { hovering = $0 }
         .help("\(browser.space.name) — ⌃1–⌃9, or two fingers \(browser.prefs.sidebar ? "sideways" : "up or down") over the tabs, to switch")
         // Where the dot stands, for the card that opens over it: it is drawn
@@ -551,7 +551,7 @@ struct SpaceDot: View {
         .onChange(of: key) { _, now in
             let symbol = symbol
             DispatchQueue.main.async {
-                withAnimation(.easeOut(duration: 0.22)) { shown = (now, symbol) }
+                withAnimation(Motion.ease(0.22)) { shown = (now, symbol) }
             }
         }
         .onChange(of: browser.spaceID) { _, _ in name() }

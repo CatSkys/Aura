@@ -105,7 +105,7 @@ struct AccountList: View {
                 .background(hovering ? Palette.hover : .clear)
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(Press())
             .onHover { hovering = $0 }
             .animation(Motion.quick, value: hovering)
         }

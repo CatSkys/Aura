@@ -1999,7 +1999,7 @@ private struct ExtensionButtons: View {
                     )
                     .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(Press())
             .onHover { hovering = $0 }
             .help(button.label)
         }
@@ -2175,6 +2175,7 @@ private struct ExtensionMenu: View {
             .frame(height: 30)
             .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(hovering ? Palette.wash : .clear))
             .contentShape(Rectangle())
+            .pressable(Motion.give)
             .onTapGesture {
                 // The list goes first; the popup, if there is one, then
                 // hangs from the puzzle button it came out of.
@@ -2205,8 +2206,9 @@ private struct ExtensionMenu: View {
                     .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(hovering ? Palette.hover : .clear))
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(Press(dip: Motion.dipSmall))
             .onHover { hovering = $0 }
+            .animation(Motion.quick, value: hovering)
             .help(help)
         }
     }
@@ -2233,6 +2235,7 @@ private struct ExtensionMenu: View {
             .padding(.vertical, 6)
             .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(hovering ? Palette.wash : .clear))
             .contentShape(Rectangle())
+            .pressable(Motion.give)
             .onTapGesture(perform: act)
             .onHover { hovering = $0 }
         }

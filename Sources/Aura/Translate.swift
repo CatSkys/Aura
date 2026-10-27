@@ -973,7 +973,7 @@ struct TranslateSign: View {
                                 in: RoundedRectangle(cornerRadius: 4, style: .continuous))
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(Press())
             .onHover { hovering = $0 }
             .help(TranslateMenu.heading(mark))
             .accessibilityLabel(TranslateMenu.heading(mark))
@@ -1056,6 +1056,7 @@ struct TranslateMenu: View {
             .padding(.vertical, 6)
             .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(hovering ? Palette.wash : .clear))
             .contentShape(Rectangle())
+            .pressable(Motion.give)
             .onTapGesture(perform: act)
             .onHover { hovering = $0 }
         }

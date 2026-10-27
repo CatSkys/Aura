@@ -248,7 +248,7 @@ private struct CardDoor: View {
                 .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .animation(Motion.quick, value: over)
         }
-        .buttonStyle(DoorPress())
+        .buttonStyle(Press(dip: Motion.dipSmall))
         .disabled(!on)
         .onHover { over = $0 }
         .help(help)
@@ -256,16 +256,9 @@ private struct CardDoor: View {
     }
 }
 
-/// The symbol given a little while it is held, as a tab gives under the hand
-/// (see Give), and back on the release — an answer to the press before the card
-/// goes.
-private struct DoorPress: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.92 : 1)
-            .animation(Motion.quick, value: configuration.isPressed)
-    }
-}
+// The symbol here used to have a press style of its own: it was one of the few
+// presses in the app, and the only one written by hand. It is Press now, with
+// the smaller dip a square that size wants (see Press.swift).
 
 // MARK: - where it stands
 

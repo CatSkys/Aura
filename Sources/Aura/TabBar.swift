@@ -150,7 +150,7 @@ struct TabBar: View {
                                     .fill(plussed ? Palette.hover : .clear)
                             )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(Press())
                     .onHover { plussed = $0 }
                     .opacity(nearby ? 1 : 0)
                     .scaleEffect(nearby ? 1 : 0.7, anchor: .leading)
@@ -763,7 +763,7 @@ private struct TabPill: View {
         .onChange(of: browser.refusals) { _, _ in
             guard editing else { return }
             shake = 0
-            withAnimation(.easeOut(duration: 0.5)) { shake = 1 }
+            withAnimation(Motion.refuse) { shake = 1 }
         }
         // Arriving and leaving from the strip rather than from nowhere.
         .transition(.scale(scale: 0.9, anchor: .leading).combined(with: .opacity))
@@ -1506,14 +1506,16 @@ struct Pressing: ViewModifier {
 
 /// A tab gives a little under the button and springs back when it is let
 /// go, the life Arc's tabs have when clicked. Going down is quick, so the
-/// click is answered at once; coming back is the settle spring. Only the
-/// scale is animated, so the selection the press makes isn't slowed with
-/// it. Nothing moves with Reduce Motion on.
+/// click is answered at once; coming back is a spring that goes a little past
+/// where it started (Motion.released — it was settle, which lands dead flat,
+/// and a tab is the thing in Aura you press most). Only the scale is animated,
+/// so the selection the press makes isn't slowed with it. Nothing moves with
+/// Reduce Motion on, or with Press feedback turned off.
 struct Give: ViewModifier {
     let pressed: Bool
 
     func body(content: Content) -> some View {
-        content.animation(pressed ? Motion.quick : Motion.settle) {
+        content.animation(pressed ? Motion.pressed : Motion.released) {
             $0.scaleEffect(pressed && !Motion.reduced ? Motion.give : 1)
         }
     }

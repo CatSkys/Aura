@@ -133,7 +133,7 @@ private struct KeyBox: View {
                 )
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Press())
         .onHover { hovering = $0 }
         .onDisappear(perform: stop)
     }

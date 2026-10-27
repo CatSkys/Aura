@@ -352,7 +352,7 @@ private struct PaneQuestionCard: View {
                 .frame(height: 26)
                 .background(strong ? Palette.ink : Palette.ink.opacity(0.07), in: Capsule())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Press())
         .disabled(!ready)
         .opacity(ready ? 1 : 0.5)
     }

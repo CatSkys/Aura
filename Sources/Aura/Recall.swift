@@ -231,6 +231,7 @@ struct HistoryPanel: View {
             .padding(.vertical, 9)
             .background(hovering ? Palette.rowHover : .clear)
             .contentShape(Rectangle())
+            .pressable(Motion.give)
             .onTapGesture(perform: go)
             .onHover { hovering = $0 }
             .animation(Motion.quick, value: hovering)
@@ -466,6 +467,7 @@ struct DownloadsPanel: View {
             .padding(.vertical, 9)
             .background(hovering ? Palette.rowHover : .clear)
             .contentShape(Rectangle())
+            .pressable(Motion.give)
             .onTapGesture { if keep.stillThere { open() } }
             .onHover { hovering = $0 }
             .animation(Motion.quick, value: hovering)

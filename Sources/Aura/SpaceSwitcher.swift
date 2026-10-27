@@ -182,7 +182,7 @@ struct SpaceSwitcher: View {
                                 .fill(here.symbol == symbol ? Palette.wash : .clear))
                             .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(Press())
                     .help(name.localized)
                     .accessibilityLabel(name.localized)
                 }
@@ -410,7 +410,7 @@ private struct SpaceCardRow: View {
                 .fill(hovering ? Palette.hover : .clear))
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Press())
         .onHover { hovering = $0 }
         .accessibilityLabel(title)
         .accessibilityValue(checked ? "Selected".localized : "")

@@ -294,7 +294,7 @@ struct AIToolRail: View {
         } else {
             VStack(alignment: .leading, spacing: 0) {
                 Button {
-                    withAnimation(.easeOut(duration: 0.16)) { open.toggle() }
+                    withAnimation(Motion.ease(0.16)) { open.toggle() }
                 } label: {
                     HStack(spacing: 6) {
                         // Dia keeps up to three marks in the gutter beside the
@@ -311,7 +311,7 @@ struct AIToolRail: View {
                     }
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(Press())
                 if open { rows(folded: true).transition(.opacity) }
             }
         }
@@ -687,7 +687,7 @@ private struct ChipPill: View {
         // after the one before it.
         .scaleEffect(arrived ? 1 : 0.25)
         .opacity(arrived ? 1 : 0)
-        .animation(.easeOut(duration: 0.15).delay(delay), value: arrived)
+        .animation(Motion.ease(0.15)?.delay(delay), value: arrived)
         .onAppear { arrived = true }
     }
 

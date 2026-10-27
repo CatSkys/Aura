@@ -236,7 +236,7 @@ struct ProfileBadge: View {
                 )
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Press())
         .onHover { hovering = $0 }
         .help("Profile: \(name)")
         .accessibilityLabel("Profile \(name)")

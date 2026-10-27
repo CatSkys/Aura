@@ -203,7 +203,7 @@ struct Hunt: View {
                         .font(.system(size: 11))
                         .foregroundStyle(Palette.faint)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(Press())
             }
         }
         .padding(.horizontal, 12)
@@ -247,6 +247,6 @@ struct Quick: View {
                 .padding(.vertical, 4)
                 .background(Palette.wash, in: Capsule())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Press())
     }
 }

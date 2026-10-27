@@ -266,7 +266,7 @@ struct PeekPanel: View {
                     .background(hovering ? Palette.hover : Palette.ground, in: Circle())
                     .overlay(Circle().strokeBorder(Palette.hairline, lineWidth: 1))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(Press())
             .help(help)
             .onHover { hovering = $0 }
         }
@@ -341,9 +341,9 @@ struct PeekSkeleton: View {
         .allowsHitTesting(false)
         .task {
             try? await Task.sleep(for: .milliseconds(150))
-            withAnimation(.easeOut(duration: 0.2)) { shown = true }
+            withAnimation(Motion.ease(0.2)) { shown = true }
             guard !Motion.reduced else { return }
-            withAnimation(.easeInOut(duration: 1.3).repeatForever(autoreverses: false)) { sweep = true }
+            withAnimation(Motion.easeBoth(1.3)?.repeatForever(autoreverses: false)) { sweep = true }
         }
     }
 

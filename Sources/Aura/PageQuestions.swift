@@ -17,7 +17,7 @@ struct CaptureQuestion: View {
             }
         }
         .font(.system(size: 12))
-        .buttonStyle(.plain)
+        .buttonStyle(Press())
         .padding(.leading, 16)
         .padding(.trailing, 10)
         .padding(.vertical, 9)
@@ -108,7 +108,7 @@ struct ScreenQuestion: View {
             }
             .font(.system(size: 12))
             .foregroundStyle(Palette.ink)
-            .buttonStyle(.plain)
+            .buttonStyle(Press())
         }
         .frame(maxWidth: 400, alignment: .leading)
         .padding(18)
@@ -136,7 +136,7 @@ struct PasswordOffer: View {
             }
         }
         .font(.system(size: 12))
-        .buttonStyle(.plain)
+        .buttonStyle(Press())
         .padding(.leading, 16)
         .padding(.trailing, 12)
         .padding(.vertical, 9)

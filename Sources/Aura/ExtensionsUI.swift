@@ -266,7 +266,7 @@ struct StoreOffer: View {
                         Ring(size: 10)
                     } else {
                         Button("Add") { extensions.install(from: id) }
-                            .buttonStyle(.plain)
+                            .buttonStyle(Press())
                             .font(.system(size: 12))
                             .foregroundStyle(Palette.ground)
                             .padding(.horizontal, 11)
