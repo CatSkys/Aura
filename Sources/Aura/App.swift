@@ -804,7 +804,11 @@ struct ContentView: View {
                 // with the page says otherwise.
                 .padding(.leading, sidebar && !sideOnRight ? browser.prefs.sideWidth : 0)
                 .padding(.trailing, sidebar && sideOnRight ? browser.prefs.sideWidth : 0)
-                .transition(.scale(scale: 0.97).combined(with: .opacity))
+                // Down from the window's top edge rather than grown in place.
+                // It had a transition before this — `scale(0.97)`, three per
+                // cent of a bar 560 points wide — which is a fade with extra
+                // steps: nothing about it said the bar had come down.
+                .transition(.move(edge: .top).combined(with: .opacity))
         }
     }
 
@@ -901,8 +905,12 @@ struct ContentView: View {
             .overlay { TabCardOverlay(browser: browser) }
             // The card of spaces, over the window and over the page: it is
             // put away by a click anywhere else or an Escape (see
-            // SpaceCardOverlay).
-            .overlay { spaceCardOverlay }
+            // SpaceCardOverlay). The animation is here rather than in the
+            // card: what a condition inserts cannot animate its own arrival.
+            .overlay {
+                Group { spaceCardOverlay }
+                    .animation(Motion.raised, value: browser.spaceCardUp)
+            }
             .onPreferenceChange(SpaceDotFrame.self) { frame in
                 MainActor.assumeIsolated {
                     if browser.spaceDotFrame != frame { browser.spaceDotFrame = frame }
@@ -917,7 +925,13 @@ struct ContentView: View {
                 }
             }
             .overlay(alignment: .topTrailing) {
-                if let job = browser.fileImport { ImportProgress(browser: browser, job: job) }
+                // The card has had a transition all along and nothing to run
+                // it: it arrived and left on the frame it was made (see the
+                // same mistake in SpaceSwitcher and TabSwitcher).
+                Group {
+                    if let job = browser.fileImport { ImportProgress(browser: browser, job: job) }
+                }
+                .animation(Motion.raised, value: browser.fileImport?.id)
             }
             .environment(\.tabShortcutNumbers, browser.tabShortcutNumbers)
             // The field comes up with a little weight behind it (Motion.raised)
