@@ -103,6 +103,9 @@ extension Browser {
     func showImageMenu(for tab: Tab, at url: URL) {
         guard let webView = tab.built else { return }
         let menu = NSMenu()
+        // Ours rather than WebKit's, so the page's own rows are not added to it
+        // a second time (see NSMenu.auraContextMenu).
+        menu.identifier = NSMenu.auraContextMenu
         menu.autoenablesItems = false
         menu.addItem(ClosureMenuItem("Open Image in New Tab") { [weak self] in
             self?.open(url, foreground: true, from: tab)
