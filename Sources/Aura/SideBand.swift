@@ -1,7 +1,14 @@
 import SwiftUI
 
 // The band at the top of the column: the lights' corner, the door that folds
-// the column away, and back, forward and reload beside it.
+// the column away beside them, and back, forward and reload at the far end.
+//
+// The two ends are the whole of the row's shape, and they are Arc's: the fold
+// grows out of the lights' corner — where the column's own controls begin, as
+// the window's begin there — and the three doors stand at the column's inner
+// edge, beside the page they move through, the way the strip puts them at the
+// far end of the row. Set out in one run from the lights, as they were, four
+// doors read as four buttons drifting apart in a band with no ends at all.
 //
 // The column goes down to 176 points and 72 of those are the lights' corner
 // (see Metrics.sideLights), so what is left is not always room for four
@@ -23,14 +30,17 @@ struct SideBand: View {
         let plan = SideBand.plan(column: prefs.sideWidth, lights: lights)
         HStack(spacing: 0) {
             Color.clear.frame(width: lights)
+            if plan.fold { fold }
+            // Everything the column has over: the doors take it up at the far
+            // end, keeping the fold's air at least.
             HStack(spacing: plan.gap) {
-                if plan.fold { fold }
                 if !plan.doors.isEmpty {
                     Helm(browser: browser, doors: plan.doors, gap: plan.gap)
                 }
                 if plan.more { MoreDoor(browser: browser, plan: plan) }
             }
-            Spacer(minLength: 0)
+            .padding(.leading, plan.gap)
+            .frame(maxWidth: .infinity, alignment: .trailing)
         }
     }
 
@@ -62,12 +72,20 @@ extension SideBand {
         var more: Bool
         var gap: CGFloat
 
-        /// What the row takes beside the lights.
+        /// What the row takes beside the lights: the fold, the doors, and the
+        /// air between them.
         var width: CGFloat {
             let count = doors.count + (fold ? 1 : 0) + (more ? 1 : 0)
             guard count > 0 else { return 0 }
             return CGFloat(count) * SideBand.door + CGFloat(count - 1) * gap
         }
+
+        /// The near end, beside the lights: the fold and the air after it. The
+        /// rest of `width` is the far end, where the doors stand.
+        var leading: CGFloat { fold ? SideBand.door + gap : 0 }
+
+        /// The far end: the doors, and the "…" that keeps what they gave up.
+        var trailing: CGFloat { width - leading }
     }
 
     /// How much of the lights' corner the column can afford at this width:
