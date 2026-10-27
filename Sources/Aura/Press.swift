@@ -28,6 +28,11 @@ struct Press: ButtonStyle {
         let down = configuration.isPressed && Motion.presses && !Motion.reduced
         configuration.label
             .scaleEffect(down ? dip : 1)
+            // Scale alone was not enough to feel: a glyph that shrinks a
+            // little is a glyph, and the eye reads it as nothing happening.
+            // The ink goes with it, by the same amount the ground under a
+            // Mac's own button does — a shade, not a dimming out.
+            .opacity(down ? 0.88 : 1)
             .animation(down ? Motion.pressed : Motion.released, value: down)
     }
 }
